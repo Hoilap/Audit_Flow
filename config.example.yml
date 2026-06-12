@@ -1,0 +1,150 @@
+project:
+  client_name: "桂平市金山环保工程有限公司"
+  client_short_name: "桂平金山"
+  audit_year: 2022
+  template_path: "inputs/bank_ledger_match/(5017)资金流水专项核查工作底稿-桂平金山.xlsm"
+  output_dir: "outputs"
+
+inputs:
+  bank_statements:
+    - id: "icbc_bank_2022"
+      enabled: true
+      parser: "icbc_historydetail"
+      path: "inputs/bank_ledger_match/【工行】桂平金山银行流水2022.1-12月.xlsx"
+      sheet: "Sheet0"
+      bank_name: "中国工商银行贵港桂平新区支行"
+      account_no: "2116006819100073162"
+
+    # 老式 .xls 银行流水建议先安装 xlrd；格式不稳定时开启 llm_bank。
+    - id: "boc_bank_2022_11_12"
+      enabled: false
+      parser: "llm_bank"
+      path: "inputs/bank_ledger_match/【中行】桂平金山银行流水2022.11-12月.xls"
+      sheet:
+      bank_name: "中国银行股份有限公司桂平支行"
+      account_no: "621081802839"
+
+  ledgers:
+    - id: "icbc_ledger_2022"
+      enabled: true
+      parser: "xinjiyuan_bank_ledger"
+      path: "inputs/bank_ledger_match/金山工行帐（新纪元导出）.xlsx"
+      sheet: "工行贵港桂平新区支行2116006819"
+      bank_name: "中国工商银行贵港桂平新区支行"
+      account_no: "2116006819100073162"
+      year: 2022
+
+    - id: "boc_ledger_2022"
+      enabled: false
+      parser: "xinjiyuan_bank_ledger"
+      path: "inputs/bank_ledger_match/金山中行账（新纪元导出）.xlsx"
+      sheet: "中国银行桂平支行营业部62108180"
+      bank_name: "中国银行股份有限公司桂平支行"
+      account_no: "621081802839"
+      year: 2022
+
+matching:
+  date_tolerance_days: 30
+  group_date_tolerance_days: 30
+  amount_tolerance: 0.01
+  high_confidence_score: 0.82
+  medium_confidence_score: 0.65
+  one_to_one_min_score: 0.58
+  group_max_size: 6
+  group_candidate_pool_limit: 24
+  strict_account_match: true
+  llm:
+    enabled: false
+    api_key_env: "DASHSCOPE_API_KEY"
+    base_url_env: "DASHSCOPE_BASE_URL"
+    model_env: "DASHSCOPE_MODEL"
+    base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    model: "qwen3.7-plus"
+    candidate_window_days: 45
+    max_candidates: 160
+    batch_size: 5
+    acceptance_confidence: 0.72
+    request_timeout_seconds: 45
+    reuse_decisions: true
+    manual_review_file: "manual_review_candidates.csv"
+    relaxed_amount_groups:
+      enabled: true
+      window_days: 90
+      pool_limit: 32
+      max_size: 10
+      min_amount: 0
+      max_search_nodes: 200000
+    manual_amount_enumeration:
+      enabled: true
+      window_days: 365
+      same_flow: true
+      pool_limit: 80
+      max_size: 60
+      max_results_per_ledger: 5
+      prioritize: "date_proximity"
+      contiguous_time_window: true
+      max_total_candidates: 100
+      max_dp_cents: 10000000
+      max_search_nodes: 100000
+    manual_window_many_to_many:
+      enabled: true
+      compare: "signed_or_abs"
+      bank_window_max_size: 80
+      ledger_window_max_size: 12
+      min_bank_count: 2
+      min_ledger_count: 2
+      max_total_candidates: 50
+      block_auto_accept: true
+      block_top_candidates: 50
+    monthly_balance_enumeration:
+      enabled: true
+      bank_pool_limit: 90
+      ledger_pool_limit: 30
+      max_bank_subset_size: 40
+      max_ledger_subset_size: 8
+      max_ledger_subsets: 180
+      max_results_per_bucket: 8
+      max_total_candidates: 80
+      full_bucket_max_records: 120
+      llm_review_max_records: 80
+      max_search_nodes: 200000
+
+working_paper:
+  enabled: true
+  fill_only_when_fully_matched: false
+  output_file: "outputs/bank_ledger_match/working_paper/资金流水专项核查工作底稿-自动填报.xlsm"
+  wp03:
+    enabled: true
+    sheet: "WP-03"
+    account_cell: "C6"
+    start_row: 9
+    data_end_row: 38
+    template_row: 9
+    min_amount: 70000
+    columns:
+      entity: "B"
+      bank_date: "C"
+      bank_debit: "D"
+      bank_credit: "E"
+      counterparty: "F"
+      ledger_date: "G"
+      voucher_no: "H"
+      ledger_summary: "I"
+      ledger_counterparty: "J"
+      ledger_debit: "K"
+      ledger_credit: "L"
+  wp02:
+    enabled: true
+    sheet: "WP-02"
+    month_start_row: 7
+    bank_name_col: "C"
+    account_no_col: "D"
+    ledger_debit_col: "E"
+    bank_credit_col: "F"
+    ledger_credit_col: "H"
+    bank_debit_col: "I"
+
+llm:
+  enabled: false
+  generated_parser_dir: "generated_parsers"
+  model: ""

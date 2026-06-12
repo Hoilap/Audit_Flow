@@ -1,0 +1,12 @@
+{
+  "name": "audit-workflow-desktop",
+  "version": "0.1.0",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "start-api": "python -m desktop.api"
+  },
+  "devDependencies": {
+    "electron": "^25.0.0"
+  }
+}

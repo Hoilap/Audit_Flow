@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AuditFlow Desktop</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' https:; script-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:8000">
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="status-bar">
+        <div class="status-left">
+          <span id="agent-dot" class="status-dot"></span>
+          <strong id="agent-status">Agent Idle</strong>
+          <div class="progress-track"><div id="agent-progress" class="progress-fill"></div></div>
+          <span id="elapsed" class="metric-inline">00:00</span>
+          <span id="tokens" class="metric-inline">0 tokens</span>
+          <span id="status-model" class="metric-inline">GPT-5.5</span>
+        </div>
+        <div class="status-right">
+          <button id="theme-toggle" class="ghost" title="切换深色模式">深色</button>
+          <button id="refresh-all" class="ghost">刷新</button>
+        </div>
+      </header>
+
+      <div class="layout">
+        <aside class="sidebar">
+          <div class="brand">
+            <div class="brand-title">AuditFlow</div>
+            <div class="brand-subtitle">智能审计工作流桌面端</div>
+          </div>
+          <nav class="nav" id="nav"></nav>
+          <div class="sidebar-footer">
+            <div class="model-card">
+              <div class="label">当前模型</div>
+              <select id="model-select">
+                <option>GPT-5.5</option>
+                <option>Claude</option>
+                <option>Gemini</option>
+                <option>本地模型</option>
+              </select>
+            </div>
+            <button id="commit-all">提交当前证据链</button>
+          </div>
+        </aside>
+
+        <main class="main" id="main"></main>
+
+        <aside class="evidence">
+          <div class="evidence-header">
+            <div>
+              <strong>审计证据链</strong>
+              <div class="label">执行过程与输出文件</div>
+            </div>
+            <button id="refresh-files" class="ghost">刷新</button>
+          </div>
+          <div class="evidence-body">
+            <section class="panel-section">
+              <h3>执行时间线</h3>
+              <div class="timeline" id="timeline"></div>
+            </section>
+            <section class="panel-section">
+              <h3>本任务生成文件</h3>
+              <div id="step-file-list" class="grid"></div>
+            </section>
+            <section class="panel-section">
+              <h3>所有输出文件</h3>
+              <div id="file-list" class="grid"></div>
+            </section>
+            <section class="panel-section">
+              <h3>CSV 预览</h3>
+              <div id="csv-preview" class="card csv-preview subtle">选择一个 CSV 文件后在这里预览。</div>
+            </section>
+            <section class="panel-section">
+              <h3>Git 历史</h3>
+              <div id="git-log" class="timeline"></div>
+              <button id="refresh-log">刷新历史</button>
+            </section>
+            <section class="panel-section">
+              <h3>人工复核</h3>
+              <div id="approve-table" class="card" style="overflow:auto; max-height: 240px;"></div>
+              <button id="refresh-approve">刷新复核表</button>
+            </section>
+          </div>
+        </aside>
+
+        <div class="composer">
+          <textarea id="prompt" placeholder="输入审计指令，例如：生成一段 Python 清洗代码，修正 outputs/clean 里的异常金额格式。"></textarea>
+          <div class="composer-actions">
+            <div class="composer-options">
+              <label><input type="checkbox" id="run-after-generate" checked /> 编译后执行代码并修改文件</label>
+              <span>超时 <input id="composer-timeout" type="number" value="5" /> 秒</span>
+              <span id="llm-target-label" class="llm-code-path">outputs/llm_code/generated_from_llm.py</span>
+            </div>
+            <button id="send" class="primary">生成代码</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="src/main.js"></script>
+  </body>
+</html>

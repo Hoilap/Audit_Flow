@@ -1,0 +1,12 @@
+pandas>=2.0
+openpyxl>=3.1
+PyYAML>=6.0
+python-dotenv>=1.0
+openai>=1.99.9
+xlrd>=2.0
+rapidfuzz>=3.0
+fastapi>=0.110
+uvicorn[standard]>=0.22
+GitPython>=3.1
+python-multipart>=0.0.6
+pydantic-ai-slim[openai]==0.8.1

@@ -1,0 +1,5 @@
+.env
+outputs/
+generated_parsers/
+__pycache__/
+*.pyc
