@@ -48,3 +48,25 @@ export function stepStatus(taskId, stepId) {
 export function findWorkflowTaskByName(taskName) {
   return workflowTasks.find((t) => t.name === taskName) || null
 }
+
+/**
+ * 获取当前项目/客户+任务对应的输出根目录。
+ * 格式: outputs/{customerName}/{taskDirName}
+ * @returns {string|null}
+ */
+export function getProjectBasePath() {
+  const wfTask = findWorkflowTaskByName(state.customTaskName)
+  if (!wfTask || !state.customCustomerName) return null
+  return `outputs/${state.customCustomerName}/${wfTask.dirName}`
+}
+
+/**
+ * 将步骤/复核的相对路径解析为完整项目路径。
+ * @param {string} relativePath - 如 'matches/matches.csv'
+ * @returns {string|null} 如 'outputs/桂平金山/bank_ledger_match/matches/matches.csv'
+ */
+export function resolveProjectPath(relativePath) {
+  const base = getProjectBasePath()
+  if (!base) return null
+  return `${base}/${relativePath}`
+}

@@ -11,6 +11,7 @@ export const api = {
   listFiles: (root = 'outputs') => request(`/files/list?root=${encodeURIComponent(root)}`),
   readFile: (path) => request(`/files/read?path=${encodeURIComponent(path)}`),
   uploadFile: (form) => request('/files/upload', { method: 'POST', body: form }),
+  deleteFile: (path) => request(`/files/delete?path=${encodeURIComponent(path)}`, { method: 'DELETE' }),
   gitLog: () => request('/git/log'),
   gitCommit: (message) => request(`/git/commit?message=${encodeURIComponent(message)}`, { method: 'POST' }),
   workflow: (endpoint) => request(endpoint, { method: 'POST' }),

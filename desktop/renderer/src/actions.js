@@ -1,15 +1,16 @@
 import { api } from './api.js'
 import { llmCodePath, workflowTasks } from './config.js'
-import { activeTask, findWorkflowTaskByName, markStep, state, stepStatus } from './state.js'
+import { activeTask, findWorkflowTaskByName, getProjectBasePath, resolveProjectPath, markStep, state, stepStatus } from './state.js'
 import { $ } from './dom.js'
-import { addMessage, renderFileError, renderFiles, renderLlmCode, renderStepFiles, renderTimeline, renderWorkflowWorkspace, setAgentStatus, startTimer, stopTimer } from './ui.js'
+import { addMessage, renderFileError, renderFileTree, renderFiles, renderLlmCode, renderStepFiles, renderTimeline, renderWorkflowWorkspace, setAgentStatus, startTimer, stopTimer } from './ui.js'
 import { openCsvPreview } from './previewModal.js'
 import { openReviewEditor } from './reviewEditor.js'
 
 export async function refreshFiles() {
   try {
-    const data = await api.listFiles('outputs')
-    renderFiles(data.files || [])
+    const root = getProjectBasePath() || 'outputs'
+    const data = await api.listFiles(root)
+    renderFiles(data.files || [], root)
     renderStepFiles()
   } catch (error) {
     renderFileError(error.message)
@@ -36,7 +37,8 @@ export async function refreshApprove() {
   const wfTask = findWorkflowTaskByName(state.customTaskName)
   const reviewFiles = wfTask ? wfTask.reviewFiles || [] : []
   if (reviewFiles.length > 0) {
-    await openReviewEditor(reviewFiles[0])
+    const resolved = resolveProjectPath(reviewFiles[0])
+    if (resolved) await openReviewEditor(resolved)
   } else {
     alert('当前工作流没有配置复核文件。')
   }
@@ -69,7 +71,8 @@ export async function runStep(stepIndex = state.activeStepIndex) {
     const wfTask = findWorkflowTaskByName(state.customTaskName)
     const reviewFiles = wfTask ? wfTask.reviewFiles || [] : []
     if (reviewFiles.length > 0) {
-      openReviewEditor(reviewFiles[0])
+      const resolved = resolveProjectPath(reviewFiles[0])
+      if (resolved) openReviewEditor(resolved)
     }
     return result
   } catch (error) {
@@ -140,6 +143,8 @@ export async function uploadFile() {
   try {
     const result = await api.uploadFile(form)
     addMessage({ title: '文件上传', body: `已上传到 ${result.path || '输入目录'}` })
+    // 刷新文件树
+    await renderFileTree()
   } catch (error) {
     addMessage({ title: '文件上传失败', body: error.message, failed: true })
   }

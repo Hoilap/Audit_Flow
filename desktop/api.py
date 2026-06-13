@@ -207,6 +207,15 @@ def write_file(payload: WritePayload):
     return {"ok": True, "path": os.path.relpath(p)}
 
 
+@app.delete("/files/delete")
+def delete_file(path: str):
+    p = os.path.abspath(path)
+    if not os.path.exists(p):
+        raise HTTPException(status_code=404, detail="File not found")
+    os.remove(p)
+    return {"ok": True, "path": os.path.relpath(p)}
+
+
 @app.post("/git/commit")
 def git_commit(message: str = "commit from desktop app"):
     repo = find_repo()

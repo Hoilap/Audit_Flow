@@ -88,6 +88,8 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 .metric-inline { color: var(--text-muted); font-size: 12px; white-space: nowrap; }
 .layout { display: grid; grid-template-columns: 260px minmax(560px, 1fr) 380px; min-height: 0; transition: grid-template-columns 250ms ease; }
 .layout.sidebar-hidden { grid-template-columns: 0px minmax(560px, 1fr) 380px; }
+.layout.evidence-hidden { grid-template-columns: 260px 1fr 0px; }
+.layout.sidebar-hidden.evidence-hidden { grid-template-columns: 0px 1fr 0px; }
 .sidebar, .main, .evidence { min-height: 0; overflow: hidden; }
 .sidebar { border-right: 1px solid var(--border); background: var(--surface); display: flex; flex-direction: column; transition: width 250ms ease, opacity 200ms ease; }
 .sidebar.collapsed { width: 0; min-width: 0; overflow: hidden; opacity: 0; pointer-events: none; padding: 0; border: 0; }
@@ -156,6 +158,8 @@ h3 { font-size: 14px; }
 .composer { position: fixed; left: 284px; right: 404px; bottom: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12); padding: 10px; display: grid; gap: 8px; z-index: 5; transition: left 250ms ease; }
 .sidebar-hidden ~ .composer,
 .layout.sidebar-hidden .composer { left: 24px; }
+.evidence-hidden .composer,
+.layout.evidence-hidden .composer { right: 24px; }
 .composer textarea { width: 100%; min-height: 62px; max-height: 140px; resize: vertical; padding: 10px; }
 .composer-actions { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .composer-options { display: flex; align-items: center; gap: 10px; color: var(--text-muted); font-size: 12px; flex-wrap: wrap; }
@@ -524,4 +528,138 @@ button.danger:hover {
 .open-review-btn:hover {
   background: var(--accent);
   color: white;
+}
+
+/* ===== 文件树 ===== */
+.file-tree {
+  font-size: 13px;
+  max-height: calc(100vh - 220px);
+  overflow-y: auto;
+  user-select: none;
+}
+.tree-root {
+  padding: 6px 4px;
+  font-weight: 650;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.tree-folder {
+  padding: 5px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.1s;
+}
+.tree-folder:hover {
+  background: var(--surface-muted);
+}
+.tree-file {
+  padding: 5px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.1s;
+  color: var(--text-soft);
+}
+.tree-file:hover {
+  background: var(--surface-muted);
+  color: var(--text);
+}
+.tree-file.active {
+  background: var(--primary);
+  color: white;
+}
+.tree-delete-btn {
+  display: none;
+  margin-left: auto;
+  padding: 1px 6px;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  font-size: 12px;
+  cursor: pointer;
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+.tree-file:hover .tree-delete-btn {
+  display: inline-block;
+}
+.tree-delete-btn:hover {
+  opacity: 1;
+  background: var(--danger);
+  color: white;
+}
+.tree-icon {
+  width: 18px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.tree-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ===== 数据画像 ===== */
+.profile-stats {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  background: var(--surface-muted);
+  border-radius: 8px;
+}
+.profile-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.profile-stat .label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.profile-cols {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.profile-col-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 12px;
+  background: var(--surface);
+}
+.profile-col-item .badge {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: var(--surface-muted);
+  color: var(--text-muted);
+}
+.profile-table-wrap {
+  overflow: auto;
+  max-height: 260px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.profile-table-wrap .table th {
+  position: sticky;
+  top: 0;
+  background: var(--surface-muted);
+  z-index: 2;
+  white-space: nowrap;
 }

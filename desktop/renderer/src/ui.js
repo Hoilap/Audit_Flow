@@ -1,7 +1,8 @@
 import { llmCodePath, navItems, workflowTasks, evidencePanelSections } from './config.js'
-import { activeTask, state, stepStatus, findWorkflowTaskByName } from './state.js'
+import { activeTask, getProjectBasePath, resolveProjectPath, state, stepStatus, findWorkflowTaskByName } from './state.js'
 import { $, $$, escapeHtml, formatSeconds, isCsv } from './dom.js'
 import { parseCsv } from './csv.js'
+import { api } from './api.js'
 
 export function renderShell() {
   $('#nav').innerHTML = navItems.map(([id, icon, label]) => `
@@ -17,6 +18,8 @@ export function renderShell() {
     reportsPage(),
     settingsPage(),
   ].join('')
+  // 右侧证据面板仅在 Agent 页面显示
+  updateEvidencePanelVisibility()
   renderEvidencePanel()
   renderWorkflowWorkspace()
   renderTimeline()
@@ -58,6 +61,22 @@ export function showPage(page) {
   state.activePage = page
   $$('.page').forEach((el) => el.classList.toggle('active', el.id === `page-${page}`))
   $$('#nav button').forEach((button) => button.classList.toggle('active', button.dataset.page === page))
+  updateEvidencePanelVisibility()
+  if (page === 'data') {
+    setTimeout(() => renderFileTree(), 0)
+  }
+}
+
+/**
+ * 右侧证据面板仅在 Agent 工作流页面显示。
+ */
+function updateEvidencePanelVisibility() {
+  const evidence = $('#evidence')
+  const layout = $('#layout')
+  if (!evidence || !layout) return
+  const visible = state.activePage === 'agent'
+  evidence.style.display = visible ? '' : 'none'
+  layout.classList.toggle('evidence-hidden', !visible)
 }
 
 export function setAgentStatus(status, progress = 0) {
@@ -188,7 +207,7 @@ function renderProjectSelector() {
   `
 }
 
-export function renderFiles(files) {
+export function renderFiles(files, root = 'outputs') {
   state.files = files.map(normalizePath)
   const count = $('#file-count')
   if (count) count.textContent = files.length
@@ -198,7 +217,7 @@ export function renderFiles(files) {
     list.innerHTML = '<div class="subtle">暂无输出文件</div>'
     return
   }
-  list.innerHTML = state.files.slice(0, 80).map((file) => fileRow(file, '所有输出')).join('')
+  list.innerHTML = state.files.slice(0, 80).map((file) => fileRow(file, `${root}`)).join('')
 }
 
 export function renderFileError(message) {
@@ -208,15 +227,25 @@ export function renderFileError(message) {
 export function renderStepFiles() {
   const task = activeTask()
   const seen = new Set()
-  const files = task.steps.flatMap((step) => step.outputs.map((file) => ({ file: normalizePath(file), step })))
-    .filter(({ file, step }) => {
-      const key = `${step.id}:${file}`
-      if (seen.has(key)) return false
-      seen.add(key)
-      return true
-    })
+  // 将所有步骤的 outputs 解析为完整路径，只保留 state.files 中实际存在的
+  const existingSet = new Set(state.files.map(normalizePath))
+  const files = task.steps.flatMap((step) =>
+    step.outputs
+      .map((rel) => resolveProjectPath(rel))
+      .filter((full) => full && existingSet.has(full))
+      .map((file) => ({ file, step }))
+  ).filter(({ file, step }) => {
+    const key = `${step.id}:${file}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
   const list = $('#step-file-list')
   if (!list) return
+  if (files.length === 0) {
+    list.innerHTML = '<div class="subtle">暂无生成文件，执行步骤后出现</div>'
+    return
+  }
   list.innerHTML = files.map(({ file, step }) => fileRow(file, step.label)).join('')
 }
 
@@ -233,7 +262,16 @@ function renderReviewFiles() {
     list.innerHTML = '<div class="subtle">此工作流暂无人工复核文件</div>'
     return
   }
-  list.innerHTML = reviewFiles.map((file) => {
+  const existingSet = new Set(state.files.map(normalizePath))
+  const existing = reviewFiles
+    .map((rel) => resolveProjectPath(rel))
+    .filter((full) => full && existingSet.has(full))
+
+  if (existing.length === 0) {
+    list.innerHTML = '<div class="subtle">暂无人工复核文件，执行步骤后生成</div>'
+    return
+  }
+  list.innerHTML = existing.map((file) => {
     const name = shortName(file)
     return `<div class="file-row review-file-item" data-file="${escapeHtml(file)}" title="${escapeHtml(file)}">
       <span>📝 ${escapeHtml(name)}</span>
@@ -455,7 +493,228 @@ function projectsPage() {
 }
 
 function dataPage() {
-  return `<section class="page" id="page-data"><div class="page-header"><div><h1>数据源</h1><p class="subtle">上传 Excel、CSV、TXT、PDF 或 ZIP，并查看字段画像</p></div></div><div class="grid two-col"><div class="drop-zone"><h2>导入数据</h2><p class="subtle">文件将保存到本地工作区，Agent 会基于数据结构生成审计程序。</p><div class="upload-row"><input type="file" id="upload-file"><input type="text" id="upload-dest" value="inputs/bank_ledger_match/"><button id="upload-btn" class="primary">上传</button></div></div><div class="card"><h2>自动数据画像</h2><div class="grid" style="margin-top:12px;"><div><span class="label">已识别金额字段</span><br><strong>借方发生额、贷方发生额、银行流水金额</strong></div><div><span class="label">已识别日期字段</span><br><strong>交易日期、记账日期</strong></div><div><span class="label">当前输出文件</span><br><strong id="file-count">0</strong> 个</div></div></div></div></section>`
+  return `<section class="page" id="page-data">
+    <div class="page-header"><div><h1>数据源</h1><p class="subtle">上传文件、浏览文件树，点击文件查看自动数据画像。要求按照“客户名称/项目名称”目录结构组织文件。</p></div></div>
+    <div class="upload-bar" style="margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <input type="file" id="upload-file" style="flex:1;min-width:160px;">
+      <input type="text" id="upload-dest" value="inputs/" style="width:260px;height:32px;padding:0 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);">
+      <button id="upload-btn" class="primary">上传</button>
+    </div>
+    <div class="grid two-col" style="align-items:start;">
+      <div class="card" style="padding:10px;">
+        <h2 style="margin-bottom:10px;">📁 文件树</h2>
+        <div id="file-tree" class="file-tree"><div class="subtle">加载中...</div></div>
+      </div>
+      <div class="card" id="data-profile-card">
+        <h2>📊 自动数据画像</h2>
+        <div id="data-profile-content" style="margin-top:10px;">
+          <p class="subtle">请点击左侧文件查看其数据画像</p>
+        </div>
+      </div>
+    </div>
+  </section>`
+}
+
+/**
+ * 递归渲染文件树节点（inputs / outputs 下所有文件）
+ */
+function renderTreeNodes(files, basePath) {
+  const tree = {}
+  for (const file of files) {
+    const rel = file.startsWith(basePath + '/') ? file.slice(basePath.length + 1) : file.startsWith(basePath) ? file.slice(basePath.length) : file
+    const parts = rel.replace(/\\/g, '/').split('/').filter(Boolean)
+    let cursor = tree
+    for (let i = 0; i < parts.length; i++) {
+      const seg = parts[i]
+      if (i === parts.length - 1) {
+        if (!cursor._files) cursor._files = []
+        cursor._files.push({ name: seg, relPath: rel })
+      } else {
+        if (!cursor[seg]) cursor[seg] = {}
+        cursor = cursor[seg]
+      }
+    }
+  }
+
+  function renderNode(node, name, depth) {
+    const hasFiles = node._files && node._files.length > 0
+    const hasDirs = Object.keys(node).filter((k) => k !== '_files').length > 0
+    const indent = depth * 16
+    let html = ''
+    if (name) {
+      html += `<div class="tree-folder" style="padding-left:${indent}px;" data-expand="true">
+        <span class="tree-icon">📂</span><span class="tree-name">${escapeHtml(name)}</span></div>`
+    }
+    // subdirs
+    for (const key of Object.keys(node).sort()) {
+      if (key === '_files') continue
+      html += renderNode(node[key], key, name ? depth + 1 : depth)
+    }
+    // files
+    if (hasFiles) {
+      for (const f of node._files) {
+        html += `<div class="tree-file" style="padding-left:${(name ? depth + 1 : depth) * 16}px;" data-path="${escapeHtml(basePath + '/' + f.relPath)}">
+          <span class="tree-icon">📄</span><span class="tree-name">${escapeHtml(f.name)}</span>
+          <button class="tree-delete-btn" data-delete="${escapeHtml(basePath + '/' + f.relPath)}" title="删除文件">🗑</button>
+        </div>`
+      }
+    }
+    return html
+  }
+  return renderNode(tree, null, 0)
+}
+
+/**
+ * 构建并渲染完整文件树（inputs + outputs）
+ */
+export async function renderFileTree() {
+  const container = $('#file-tree')
+  if (!container) return
+  container.innerHTML = '<div class="subtle">加载中...</div>'
+  try {
+    const [inputsRes, outputsRes] = await Promise.all([
+      api.listFiles('inputs').catch(() => ({ files: [] })),
+      api.listFiles('outputs').catch(() => ({ files: [] }))
+    ])
+    const inputsFiles = (inputsRes.files || []).filter((f) => !f.endsWith('/'))
+    const outputsFiles = (outputsRes.files || []).filter((f) => !f.endsWith('/'))
+
+    let html = ''
+    if (inputsFiles.length > 0) {
+      html += `<div class="tree-root"><span class="tree-icon">📁</span><strong>inputs</strong></div>`
+      html += renderTreeNodes(inputsFiles, 'inputs')
+    }
+    if (outputsFiles.length > 0) {
+      html += `<div class="tree-root"><span class="tree-icon">📁</span><strong>outputs</strong></div>`
+      html += renderTreeNodes(outputsFiles, 'outputs')
+    }
+    if (!html) html = '<div class="subtle">暂无文件</div>'
+    container.innerHTML = html
+
+    // 点击文件时触发数据画像
+    container.querySelectorAll('.tree-file').forEach((el) => {
+      el.addEventListener('click', (e) => {
+        // 如果点击的是删除按钮则不触发画像
+        if (e.target.closest('.tree-delete-btn')) return
+        const path = el.dataset.path
+        renderDataProfile(path)
+        // 高亮选中
+        container.querySelectorAll('.tree-file.active').forEach((e) => e.classList.remove('active'))
+        el.classList.add('active')
+      })
+    })
+    // 删除按钮
+    container.querySelectorAll('.tree-delete-btn').forEach((btn) => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation()
+        const path = btn.dataset.delete
+        if (!confirm(`确定删除文件？\n${path}`)) return
+        try {
+          await api.deleteFile(path)
+          await renderFileTree()
+          // 如果当前画像面板正在显示此文件则清空
+          const content = $('#data-profile-content')
+          if (content) content.innerHTML = '<p class="subtle">请点击左侧文件查看其数据画像</p>'
+        } catch (err) {
+          alert(`删除失败: ${err.message}`)
+        }
+      })
+    })
+    // 折叠/展开文件夹
+    container.querySelectorAll('.tree-folder').forEach((el) => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation()
+        const expanded = el.dataset.expand === 'true'
+        el.dataset.expand = expanded ? 'false' : 'true'
+        el.querySelector('.tree-icon').textContent = expanded ? '📁' : '📂'
+        // toggle siblings until next same-depth folder
+        let next = el.nextElementSibling
+        while (next) {
+          const nextIndent = parseInt(next.style.paddingLeft) || 0
+          const myIndent = parseInt(el.style.paddingLeft) || 0
+          if (nextIndent <= myIndent && !next.classList.contains('tree-file') && !next.classList.contains('tree-folder')) break
+          if (next.classList.contains('tree-folder') && nextIndent <= myIndent) break
+          next.style.display = expanded ? 'none' : ''
+          next = next.nextElementSibling
+        }
+      })
+    })
+  } catch (err) {
+    container.innerHTML = `<div class="subtle">加载失败: ${escapeHtml(err.message)}</div>`
+  }
+}
+
+/**
+ * 读取并渲染单个文件的数据画像
+ */
+export async function renderDataProfile(filePath) {
+  const card = $('#data-profile-card')
+  const content = $('#data-profile-content')
+  if (!card || !content) return
+  content.innerHTML = '<div class="subtle">加载中...</div>'
+  try {
+    const resp = await api.readFile(filePath)
+    const raw = resp.content || ''
+    if (!raw.trim()) {
+      content.innerHTML = '<p class="subtle">文件为空</p>'
+      return
+    }
+    const rows = parseCsv(raw)
+    if (rows.length === 0) {
+      content.innerHTML = '<p class="subtle">无法解析文件内容</p>'
+      return
+    }
+    const headers = rows[0]
+    const dataRows = rows.slice(1).filter((r) => r.some((c) => c.trim() !== ''))
+
+    // 推断列类型
+    const colTypes = headers.map((h, i) => {
+      const samples = dataRows.slice(0, 100).map((r) => (r[i] || '').trim()).filter(Boolean)
+      if (samples.length === 0) return { name: h, type: '空列', icon: '⬜' }
+      const numCount = samples.filter((v) => !isNaN(parseFloat(v)) && isFinite(v) && v !== '').length
+      const dateCount = samples.filter((v) => /^\d{4}[-/]\d{1,2}[-/]\d{1,2}/.test(v) || /^\d{1,2}[-/]\d{1,2}[-/]\d{4}/.test(v)).length
+      if (numCount >= samples.length * 0.8) return { name: h, type: '数值', icon: '🔢' }
+      if (dateCount >= samples.length * 0.8) return { name: h, type: '日期', icon: '📅' }
+      return { name: h, type: '文本', icon: '📝' }
+    })
+
+    // 金额列识别
+    const amountCols = colTypes.filter((c) => c.type === '数值' && /金额|发生额|余额|amount|借方|贷方/i.test(c.name))
+
+    // 日期列识别
+    const dateCols = colTypes.filter((c) => c.type === '日期' || /日期|date|时间|time/i.test(c.name))
+
+    // 样本数据(前5行)
+    const sampleRows = dataRows.slice(0, 5)
+
+    content.innerHTML = `
+      <div class="profile-stats">
+        <div class="profile-stat"><span class="label">文件路径</span><strong>${escapeHtml(filePath)}</strong></div>
+        <div class="profile-stat"><span class="label">行数</span><strong>${dataRows.length.toLocaleString()}</strong></div>
+        <div class="profile-stat"><span class="label">列数</span><strong>${headers.length}</strong></div>
+      </div>
+      <div style="margin-top:12px;">
+        <div class="label" style="margin-bottom:6px;">已识别金额字段</div>
+        <strong>${amountCols.length ? amountCols.map((c) => c.name).join('、') : '—'}</strong>
+      </div>
+      <div style="margin-top:10px;">
+        <div class="label" style="margin-bottom:6px;">已识别日期字段</div>
+        <strong>${dateCols.length ? dateCols.map((c) => c.name).join('、') : '—'}</strong>
+      </div>
+      <div style="margin-top:14px;">
+        <div class="label" style="margin-bottom:6px;">列信息 (${headers.length} 列)</div>
+        <div class="profile-cols">${colTypes.map((c) => `<div class="profile-col-item"><span>${c.icon}</span> <strong>${escapeHtml(c.name)}</strong> <span class="badge">${c.type}</span></div>`).join('')}</div>
+      </div>
+      <div style="margin-top:14px;">
+        <div class="label" style="margin-bottom:6px;">数据预览 (前5行)</div>
+        <div class="profile-table-wrap">
+          <table class="table" style="font-size:12px;"><thead><tr>${headers.map((h) => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead>
+            <tbody>${sampleRows.map((r) => `<tr>${headers.map((_, i) => `<td>${escapeHtml(r[i] || '')}</td>`).join('')}</tr>`).join('')}</tbody></table>
+        </div>
+      </div>`
+  } catch (err) {
+    content.innerHTML = `<div class="subtle">读取失败: ${escapeHtml(err.message)}</div>`
+  }
 }
 
 function agentPage() {
