@@ -1,4 +1,4 @@
-import { llmCodePath, navItems, workflowTasks } from './config.js'
+import { llmCodePath, navItems, workflowTasks, evidencePanelSections } from './config.js'
 import { activeTask, state, stepStatus } from './state.js'
 import { $, $$, escapeHtml, formatSeconds, isCsv } from './dom.js'
 import { parseCsv } from './csv.js'
@@ -17,9 +17,41 @@ export function renderShell() {
     reportsPage(),
     settingsPage(),
   ].join('')
+  renderEvidencePanel()
   renderWorkflowWorkspace()
   renderTimeline()
   renderStepFiles()
+}
+
+/**
+ * 按 config.evidencePanelSections 顺序动态渲染右栏区块。
+ * 调整 config 中数组顺序即可自定义右栏布局。
+ */
+export function renderEvidencePanel() {
+  const body = $('#evidence-body')
+  if (!body) return
+
+  body.innerHTML = evidencePanelSections.map(([id, title, hasRefresh]) => {
+    let inner = ''
+    if (id === 'timeline') {
+      inner = `<div class="timeline" id="timeline"></div>`
+    } else if (id === 'step-files') {
+      inner = `<div id="step-file-list" class="grid file-scroll-list"></div>`
+    } else if (id === 'all-files') {
+      inner = `<div id="file-list" class="grid file-scroll-list"></div>`
+    } else if (id === 'git-log') {
+      inner = `<div id="git-log" class="timeline"></div>
+        ${hasRefresh ? `<button id="refresh-log">刷新历史</button>` : ''}`
+    } else if (id === 'review-editor') {
+      inner = `<button id="open-review-editor" class="primary" style="width:100%;">打开人工复核编辑器</button>`
+    }
+    return `<section class="panel-section">
+      <h3>${escapeHtml(title)}</h3>
+      ${inner}
+    </section>`
+  }).join('')
+
+  // 刷新按钮事件已在 main.js 中通过 id 绑定，此处仅渲染结构
 }
 
 export function showPage(page) {

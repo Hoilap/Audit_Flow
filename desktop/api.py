@@ -142,7 +142,7 @@ def workflow_clean(config: str = Form(None)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/workflow/match")
+@app.post("/workflow/bank_ledger_match/match")
 def workflow_match(config: str = Form(None)):
     cfg = {}
     if config:
@@ -154,7 +154,7 @@ def workflow_match(config: str = Form(None)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/workflow/approve")
+@app.post("/workflow/bank_ledger_match/approve")
 def workflow_approve(config: str = Form(None)):
     cfg = {}
     if config:
@@ -166,7 +166,7 @@ def workflow_approve(config: str = Form(None)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/workflow/verify")
+@app.post("/workflow/bank_ledger_match/verify")
 def workflow_verify(config: str = Form(None)):
     cfg = {}
     if config:
@@ -192,7 +192,7 @@ def workflow_verify(config: str = Form(None)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/workflow/fill")
+@app.post("/workflow/bank_ledger_match/fill")
 def workflow_fill(config: str = Form(None)):
     cfg = {}
     if config:

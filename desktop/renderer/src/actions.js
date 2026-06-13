@@ -1,8 +1,10 @@
 import { api } from './api.js'
 import { llmCodePath } from './config.js'
 import { activeTask, markStep, state, stepStatus } from './state.js'
-import { $, isCsv } from './dom.js'
-import { addMessage, renderCsvPreview, renderFileError, renderFiles, renderLlmCode, renderStepFiles, renderTextPreview, renderTimeline, renderWorkflowWorkspace, setAgentStatus, startTimer, stopTimer } from './ui.js'
+import { $ } from './dom.js'
+import { addMessage, renderFileError, renderFiles, renderLlmCode, renderStepFiles, renderTimeline, renderWorkflowWorkspace, setAgentStatus, startTimer, stopTimer } from './ui.js'
+import { openCsvPreview } from './previewModal.js'
+import { openReviewEditor } from './reviewEditor.js'
 
 export async function refreshFiles() {
   try {
@@ -15,20 +17,15 @@ export async function refreshFiles() {
 }
 
 export async function previewFile(path) {
-  try {
-    const data = await api.readFile(path)
-    if (isCsv(path)) renderCsvPreview(path, data.content || '')
-    else renderTextPreview(path, data.content || '')
-  } catch (error) {
-    renderTextPreview(path, `读取失败：${error.message}`)
-  }
+  await openCsvPreview(path)
 }
 
 export async function refreshLog() {
   try {
     const data = await api.gitLog()
-    $('#git-log').innerHTML = (data.log || []).slice(0, 8).map((item) => `
-      <div class="timeline-item done"><span class="timeline-mark">✓</span><span>${item.hash} · ${item.message}</span></div>
+    const commits = data.commits || data.log || []
+    $('#git-log').innerHTML = commits.slice(0, 8).map((item) => `
+      <div class="timeline-item done"><span class="timeline-mark">✓</span><span>${item.hexsha || item.hash || ''} · ${item.message || ''}</span></div>
     `).join('') || '<div class="subtle">暂无 Git 历史</div>'
   } catch (error) {
     $('#git-log').innerHTML = `<div class="subtle">Git 历史不可用：${error.message}</div>`
@@ -36,15 +33,7 @@ export async function refreshLog() {
 }
 
 export async function refreshApprove() {
-  try {
-    const data = await api.readFile('outputs/bank_ledger_match/matches/manual_review_candidates.csv')
-    const rows = data.content.trim().split(/\r?\n/).slice(0, 8)
-    $('#approve-table').innerHTML = rows.length
-      ? `<pre>${rows.map((line) => line.replace(/</g, '&lt;')).join('\n')}</pre>`
-      : '<div class="subtle">暂无人工复核候选。</div>'
-  } catch (error) {
-    $('#approve-table').innerHTML = `<div class="subtle">未发现人工复核表：${error.message}</div>`
-  }
+  await openReviewEditor()
 }
 
 export async function runStep(stepIndex = state.activeStepIndex) {
@@ -70,6 +59,10 @@ export async function runStep(stepIndex = state.activeStepIndex) {
     addMessage({ title: step.title, body: '步骤执行完成，右侧已更新生成文件。', result })
     setAgentStatus('Completed', 100)
     await refreshFiles()
+    // match 步骤完成后自动弹出人工复核编辑器
+    if (step.id === 'match') {
+      openReviewEditor()
+    }
     return result
   } catch (error) {
     markStep(task.id, step.id, 'failed', { error: error.message })

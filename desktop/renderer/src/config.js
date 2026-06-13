@@ -76,3 +76,19 @@ export const workflowTasks = [
 ]
 
 export const llmCodePath = 'outputs/llm_code/generated_from_llm.py'
+
+/**
+ * 右栏（证据面板）区块顺序配置。
+ * 调整数组顺序即可自定义右栏显示顺序，删除某条即隐藏该区块。
+ * 每条: [id, 标题, 是否有刷新按钮]
+ *   - id 对应 HTML 容器 id（如 'timeline'）
+ *   - 特殊 id: 'step-files' / 'all-files' / 'git-log' / 'review-editor'
+ */
+export const evidencePanelSections = [
+  ['timeline',    '执行时间线',   true],
+  ['review-editor', '人工复核',    true],
+  ['step-files',  '本任务生成文件', true],
+  ['all-files',   '所有输出文件',  false],
+  ['git-log',     'Git 历史',     true],
+
+]

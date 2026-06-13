@@ -9,6 +9,8 @@ export const state = {
   status: 'Idle',
   startedAt: null,
   timer: null,
+  chatHidden: false,
+  sidebarHidden: false,
 }
 
 export function activeTask() {

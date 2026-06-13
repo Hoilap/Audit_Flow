@@ -86,9 +86,11 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 .progress-track { width: 180px; height: 6px; border-radius: 999px; background: var(--surface-muted); overflow: hidden; }
 .progress-fill { height: 100%; width: 0%; background: var(--primary); transition: width 200ms ease; }
 .metric-inline { color: var(--text-muted); font-size: 12px; white-space: nowrap; }
-.layout { display: grid; grid-template-columns: 260px minmax(560px, 1fr) 380px; min-height: 0; }
+.layout { display: grid; grid-template-columns: 260px minmax(560px, 1fr) 380px; min-height: 0; transition: grid-template-columns 250ms ease; }
+.layout.sidebar-hidden { grid-template-columns: 0px minmax(560px, 1fr) 380px; }
 .sidebar, .main, .evidence { min-height: 0; overflow: hidden; }
-.sidebar { border-right: 1px solid var(--border); background: var(--surface); display: flex; flex-direction: column; }
+.sidebar { border-right: 1px solid var(--border); background: var(--surface); display: flex; flex-direction: column; transition: width 250ms ease, opacity 200ms ease; }
+.sidebar.collapsed { width: 0; min-width: 0; overflow: hidden; opacity: 0; pointer-events: none; padding: 0; border: 0; }
 .brand { padding: 18px 16px 12px; border-bottom: 1px solid var(--border); }
 .brand-title { font-size: 17px; font-weight: 700; }
 .brand-subtitle { margin-top: 4px; color: var(--text-muted); font-size: 12px; }
@@ -147,7 +149,9 @@ h3 { font-size: 14px; }
 .llm-code-panel { margin-top: 12px; display: grid; gap: 8px; }
 .llm-code-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .llm-code-path { font: 12px "JetBrains Mono", Consolas, monospace; color: var(--text-muted); }
-.composer { position: fixed; left: 284px; right: 404px; bottom: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12); padding: 10px; display: grid; gap: 8px; z-index: 5; }
+.composer { position: fixed; left: 284px; right: 404px; bottom: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12); padding: 10px; display: grid; gap: 8px; z-index: 5; transition: left 250ms ease; }
+.sidebar-hidden ~ .composer,
+.layout.sidebar-hidden .composer { left: 24px; }
 .composer textarea { width: 100%; min-height: 62px; max-height: 140px; resize: vertical; padding: 10px; }
 .composer-actions { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .composer-options { display: flex; align-items: center; gap: 10px; color: var(--text-muted); font-size: 12px; flex-wrap: wrap; }
@@ -169,6 +173,10 @@ h3 { font-size: 14px; }
 .file-row:hover { background: var(--surface-muted); }
 .file-name { font-size: 12px; word-break: break-all; }
 .file-meta { display: flex; justify-content: space-between; gap: 8px; color: var(--text-muted); font-size: 11px; }
+.file-scroll-list { max-height: 220px; overflow-y: auto; padding-right: 4px; }
+.file-scroll-list::-webkit-scrollbar { width: 5px; }
+.file-scroll-list::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 999px; }
+.file-scroll-list::-webkit-scrollbar-track { background: transparent; }
 .csv-preview { max-height: 360px; overflow: auto; }
 .csv-preview table { min-width: 100%; }
 .finding-row { padding: 12px; display: grid; gap: 8px; }
@@ -177,6 +185,173 @@ h3 { font-size: 14px; }
 .tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--border); margin-bottom: 14px; }
 .tabs button { border: 0; border-radius: 6px 6px 0 0; background: transparent; color: var(--text-muted); }
 .tabs button.active { color: var(--text); background: var(--surface-muted); }
+
+/* ===== Modal 通用样式 ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  animation: fadeIn 150ms ease;
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.modal-container {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 16px 48px rgba(15, 23, 42, 0.18);
+  display: flex;
+  flex-direction: column;
+  max-height: 95vh;
+  outline: none;
+  animation: slideUp 200ms ease;
+}
+@keyframes slideUp {
+  from { transform: translateY(24px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.modal-title {
+  font-size: 17px;
+  font-weight: 700;
+  margin: 0;
+}
+.modal-close {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  background: transparent;
+  font-size: 18px;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modal-close:hover {
+  background: var(--surface-muted);
+  color: var(--text);
+}
+.modal-body {
+  flex: 1;
+  overflow: auto;
+  padding: 16px 20px;
+}
+
+/* ===== 人工复核编辑器 ===== */
+.review-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.review-toolbar button {
+  margin-left: 8px;
+}
+.review-table-wrap {
+  overflow: auto;
+  max-height: calc(90vh - 160px);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.review-table {
+  min-width: 1400px;
+  table-layout: auto;
+}
+.review-table th {
+  position: sticky;
+  top: 0;
+  background: var(--surface-muted);
+  z-index: 2;
+  white-space: nowrap;
+}
+.review-table td {
+  vertical-align: top;
+  padding: 8px;
+}
+.review-table .cell-id {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.review-table .cell-wide {
+  min-width: 280px;
+  max-width: 420px;
+}
+.review-table .cell-mid {
+  max-width: 320px;
+  font-size: 12px;
+  color: var(--text-soft);
+}
+.review-table textarea.review-ta {
+  width: 100%;
+  min-height: 60px;
+  resize: vertical;
+  font-size: 12px;
+  font-family: "JetBrains Mono", Consolas, monospace;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text);
+}
+.review-table textarea.review-ta:focus {
+  border-color: var(--primary);
+  outline: none;
+}
+.review-table select {
+  height: 28px;
+  padding: 0 6px;
+  font-size: 12px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+
+/* ===== CSV 预览 Modal ===== */
+.preview-info {
+  margin-bottom: 12px;
+}
+.preview-table-wrap {
+  overflow: auto;
+  max-height: calc(88vh - 140px);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.preview-table {
+  min-width: 100%;
+}
+.preview-table th {
+  position: sticky;
+  top: 0;
+  background: var(--surface-muted);
+  z-index: 2;
+  white-space: nowrap;
+}
+.preview-table td {
+  white-space: nowrap;
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 @media (max-width: 1180px) {
   .layout { grid-template-columns: 220px minmax(420px, 1fr) 320px; }
   .composer { left: 244px; right: 344px; }

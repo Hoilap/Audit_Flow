@@ -2,7 +2,8 @@ import { workflowTasks } from './config.js'
 import { state } from './state.js'
 import { $, $$ } from './dom.js'
 import { renderShell, renderWorkflowWorkspace, setAgentStatus, showPage } from './ui.js'
-import { commitAll, previewFile, refreshApprove, refreshFiles, refreshLog, runAllSteps, runNextStep, runStep, sendPrompt, uploadFile } from './actions.js'
+import { commitAll, previewFile, refreshFiles, refreshLog, runAllSteps, runNextStep, runStep, sendPrompt, uploadFile } from './actions.js'
+import { openReviewEditor } from './reviewEditor.js'
 
 function bindEvents() {
   document.addEventListener('click', async (event) => {
@@ -27,11 +28,39 @@ function bindEvents() {
     if (fileRow) previewFile(fileRow.dataset.file)
   })
 
+  // 左栏折叠
+  $('#toggle-sidebar').addEventListener('click', () => {
+    const sidebar = $('#sidebar')
+    const layout = $('#layout')
+    sidebar.classList.toggle('collapsed')
+    layout.classList.toggle('sidebar-hidden')
+    $('#toggle-sidebar').textContent = sidebar.classList.contains('collapsed') ? '▶' : '◀'
+  })
+
+  // 底部 LLM 输入区折叠
+  $('#toggle-chat').addEventListener('click', () => {
+    const composer = document.querySelector('.composer')
+    if (!composer) return
+    state.chatHidden = !state.chatHidden
+    composer.style.display = state.chatHidden ? 'none' : ''
+    $('#main').style.paddingBottom = state.chatHidden ? '20px' : ''
+    $('#toggle-chat').textContent = state.chatHidden ? '▲' : '▼'
+  })
+
+  // 页面初始化时恢复 composer 状态
+  if (state.chatHidden) {
+    const composer = document.querySelector('.composer')
+    if (composer) composer.style.display = 'none'
+    const main = $('#main')
+    if (main) main.style.paddingBottom = '20px'
+    $('#toggle-chat').textContent = '▲'
+  }
+
   $('#theme-toggle').addEventListener('click', () => document.body.classList.toggle('dark'))
   $('#refresh-all').addEventListener('click', refreshAll)
   $('#refresh-files').addEventListener('click', refreshFiles)
   $('#refresh-log').addEventListener('click', refreshLog)
-  $('#refresh-approve').addEventListener('click', refreshApprove)
+  $('#open-review-editor').addEventListener('click', () => openReviewEditor())
   $('#run-next-step').addEventListener('click', () => withDisabled('#run-next-step', runNextStep))
   $('#run-all-steps').addEventListener('click', () => withDisabled('#run-all-steps', runAllSteps))
   $('#send').addEventListener('click', () => withDisabled('#send', sendPrompt))
@@ -54,7 +83,7 @@ async function withDisabled(selector, action) {
 }
 
 async function refreshAll() {
-  await Promise.allSettled([refreshFiles(), refreshLog(), refreshApprove()])
+  await Promise.allSettled([refreshFiles(), refreshLog()])
 }
 
 function init() {

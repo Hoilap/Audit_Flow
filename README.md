@@ -24,6 +24,20 @@ python -m audit_workflow.bank_ledger_match run -c config.example.yml
 - `outputs/matches/unmatched_ledger.csv`
 - `outputs/working_paper/资金流水专项核查工作底稿-自动填报.xlsm`
 
+## 启动桌面应用
+
+如果你要打开桌面端界面，进入 `desktop` 目录后执行：
+
+```powershell
+cd desktop
+npm install
+npm run start
+```
+
+这会启动 Electron 前端，并自动连接本地 FastAPI 后端。
+
+更多后端端点说明请见： [docs/backend_endpoints.md](docs/backend_endpoints.md)
+
 ## LLM / PydanticAI 配置
 
 LLM 交互统一通过 PydanticAI agent 发起，支持 OpenAI 兼容接口。不要把 API key 写进聊天记录或提交到代码库。复制 `.env.example` 为 `.env`，按实际服务填入：
