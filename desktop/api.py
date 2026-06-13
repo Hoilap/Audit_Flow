@@ -1,10 +1,12 @@
 import os
+import sqlite3
+from datetime import datetime
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
 from git import Repo, InvalidGitRepositoryError
-from typing import List
+from typing import List, Optional
 import json
 import subprocess
 import csv
@@ -29,6 +31,126 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ---------- SQLite project database ----------
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'projects.db')
+
+def get_db() -> sqlite3.Connection:
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")
+    return conn
+
+def init_db():
+    conn = get_db()
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS projects (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            task_name TEXT NOT NULL,
+            customer_name TEXT NOT NULL DEFAULT '',
+            status TEXT NOT NULL DEFAULT 'Planning',
+            created_at TEXT NOT NULL DEFAULT '',
+            responsible_person TEXT NOT NULL DEFAULT '',
+            risk TEXT NOT NULL DEFAULT 'Medium'
+        )
+    """)
+    # seed default projects if empty
+    count = conn.execute("SELECT COUNT(*) FROM projects").fetchone()[0]
+    if count == 0:
+        defaults = [
+            ('序时账银行流水匹配', '桂平金山', 'Reviewing', '2026-06-08', '审计一组', 'High'),
+            ('出库表核对', 'A 公司', 'Planning', '2026-06-13', 'CPA', 'Medium'),
+        ]
+        conn.executemany(
+            "INSERT INTO projects (task_name, customer_name, status, created_at, responsible_person, risk) VALUES (?,?,?,?,?,?)",
+            defaults
+        )
+        conn.commit()
+    conn.close()
+
+init_db()
+
+
+class ProjectCreate(BaseModel):
+    task_name: str
+    customer_name: str = ''
+    status: str = 'Planning'
+    created_at: str = ''
+    responsible_person: str = ''
+    risk: str = 'Medium'
+
+class ProjectUpdate(BaseModel):
+    task_name: Optional[str] = None
+    customer_name: Optional[str] = None
+    status: Optional[str] = None
+    created_at: Optional[str] = None
+    responsible_person: Optional[str] = None
+    risk: Optional[str] = None
+
+def project_row_to_dict(row) -> dict:
+    return {
+        "id": row["id"],
+        "task_name": row["task_name"],
+        "customer_name": row["customer_name"],
+        "status": row["status"],
+        "created_at": row["created_at"],
+        "responsible_person": row["responsible_person"],
+        "risk": row["risk"],
+    }
+
+# ---------- Project CRUD endpoints ----------
+
+@app.get("/projects/list")
+def list_projects():
+    conn = get_db()
+    rows = conn.execute("SELECT * FROM projects ORDER BY id DESC").fetchall()
+    conn.close()
+    return {"projects": [project_row_to_dict(r) for r in rows]}
+
+@app.post("/projects/create")
+def create_project(payload: ProjectCreate):
+    created_at = payload.created_at or datetime.now().strftime('%Y-%m-%d')
+    conn = get_db()
+    cur = conn.execute(
+        "INSERT INTO projects (task_name, customer_name, status, created_at, responsible_person, risk) VALUES (?,?,?,?,?,?)",
+        (payload.task_name, payload.customer_name, payload.status, created_at, payload.responsible_person, payload.risk)
+    )
+    conn.commit()
+    row = conn.execute("SELECT * FROM projects WHERE id=?", (cur.lastrowid,)).fetchone()
+    conn.close()
+    return {"project": project_row_to_dict(row)}
+
+@app.put("/projects/{project_id}")
+def update_project(project_id: int, payload: ProjectUpdate):
+    conn = get_db()
+    existing = conn.execute("SELECT * FROM projects WHERE id=?", (project_id,)).fetchone()
+    if not existing:
+        conn.close()
+        raise HTTPException(status_code=404, detail="项目不存在")
+    updates = {}
+    for field in ("task_name", "customer_name", "status", "created_at", "responsible_person", "risk"):
+        val = getattr(payload, field)
+        if val is not None:
+            updates[field] = val
+    if updates:
+        set_clause = ", ".join(f"{k}=?" for k in updates)
+        conn.execute(f"UPDATE projects SET {set_clause} WHERE id=?", (*updates.values(), project_id))
+        conn.commit()
+    row = conn.execute("SELECT * FROM projects WHERE id=?", (project_id,)).fetchone()
+    conn.close()
+    return {"project": project_row_to_dict(row)}
+
+@app.delete("/projects/{project_id}")
+def delete_project(project_id: int):
+    conn = get_db()
+    existing = conn.execute("SELECT * FROM projects WHERE id=?", (project_id,)).fetchone()
+    if not existing:
+        conn.close()
+        raise HTTPException(status_code=404, detail="项目不存在")
+    conn.execute("DELETE FROM projects WHERE id=?", (project_id,))
+    conn.commit()
+    conn.close()
+    return {"ok": True}
 
 
 def find_repo(path: str = None) -> Repo:

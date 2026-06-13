@@ -16,6 +16,9 @@ export const workflowTasks = [
     description: '清洗银行流水和序时账，执行匹配、校验并填入工作底稿。',
     risk: 'High',
     prompt: '生成一段 Python 代码，读取 outputs/bank_ledger_match/clean 和 matches 下的 CSV，检查银行流水与序时账未匹配项目，并输出审计说明。',
+    reviewFiles: [
+      'outputs/bank_ledger_match/matches/manual_review_candidates.csv',
+    ],
     steps: [
       {
         id: 'clean',
@@ -53,6 +56,10 @@ export const workflowTasks = [
     description: '核对出库明细、销售订单和开票记录的一致性。',
     risk: 'Medium',
     prompt: '生成一段 Python 代码，核对出库表、销售订单和发票清单，识别数量、金额和客户名称不一致记录。',
+    reviewFiles: [
+      'outputs/outbound_check/review/discrepancies.csv',
+      'outputs/outbound_check/review/manual_review_candidates.csv',
+    ],
     steps: [
       { id: 'profile', label: 'Profile', title: '识别字段结构', endpoint: null, outputs: ['outputs/llm_code/generated_from_llm.py'] },
       { id: 'reconcile', label: 'Reconcile', title: '执行三表核对', endpoint: null, outputs: ['outputs/llm_code/generated_from_llm.py'] },
@@ -66,6 +73,10 @@ export const workflowTasks = [
     description: '围绕大额、频繁、异常对手方和摘要进行资金流水风险识别。',
     risk: 'High',
     prompt: '生成一段 Python 代码，分析银行流水 CSV 中的大额交易、同日多笔交易和异常对手方，并输出风险清单。',
+    reviewFiles: [
+      'outputs/cash_flow_review/review/risk_flags.csv',
+      'outputs/cash_flow_review/review/manual_review_candidates.csv',
+    ],
     steps: [
       { id: 'profile', label: 'Profile', title: '生成数据画像', endpoint: null, outputs: ['outputs/llm_code/generated_from_llm.py'] },
       { id: 'detect', label: 'Detect', title: '识别异常流水', endpoint: null, outputs: ['outputs/llm_code/generated_from_llm.py'] },

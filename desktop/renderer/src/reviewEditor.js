@@ -3,19 +3,23 @@ import { parseCsv } from './csv.js'
 import { escapeHtml } from './dom.js'
 import { api } from './api.js'
 
-const REVIEW_CSV_PATH = 'outputs/bank_ledger_match/matches/manual_review_candidates.csv'
-
 /**
- * 人工复核编辑器 — 在 Modal 中渲染 manual_review_candidates.csv，
+ * 人工复核编辑器 — 在 Modal 中渲染指定的复核 CSV 文件，
  * 支持业务人员直接编辑 bank_summary、ledger_summary、llm_reason 字段并保存。
  *
  * 布局: bank_summary 和 ledger_summary 放在更左侧（宽列），llm_reason 紧随其后。
+ *
+ * @param {string} filePath - 要编辑的复核 CSV 文件路径
  */
 
-export async function openReviewEditor() {
+export async function openReviewEditor(filePath) {
+  if (!filePath) {
+    alert('未指定复核文件路径。')
+    return
+  }
   let data
   try {
-    const resp = await api.readFile(REVIEW_CSV_PATH)
+    const resp = await api.readFile(filePath)
     data = resp.content || ''
   } catch (err) {
     alert(`无法加载人工复核表: ${err.message}`)
@@ -142,12 +146,12 @@ export async function openReviewEditor() {
     })
 
     // 保存按钮
-    modal.getBodyEl().querySelector('#review-save').addEventListener('click', () => saveReview(records, headers, colIndex, editState))
+    modal.getBodyEl().querySelector('#review-save').addEventListener('click', () => saveReview(filePath, records, headers, colIndex, editState))
 
     // 刷新按钮
     modal.getBodyEl().querySelector('#review-refresh').addEventListener('click', async () => {
       modal.close()
-      await openReviewEditor()
+      await openReviewEditor(filePath)
     })
   }
 
@@ -155,7 +159,7 @@ export async function openReviewEditor() {
   modal.open()
 }
 
-async function saveReview(records, headers, colIndex, editState) {
+async function saveReview(filePath, records, headers, colIndex, editState) {
   // 将编辑后的数据重建为 CSV 字符串
   const newRows = [headers]
 
@@ -188,7 +192,7 @@ async function saveReview(records, headers, colIndex, editState) {
 
   try {
     await api.writeFile({
-      path: REVIEW_CSV_PATH,
+      path: filePath,
       content: csvContent,
       commit_message: 'manual review edit from desktop app',
     })

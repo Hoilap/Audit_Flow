@@ -359,3 +359,165 @@ h3 { font-size: 14px; }
   .agent-grid, .two-col { grid-template-columns: 1fr; }
   .step-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* ===== 项目选择器（Agent 工作流页面） ===== */
+.project-selector {
+  display: grid;
+  gap: 8px;
+}
+.project-select-label {
+  font-weight: 650;
+  font-size: 13px;
+  color: var(--text-soft);
+}
+.project-custom-row {
+  margin-top: 4px;
+}
+.project-custom-fields {
+  padding: 8px;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  background: var(--surface-muted);
+}
+
+/* ===== 项目表单（Modal 内） ===== */
+.project-form {
+  display: grid;
+  gap: 12px;
+}
+.project-form label {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--text-soft);
+}
+.project-form .form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+button.danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: white;
+  margin-right: auto;
+}
+button.danger:hover {
+  opacity: 0.85;
+}
+
+/* ===== 横向项目选择栏（Agent 工作流顶部） ===== */
+.project-bar {
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.project-bar-inner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.project-bar-label {
+  font-weight: 650;
+  font-size: 13px;
+  color: var(--text-soft);
+  white-space: nowrap;
+}
+.project-bar-select {
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  min-width: 180px;
+}
+.project-bar-custom {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-soft);
+}
+.project-bar-fields {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.project-bar-input {
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  width: 130px;
+}
+
+/* ===== 步骤运行按钮 ===== */
+.run-step-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--accent);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+.run-step-btn:hover {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+.run-step-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.step-actions-inline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+/* ===== 复核文件列表 ===== */
+.file-scroll-list {
+  max-height: 260px;
+  overflow-y: auto;
+}
+.review-file-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  border-radius: 4px;
+  cursor: default;
+}
+.review-file-item:hover {
+  background: var(--surface-muted);
+}
+.open-review-btn {
+  padding: 3px 10px;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--accent);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.open-review-btn:hover {
+  background: var(--accent);
+  color: white;
+}

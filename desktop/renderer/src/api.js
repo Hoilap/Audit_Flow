@@ -20,4 +20,18 @@ export const api = {
     body: JSON.stringify(payload),
   }),
   generateAndRun: (form) => request('/llm/generate_and_run', { method: 'POST', body: form }),
+
+  // ---------- Project CRUD ----------
+  listProjects: () => request('/projects/list'),
+  createProject: (payload) => request('/projects/create', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  }),
+  updateProject: (id, payload) => request(`/projects/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  }),
+  deleteProject: (id) => request(`/projects/${id}`, { method: 'DELETE' }),
 }

@@ -1,5 +1,5 @@
 import { llmCodePath, navItems, workflowTasks, evidencePanelSections } from './config.js'
-import { activeTask, state, stepStatus } from './state.js'
+import { activeTask, state, stepStatus, findWorkflowTaskByName } from './state.js'
 import { $, $$, escapeHtml, formatSeconds, isCsv } from './dom.js'
 import { parseCsv } from './csv.js'
 
@@ -43,7 +43,7 @@ export function renderEvidencePanel() {
       inner = `<div id="git-log" class="timeline"></div>
         ${hasRefresh ? `<button id="refresh-log">刷新历史</button>` : ''}`
     } else if (id === 'review-editor') {
-      inner = `<button id="open-review-editor" class="primary" style="width:100%;">打开人工复核编辑器</button>`
+      inner = `<div id="review-file-list" class="grid file-scroll-list"></div>`
     }
     return `<section class="panel-section">
       <h3>${escapeHtml(title)}</h3>
@@ -106,37 +106,86 @@ export function renderWorkflowWorkspace() {
   const task = activeTask()
   const promptEl = $('#prompt')
   if (promptEl && !promptEl.value.trim()) promptEl.value = task.prompt
+
+  // ------ 项目选择器（替代原 task-list） ------
   const taskList = $('#workflow-task-list')
   if (taskList) {
-    taskList.innerHTML = workflowTasks.map((item) => `
-      <button class="task-card ${item.id === state.activeTaskId ? 'active' : ''}" data-task-id="${item.id}">
-        <span class="task-name">${escapeHtml(item.name)}</span>
-        <span class="task-meta">${escapeHtml(item.description)}</span>
-        <span><span class="badge ${riskClass(item.risk)}">${escapeHtml(item.risk)}</span></span>
-      </button>
-    `).join('')
+    taskList.innerHTML = renderProjectSelector()
   }
+
+  // ------ 步骤列表 ------
   const steps = $('#workflow-step-list')
   if (steps) {
     steps.innerHTML = task.steps.map((step, index) => {
       const status = stepStatus(task.id, step.id)
       const active = index === state.activeStepIndex ? 'active' : ''
       const statusClass = status === 'completed' ? 'done' : status === 'failed' ? 'failed' : ''
+      const icon = status === 'completed' ? '✓' : status === 'failed' ? '!' : status === 'running' ? '⏳' : '▶'
       return `
         <div class="step-card ${active} ${statusClass}" data-step-index="${index}">
-          <div class="step-title"><strong>${escapeHtml(step.label)}</strong><span class="badge">${statusLabel(status)}</span></div>
+          <div class="step-title">
+            <strong>${escapeHtml(step.label)}</strong>
+            <span class="step-actions-inline">
+              <span class="badge">${statusLabel(status)}</span>
+              <button class="run-step-btn" data-run-step="${index}" title="运行此步骤">${icon}</button>
+            </span>
+          </div>
           <div class="subtle">${escapeHtml(step.title)}</div>
           <div class="step-files">${step.outputs.slice(0, 2).map((file) => `<span>${escapeHtml(shortName(file))}</span>`).join('')}</div>
         </div>
       `
     }).join('')
   }
+
   const title = $('#active-task-title')
   if (title) title.textContent = task.name
   const desc = $('#active-task-desc')
-  if (desc) desc.textContent = task.description
+  if (desc) {
+    const wfTask = findWorkflowTaskByName(state.customTaskName)
+    if (wfTask) {
+      desc.textContent = wfTask.description
+    } else {
+      desc.textContent = task.description
+    }
+  }
   renderTimeline()
   renderStepFiles()
+  renderReviewFiles()
+}
+
+/**
+ * 渲染项目选择器 UI：下拉菜单选择已有项目 或 手动输入客户名+任务名。
+ */
+function renderProjectSelector() {
+  const projects = state.projects || []
+  const options = projects.map((p) => {
+    const selected = p.id === state.activeProjectId ? 'selected' : ''
+    return `<option value="${p.id}" ${selected}>${escapeHtml(p.customer_name)} — ${escapeHtml(p.task_name)} [${escapeHtml(p.status)}]</option>`
+  }).join('')
+
+  const customChecked = state.activeProjectId === null ? 'checked' : ''
+  const customerVal = escapeHtml(state.customCustomerName)
+  const taskOptions = workflowTasks.map((t) => {
+    const sel = t.name === state.customTaskName ? 'selected' : ''
+    return `<option value="${escapeHtml(t.name)}" ${sel}>${escapeHtml(t.name)}</option>`
+  }).join('')
+
+  return `
+    <div class="project-bar-inner">
+      <span class="project-bar-label">项目</span>
+      <select id="project-select" class="project-bar-select">
+        <option value="">-- 选择已有项目 --</option>
+        ${options}
+      </select>
+      <label class="project-bar-custom">
+        <input type="checkbox" id="project-custom-check" ${customChecked} /> 自定义
+      </label>
+      <span id="project-custom-fields" class="project-bar-fields" style="display:${state.activeProjectId === null ? 'inline-flex' : 'none'};">
+        <input id="project-customer-input" class="project-bar-input" placeholder="客户名称" value="${customerVal}" />
+        <select id="project-task-select" class="project-bar-select">${taskOptions}</select>
+      </span>
+    </div>
+  `
 }
 
 export function renderFiles(files) {
@@ -169,6 +218,144 @@ export function renderStepFiles() {
   const list = $('#step-file-list')
   if (!list) return
   list.innerHTML = files.map(({ file, step }) => fileRow(file, step.label)).join('')
+}
+
+/**
+ * 渲染复核文件列表（根据当前选中工作流的 reviewFiles 配置）。
+ * 每个文件可点击打开人工复核编辑器。
+ */
+function renderReviewFiles() {
+  const wfTask = findWorkflowTaskByName(state.customTaskName)
+  const reviewFiles = wfTask ? wfTask.reviewFiles || [] : []
+  const list = $('#review-file-list')
+  if (!list) return
+  if (reviewFiles.length === 0) {
+    list.innerHTML = '<div class="subtle">此工作流暂无人工复核文件</div>'
+    return
+  }
+  list.innerHTML = reviewFiles.map((file) => {
+    const name = shortName(file)
+    return `<div class="file-row review-file-item" data-file="${escapeHtml(file)}" title="${escapeHtml(file)}">
+      <span>📝 ${escapeHtml(name)}</span>
+      <button class="open-review-btn" data-file="${escapeHtml(file)}">打开复核</button>
+    </div>`
+  }).join('')
+}
+
+/**
+ * 渲染项目管理表格。
+ * @param {Array} projects - 项目列表（已过滤）
+ */
+export function renderProjectsTable(projects) {
+  const tbody = $('#project-table-body')
+  if (!tbody) return
+  if (!projects || projects.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="subtle">暂无项目数据</td></tr>'
+    return
+  }
+  tbody.innerHTML = projects.map((p) => `
+    <tr>
+      <td>${escapeHtml(p.task_name)}</td>
+      <td>${escapeHtml(p.customer_name)}</td>
+      <td><span class="badge">${escapeHtml(p.status)}</span></td>
+      <td>${escapeHtml(p.created_at)}</td>
+      <td>${escapeHtml(p.responsible_person)}</td>
+      <td><span class="badge ${riskClass(p.risk)}">${escapeHtml(p.risk)}</span></td>
+      <td>
+        <button class="edit-project-btn" data-project-id="${p.id}" title="编辑">✎</button>
+        <button class="delete-project-btn" data-project-id="${p.id}" title="删除">✕</button>
+      </td>
+    </tr>
+  `).join('')
+}
+
+/**
+ * 弹出新建/编辑项目的 Modal 表单。
+ * @param {object|null} project - 编辑时传入已有项目，新建时传 null
+ * @param {function} onSave - 保存回调 (formData) => Promise
+ * @param {function} onDelete - 删除回调 (projectId) => Promise（仅编辑模式可用）
+ */
+export async function showProjectFormModal(project, onSave, onDelete) {
+  const { createModal } = await import('./modal.js')
+  const isEdit = !!project
+
+  const statusOptions = ['Planning', 'Running', 'Reviewing', 'Completed'].map((s) => {
+    const sel = project && project.status === s ? 'selected' : ''
+    return `<option value="${s}" ${sel}>${s}</option>`
+  }).join('')
+  const riskOptions = ['Low', 'Medium', 'High', 'Critical'].map((r) => {
+    const sel = project && project.risk === r ? 'selected' : ''
+    return `<option value="${r}" ${sel}>${r}</option>`
+  }).join('')
+  const taskOptions = workflowTasks.map((t) => {
+    const sel = project && project.task_name === t.name ? 'selected' : ''
+    return `<option value="${escapeHtml(t.name)}" ${sel}>${escapeHtml(t.name)}</option>`
+  }).join('')
+  // 如果 project.task_name 不在预定义列表中，添加自定义选项
+  const isCustomTask = project && !workflowTasks.some((t) => t.name === project.task_name)
+  const customTaskOption = isCustomTask ? `<option value="${escapeHtml(project.task_name)}" selected>${escapeHtml(project.task_name)} (自定义)</option>` : ''
+
+  const modal = createModal({ title: isEdit ? '编辑项目' : '新建项目', width: '520px', height: 'auto' })
+  modal.setBody(`
+    <form id="project-form" class="project-form">
+      <label>任务名称
+        <select id="form-task-name" class="search" style="width:100%;">${taskOptions}${customTaskOption}<option value="__custom__">自定义输入...</option></select>
+        <input id="form-task-name-custom" class="search" style="width:100%;margin-top:4px;display:none;" placeholder="输入自定义任务名称" value="${isCustomTask ? escapeHtml(project.task_name) : ''}" />
+      </label>
+      <label>客户名称 <input id="form-customer" class="search" value="${escapeHtml(project?.customer_name || '')}" /></label>
+      <label>项目状态 <select id="form-status">${statusOptions}</select></label>
+      <label>创建时间 <input id="form-created" class="search" type="date" value="${project?.created_at || ''}" /></label>
+      <label>负责人 <input id="form-person" class="search" value="${escapeHtml(project?.responsible_person || '')}" /></label>
+      <label>风险等级 <select id="form-risk">${riskOptions}</select></label>
+      <div class="form-actions">
+        ${isEdit ? '<button type="button" id="form-delete-btn" class="danger">删除项目</button>' : ''}
+        <button type="button" id="form-cancel-btn">取消</button>
+        <button type="submit" class="primary">保存</button>
+      </div>
+    </form>
+  `)
+
+  // 任务名称下拉 → 自定义输入联动
+  modal.getBodyEl().querySelector('#form-task-name').addEventListener('change', (e) => {
+    const customInput = modal.getBodyEl().querySelector('#form-task-name-custom')
+    if (e.target.value === '__custom__') {
+      customInput.style.display = ''
+      customInput.focus()
+    } else {
+      customInput.style.display = 'none'
+    }
+  })
+
+  modal.getBodyEl().querySelector('#form-cancel-btn').addEventListener('click', () => modal.close())
+  if (isEdit) {
+    modal.getBodyEl().querySelector('#form-delete-btn').addEventListener('click', async () => {
+      if (confirm(`确定要删除项目「${project.customer_name} — ${project.task_name}」吗？`)) {
+        await onDelete(project.id)
+        modal.close()
+      }
+    })
+  }
+
+  modal.getBodyEl().querySelector('#project-form').addEventListener('submit', async (e) => {
+    e.preventDefault()
+    const getVal = (id) => modal.getBodyEl().querySelector(id).value
+    const taskSelect = getVal('#form-task-name')
+    const customTask = modal.getBodyEl().querySelector('#form-task-name-custom').value.trim()
+    const taskName = taskSelect === '__custom__' ? customTask : taskSelect
+
+    const payload = {
+      task_name: taskName,
+      customer_name: getVal('#form-customer'),
+      status: getVal('#form-status'),
+      created_at: getVal('#form-created'),
+      responsible_person: getVal('#form-person'),
+      risk: getVal('#form-risk'),
+    }
+    await onSave(payload)
+    modal.close()
+  })
+
+  modal.open()
 }
 
 export function renderCsvPreview(file, content) {
@@ -264,7 +451,7 @@ function dashboardPage() {
 }
 
 function projectsPage() {
-  return `<section class="page" id="page-projects"><div class="page-header"><div><h1>项目管理</h1><p class="subtle">按状态、负责人和风险等级管理审计项目</p></div><button class="primary">新建项目</button></div><div class="card"><div class="toolbar" style="margin-bottom:12px;"><input class="search" placeholder="搜索项目、客户或负责人"><select><option>全部状态</option><option>Running</option><option>Reviewing</option></select><select><option>全部风险</option><option>Low</option><option>Medium</option><option>High</option></select></div><table class="table"><thead><tr><th>项目名称</th><th>客户名称</th><th>项目状态</th><th>创建时间</th><th>负责人</th><th>风险等级</th></tr></thead><tbody><tr><td>资金流水专项核查</td><td>桂平金山</td><td><span class="badge">Reviewing</span></td><td>2026-06-08</td><td>审计一组</td><td><span class="badge high">High</span></td></tr><tr><td>出库表核对</td><td>A 公司</td><td><span class="badge">Planning</span></td><td>2026-06-13</td><td>CPA</td><td><span class="badge medium">Medium</span></td></tr></tbody></table></div></section>`
+  return `<section class="page" id="page-projects"><div class="page-header"><div><h1>项目管理</h1><p class="subtle">按状态、负责人和风险等级管理审计项目</p></div><button id="new-project-btn" class="primary">新建项目</button></div><div class="card"><div class="toolbar" style="margin-bottom:12px;"><input id="project-search" class="search" placeholder="搜索项目、客户或负责人"><select id="project-filter-status"><option value="">全部状态</option><option>Planning</option><option>Running</option><option>Reviewing</option><option>Completed</option></select><select id="project-filter-risk"><option value="">全部风险</option><option>Low</option><option>Medium</option><option>High</option><option>Critical</option></select></div><div id="project-table-container"><table class="table"><thead><tr><th>任务名称</th><th>客户名称</th><th>项目状态</th><th>创建时间</th><th>负责人</th><th>风险等级</th><th>操作</th></tr></thead><tbody id="project-table-body"><tr><td colspan="7" class="subtle">加载中...</td></tr></tbody></table></div></div></section>`
 }
 
 function dataPage() {
@@ -272,7 +459,7 @@ function dataPage() {
 }
 
 function agentPage() {
-  return `<section class="page" id="page-agent"><div class="page-header"><div><h1>Agent 工作流</h1><p id="active-task-desc" class="subtle"></p></div><div class="toolbar"><button id="run-next-step">执行下一步</button><button id="run-all-steps" class="primary">执行全部</button></div></div><div class="agent-grid"><div class="card"><h2>任务选择</h2><div id="workflow-task-list" class="task-list" style="margin-top:12px;"></div></div><div><div class="card"><div class="page-header" style="margin-bottom:12px;"><div><h2 id="active-task-title"></h2><p class="subtle">每个任务有独立执行时间线，可单步执行，也可全部执行。</p></div></div><div id="workflow-step-list" class="step-list"></div></div><div id="llm-code-panel" class="card llm-code-panel"><div class="llm-code-head"><strong>LLM 生成代码区</strong><span class="llm-code-path">${llmCodePath}</span></div><pre class="code-block">等待生成代码。</pre></div><div class="conversation" id="chat"><div class="message"><div class="message-head"><span>Agent</span><span>Ready</span></div><p>请选择任务和步骤。对于没有固定后端接口的任务，可以先用自然语言生成代码，代码会写入独立目录并可选择编译后执行，再继续下一步。</p></div></div></div></div></section>`
+  return `<section class="page" id="page-agent"><div class="page-header"><div><h1>Agent 工作流</h1><p id="active-task-desc" class="subtle"></p></div><div class="toolbar"><button id="run-next-step">执行下一步</button><button id="run-all-steps" class="primary">执行全部</button></div></div><div id="workflow-task-list" class="project-bar"></div><div class="agent-grid" style="margin-top:12px;"><div><div class="card"><div class="page-header" style="margin-bottom:12px;"><div><h2 id="active-task-title"></h2><p class="subtle">每个步骤可独立执行，也可按顺序全部执行。</p></div></div><div id="workflow-step-list" class="step-list"></div></div><div id="llm-code-panel" class="card llm-code-panel"><div class="llm-code-head"><strong>LLM 生成代码区</strong><span class="llm-code-path">${llmCodePath}</span></div><pre class="code-block">等待生成代码。</pre></div><div class="conversation" id="chat"><div class="message"><div class="message-head"><span>Agent</span><span>Ready</span></div><p>请先选择项目，每个步骤可点击 ▶ 独立运行。</p></div></div></div></div></section>`
 }
 
 function programsPage() {

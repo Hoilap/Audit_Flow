@@ -1,21 +1,26 @@
 import { workflowTasks } from './config.js'
-import { state } from './state.js'
+import { findWorkflowTaskByName, state } from './state.js'
 import { $, $$ } from './dom.js'
 import { renderShell, renderWorkflowWorkspace, setAgentStatus, showPage } from './ui.js'
-import { commitAll, previewFile, refreshFiles, refreshLog, runAllSteps, runNextStep, runStep, sendPrompt, uploadFile } from './actions.js'
+import { commitAll, createProject, deleteProject, loadProjects, previewFile, refreshFiles, refreshLog, runAllSteps, runNextStep, runStep, selectProject, sendPrompt, toggleCustomMode, updateCustomCustomerName, updateCustomTaskName, updateProject, uploadFile } from './actions.js'
 import { openReviewEditor } from './reviewEditor.js'
+import { renderProjectsTable, showProjectFormModal } from './ui.js'
 
 function bindEvents() {
   document.addEventListener('click', async (event) => {
     const navButton = event.target.closest('[data-page]')
-    if (navButton) showPage(navButton.dataset.page)
-
-    const taskButton = event.target.closest('[data-task-id]')
-    if (taskButton) {
-      state.activeTaskId = taskButton.dataset.taskId
-      state.activeStepIndex = 0
-      $('#prompt').value = workflowTasks.find((task) => task.id === state.activeTaskId)?.prompt || ''
-      renderWorkflowWorkspace()
+    if (navButton) {
+      showPage(navButton.dataset.page)
+      // 切换到项目管理页面时刷新表格
+      if (navButton.dataset.page === 'projects') {
+        await loadProjects()
+        refreshProjectTable()
+      }
+      // 切换到 Agent 工作流页面时刷新项目选择器
+      if (navButton.dataset.page === 'agent') {
+        await loadProjects()
+        renderWorkflowWorkspace()
+      }
     }
 
     const stepCard = event.target.closest('[data-step-index]')
@@ -24,8 +29,41 @@ function bindEvents() {
       renderWorkflowWorkspace()
     }
 
+    // 步骤卡独立运行按钮
+    const runStepBtn = event.target.closest('[data-run-step]')
+    if (runStepBtn) {
+      event.stopPropagation()
+      const idx = Number(runStepBtn.dataset.runStep)
+      state.activeStepIndex = idx
+      runStepBtn.disabled = true
+      try { await runStep(idx) } finally { runStepBtn.disabled = false }
+    }
+
     const fileRow = event.target.closest('[data-file]')
     if (fileRow) previewFile(fileRow.dataset.file)
+  })
+
+  // 项目选择器事件（通过 DOM 事件代理，因为这些元素在 renderWorkflowWorkspace 中动态生成）
+  document.addEventListener('change', (event) => {
+    // 选择已有项目
+    if (event.target.id === 'project-select') {
+      selectProject(event.target.value)
+    }
+    // 自定义模式 checkbox
+    if (event.target.id === 'project-custom-check') {
+      toggleCustomMode(event.target.checked)
+    }
+    // 自定义任务名称下拉
+    if (event.target.id === 'project-task-select') {
+      updateCustomTaskName(event.target.value)
+    }
+  })
+
+  // 客户名称实时更新
+  document.addEventListener('input', (event) => {
+    if (event.target.id === 'project-customer-input') {
+      updateCustomCustomerName(event.target.value)
+    }
   })
 
   // 左栏折叠
@@ -60,7 +98,14 @@ function bindEvents() {
   $('#refresh-all').addEventListener('click', refreshAll)
   $('#refresh-files').addEventListener('click', refreshFiles)
   $('#refresh-log').addEventListener('click', refreshLog)
-  $('#open-review-editor').addEventListener('click', () => openReviewEditor())
+  // 复核文件列表：点击"打开复核"按钮
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.open-review-btn')
+    if (btn) {
+      const filePath = btn.dataset.file
+      if (filePath) openReviewEditor(filePath)
+    }
+  })
   $('#run-next-step').addEventListener('click', () => withDisabled('#run-next-step', runNextStep))
   $('#run-all-steps').addEventListener('click', () => withDisabled('#run-all-steps', runAllSteps))
   $('#send').addEventListener('click', () => withDisabled('#send', sendPrompt))
@@ -69,6 +114,38 @@ function bindEvents() {
 
   $('#model-select').addEventListener('change', (event) => {
     $('#status-model').textContent = event.target.value
+  })
+
+  // ────────── 项目管理页面事件（click 代理）──────────
+  document.addEventListener('click', async (event) => {
+    // 新建项目按钮
+    if (event.target.id === 'new-project-btn') {
+      await openProjectForm(null)
+    }
+    // 编辑按钮
+    const editBtn = event.target.closest('.edit-project-btn')
+    if (editBtn) {
+      const id = Number(editBtn.dataset.projectId)
+      const project = state.projects.find((p) => p.id === id)
+      if (project) await openProjectForm(project)
+    }
+    // 删除按钮
+    const deleteBtn = event.target.closest('.delete-project-btn')
+    if (deleteBtn) {
+      const id = Number(deleteBtn.dataset.projectId)
+      if (confirm('确定要删除该项目吗？')) {
+        await deleteProject(id)
+        await refreshProjectTable()
+      }
+    }
+  })
+
+  // 搜索/过滤
+  document.addEventListener('input', (event) => {
+    if (event.target.id === 'project-search') refreshProjectTable()
+  })
+  document.addEventListener('change', (event) => {
+    if (event.target.id === 'project-filter-status' || event.target.id === 'project-filter-risk') refreshProjectTable()
   })
 }
 
@@ -86,12 +163,60 @@ async function refreshAll() {
   await Promise.allSettled([refreshFiles(), refreshLog()])
 }
 
-function init() {
+async function refreshProjectTable() {
+  const search = ($('#project-search')?.value || '').toLowerCase()
+  const statusFilter = $('#project-filter-status')?.value || ''
+  const riskFilter = $('#project-filter-risk')?.value || ''
+  let filtered = state.projects || []
+  if (search) {
+    filtered = filtered.filter((p) =>
+      p.task_name.toLowerCase().includes(search) ||
+      p.customer_name.toLowerCase().includes(search) ||
+      p.responsible_person.toLowerCase().includes(search)
+    )
+  }
+  if (statusFilter) filtered = filtered.filter((p) => p.status === statusFilter)
+  if (riskFilter) filtered = filtered.filter((p) => p.risk === riskFilter)
+  renderProjectsTable(filtered)
+}
+
+async function openProjectForm(project) {
+  await showProjectFormModal(project, async (payload) => {
+    if (project) {
+      await updateProject(project.id, payload)
+    } else {
+      await createProject(payload)
+    }
+    await refreshProjectTable()
+    // 同步回 workflow 页面状态
+    await loadProjects()
+  }, async (id) => {
+    await deleteProject(id)
+    await refreshProjectTable()
+    if (state.activeProjectId === id) {
+      state.activeProjectId = null
+      renderWorkflowWorkspace()
+    }
+  })
+}
+
+async function init() {
   renderShell()
   bindEvents()
   showPage(state.activePage)
   setAgentStatus('Idle', 0)
   $$('.page').forEach((page) => page.classList.toggle('active', page.id === `page-${state.activePage}`))
+  // 加载项目数据
+  await loadProjects()
+  if (state.projects.length > 0) {
+    state.activeProjectId = state.projects[0].id
+    const p = state.projects[0]
+    state.customCustomerName = p.customer_name
+    state.customTaskName = p.task_name
+    const wfTask = findWorkflowTaskByName(p.task_name)
+    if (wfTask) state.activeTaskId = wfTask.id
+    renderWorkflowWorkspace()
+  }
   refreshAll()
 }
 

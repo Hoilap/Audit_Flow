@@ -1,6 +1,6 @@
 import { api } from './api.js'
-import { llmCodePath } from './config.js'
-import { activeTask, markStep, state, stepStatus } from './state.js'
+import { llmCodePath, workflowTasks } from './config.js'
+import { activeTask, findWorkflowTaskByName, markStep, state, stepStatus } from './state.js'
 import { $ } from './dom.js'
 import { addMessage, renderFileError, renderFiles, renderLlmCode, renderStepFiles, renderTimeline, renderWorkflowWorkspace, setAgentStatus, startTimer, stopTimer } from './ui.js'
 import { openCsvPreview } from './previewModal.js'
@@ -33,7 +33,13 @@ export async function refreshLog() {
 }
 
 export async function refreshApprove() {
-  await openReviewEditor()
+  const wfTask = findWorkflowTaskByName(state.customTaskName)
+  const reviewFiles = wfTask ? wfTask.reviewFiles || [] : []
+  if (reviewFiles.length > 0) {
+    await openReviewEditor(reviewFiles[0])
+  } else {
+    alert('当前工作流没有配置复核文件。')
+  }
 }
 
 export async function runStep(stepIndex = state.activeStepIndex) {
@@ -59,9 +65,11 @@ export async function runStep(stepIndex = state.activeStepIndex) {
     addMessage({ title: step.title, body: '步骤执行完成，右侧已更新生成文件。', result })
     setAgentStatus('Completed', 100)
     await refreshFiles()
-    // match 步骤完成后自动弹出人工复核编辑器
-    if (step.id === 'match') {
-      openReviewEditor()
+    // 步骤完成后，如果该工作流配置了复核文件，自动弹出第一个复核文件编辑器
+    const wfTask = findWorkflowTaskByName(state.customTaskName)
+    const reviewFiles = wfTask ? wfTask.reviewFiles || [] : []
+    if (reviewFiles.length > 0) {
+      openReviewEditor(reviewFiles[0])
     }
     return result
   } catch (error) {
@@ -145,4 +153,94 @@ export async function commitAll() {
   } catch (error) {
     addMessage({ title: 'Git 提交失败', body: error.message, failed: true })
   }
+}
+
+// ────────── 项目管理 CRUD ──────────
+
+export async function loadProjects() {
+  try {
+    const data = await api.listProjects()
+    state.projects = data.projects || []
+  } catch (error) {
+    state.projects = []
+  }
+}
+
+export async function createProject(payload) {
+  const data = await api.createProject(payload)
+  await loadProjects()
+  return data.project
+}
+
+export async function updateProject(id, payload) {
+  const data = await api.updateProject(id, payload)
+  await loadProjects()
+  return data.project
+}
+
+export async function deleteProject(id) {
+  await api.deleteProject(id)
+  await loadProjects()
+}
+
+// ────────── 项目选择器交互 ──────────
+
+/**
+ * 当下拉选择已有项目时调用。
+ */
+export function selectProject(projectId) {
+  const id = projectId ? Number(projectId) : null
+  state.activeProjectId = id
+  if (id) {
+    const project = state.projects.find((p) => p.id === id)
+    if (project) {
+      state.customCustomerName = project.customer_name
+      state.customTaskName = project.task_name
+      const wfTask = findWorkflowTaskByName(project.task_name)
+      if (wfTask) {
+        state.activeTaskId = wfTask.id
+        $('#prompt').value = wfTask.prompt || ''
+      } else {
+        // 自定义任务名：使用第一个 workflow 模板
+        state.activeTaskId = workflowTasks[0].id
+      }
+    }
+  } else {
+    // 未选项目，回退到自定义模式
+    state.activeProjectId = null
+  }
+  state.activeStepIndex = 0
+  renderWorkflowWorkspace()
+}
+
+/**
+ * 切换自定义模式 checkbox
+ */
+export function toggleCustomMode(checked) {
+  state.activeProjectId = checked ? null : (state.projects[0]?.id || null)
+  if (!checked && state.projects.length > 0 && !state.activeProjectId) {
+    state.activeProjectId = state.projects[0].id
+  }
+  renderWorkflowWorkspace()
+}
+
+/**
+ * 自定义模式下更新客户名称
+ */
+export function updateCustomCustomerName(name) {
+  state.customCustomerName = name
+}
+
+/**
+ * 自定义模式下更新任务名称
+ */
+export function updateCustomTaskName(taskName) {
+  state.customTaskName = taskName
+  const wfTask = findWorkflowTaskByName(taskName)
+  if (wfTask) {
+    state.activeTaskId = wfTask.id
+    $('#prompt').value = wfTask.prompt || ''
+  }
+  state.activeStepIndex = 0
+  renderWorkflowWorkspace()
 }
