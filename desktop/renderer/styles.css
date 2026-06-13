@@ -128,18 +128,22 @@ h3 { font-size: 14px; }
 .table th, .table td { padding: 10px 8px; text-align: left; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: top; }
 .table th { color: var(--text-muted); font-weight: 500; }
 .table tr:hover td { background: var(--surface-muted); }
-.agent-grid { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 12px; align-items: start; }
+.agent-grid { display: grid; grid-template-columns: 1fr; gap: 12px; align-items: start; }
 .task-list { display: grid; gap: 8px; }
 .task-card { padding: 10px; text-align: left; height: auto; display: grid; gap: 5px; }
 .task-card.active { border-color: var(--primary); background: var(--surface-muted); }
 .task-name { font-weight: 650; }
 .task-meta { color: var(--text-muted); font-size: 12px; }
-.step-list { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
-.step-card { padding: 10px; display: grid; gap: 8px; min-height: 112px; }
+.step-list { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scroll-behavior: smooth; }
+.step-list::-webkit-scrollbar { height: 5px; }
+.step-list::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 999px; }
+.step-list::-webkit-scrollbar-track { background: transparent; }
+.step-card { flex: 0 0 220px; padding: 10px; display: grid; gap: 8px; min-height: 112px; overflow: hidden; min-width: 0; }
 .step-card.active { border-color: var(--primary); }
 .step-card.done { border-color: color-mix(in srgb, var(--success) 50%, var(--border)); }
 .step-card.failed { border-color: color-mix(in srgb, var(--danger) 50%, var(--border)); }
-.step-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.step-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+.step-title strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .step-files { display: grid; gap: 4px; color: var(--text-muted); font-size: 12px; }
 .step-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 .conversation { display: grid; gap: 10px; margin-top: 12px; }
@@ -357,7 +361,7 @@ h3 { font-size: 14px; }
   .composer { left: 244px; right: 344px; }
   .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .agent-grid, .two-col { grid-template-columns: 1fr; }
-  .step-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .step-card { flex: 0 0 180px; }
 }
 
 /* ===== 项目选择器（Agent 工作流页面） ===== */
