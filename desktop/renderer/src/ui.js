@@ -64,6 +64,20 @@ export function showPage(page) {
   updateEvidencePanelVisibility()
   if (page === 'data') {
     setTimeout(() => renderFileTree(), 0)
+    // 绑定项目选择下拉 → 自动更新上传目标目录
+    setTimeout(() => {
+      const sel = $('#data-project-select')
+      const dest = $('#upload-dest')
+      if (sel && dest) {
+        sel.addEventListener('change', () => {
+          if (sel.value) {
+            dest.value = `inputs/${sel.value}/`
+          } else {
+            dest.value = 'inputs/'
+          }
+        })
+      }
+    }, 50)
   }
 }
 
@@ -130,6 +144,12 @@ export function renderWorkflowWorkspace() {
   const taskList = $('#workflow-task-list')
   if (taskList) {
     taskList.innerHTML = renderProjectSelector()
+  }
+
+  // ------ Detect 识别方式选择器 ------
+  const detectMethod = $('#detect-method-bar')
+  if (detectMethod) {
+    detectMethod.innerHTML = renderDetectMethodSelector()
   }
 
   // ------ 步骤列表 ------
@@ -203,6 +223,25 @@ function renderProjectSelector() {
         <input id="project-customer-input" class="project-bar-input" placeholder="客户名称" value="${customerVal}" />
         <select id="project-task-select" class="project-bar-select">${taskOptions}</select>
       </span>
+    </div>
+  `
+}
+
+/**
+ * 渲染 Detect 步骤的识别方式选择器：LLM 识别 / 脚本（本地关键词）识别
+ */
+function renderDetectMethodSelector() {
+  const llmChecked = state.detectMethod === 'llm' ? 'checked' : ''
+  const scriptChecked = state.detectMethod === 'script' ? 'checked' : ''
+  return `
+    <div class="project-bar-inner" style="margin-top:6px;">
+      <span class="project-bar-label">识别方式</span>
+      <label class="project-bar-custom" style="margin-right:12px;">
+        <input type="radio" name="detect-method" value="llm" ${llmChecked} /> 🤖 LLM 识别
+      </label>
+      <label class="project-bar-custom">
+        <input type="radio" name="detect-method" value="script" ${scriptChecked} /> 📜 脚本（关键词）
+      </label>
     </div>
   `
 }
@@ -494,10 +533,13 @@ function projectsPage() {
 
 function dataPage() {
   return `<section class="page" id="page-data">
-    <div class="page-header"><div><h1>数据源</h1><p class="subtle">上传文件、浏览文件树，点击文件查看自动数据画像。要求按照“客户名称/项目名称”目录结构组织文件。</p></div></div>
+    <div class="page-header"><div><h1>数据源</h1><p class="subtle">上传文件、浏览文件树，点击文件查看自动数据画像。按「客户名称/任务名称」组织文件。</p></div></div>
     <div class="upload-bar" style="margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <select id="data-project-select" class="project-bar-select" style="min-width:200px;">
+        <option value="">-- 选择项目以定位目录 --</option>
+      </select>
       <input type="file" id="upload-file" style="flex:1;min-width:160px;">
-      <input type="text" id="upload-dest" value="inputs/" style="width:260px;height:32px;padding:0 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);">
+      <input type="text" id="upload-dest" value="inputs/" style="width:280px;height:32px;padding:0 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);">
       <button id="upload-btn" class="primary">上传</button>
     </div>
     <div class="grid two-col" style="align-items:start;">
@@ -571,6 +613,24 @@ export async function renderFileTree() {
   const container = $('#file-tree')
   if (!container) return
   container.innerHTML = '<div class="subtle">加载中...</div>'
+
+  // 同时加载项目列表，填充项目下拉选择器
+  let projects = []
+  try {
+    const projData = await api.listProjects()
+    projects = projData.projects || []
+  } catch (e) { /* ignore */ }
+  const projSelect = $('#data-project-select')
+  if (projSelect) {
+    const currentVal = projSelect.value
+    projSelect.innerHTML = '<option value="">-- 选择项目以定位目录 --</option>' +
+      projects.map((p) => {
+        const val = `${p.customer_name}/${p.task_name}`
+        const sel = val === currentVal ? 'selected' : ''
+        return `<option value="${escapeHtml(val)}" ${sel}>${escapeHtml(p.customer_name)} — ${escapeHtml(p.task_name)}</option>`
+      }).join('')
+  }
+
   try {
     const [inputsRes, outputsRes] = await Promise.all([
       api.listFiles('inputs').catch(() => ({ files: [] })),
@@ -718,7 +778,7 @@ export async function renderDataProfile(filePath) {
 }
 
 function agentPage() {
-  return `<section class="page" id="page-agent"><div class="page-header"><div><h1>Agent 工作流</h1><p id="active-task-desc" class="subtle"></p></div><div class="toolbar"><button id="run-next-step">执行下一步</button><button id="run-all-steps" class="primary">执行全部</button></div></div><div id="workflow-task-list" class="project-bar"></div><div class="agent-grid" style="margin-top:12px;"><div><div class="card"><div class="page-header" style="margin-bottom:12px;"><div><h2 id="active-task-title"></h2><p class="subtle">每个步骤可独立执行，也可按顺序全部执行。</p></div></div><div id="workflow-step-list" class="step-list"></div></div><div id="llm-code-panel" class="card llm-code-panel"><div class="llm-code-head"><strong>LLM 生成代码区</strong><span class="llm-code-path">${llmCodePath}</span></div><pre class="code-block">等待生成代码。</pre></div><div class="conversation" id="chat"><div class="message"><div class="message-head"><span>Agent</span><span>Ready</span></div><p>请先选择项目，每个步骤可点击 ▶ 独立运行。</p></div></div></div></div></section>`
+  return `<section class="page" id="page-agent"><div class="page-header"><div><h1>Agent 工作流</h1><p id="active-task-desc" class="subtle"></p></div><div class="toolbar"><button id="run-next-step">执行下一步</button><button id="run-all-steps" class="primary">执行全部</button></div></div><div id="workflow-task-list" class="project-bar"></div><div id="detect-method-bar" class="project-bar"></div><div class="agent-grid" style="margin-top:12px;"><div><div class="card"><div class="page-header" style="margin-bottom:12px;"><div><h2 id="active-task-title"></h2><p class="subtle">每个步骤可独立执行，也可按顺序全部执行。</p></div></div><div id="workflow-step-list" class="step-list"></div></div><div id="llm-code-panel" class="card llm-code-panel"><div class="llm-code-head"><strong>LLM 生成代码区</strong><span class="llm-code-path">${llmCodePath}</span></div><pre class="code-block">等待生成代码。</pre></div><div class="conversation" id="chat"><div class="message"><div class="message-head"><span>Agent</span><span>Ready</span></div><p>请先选择项目，每个步骤可点击 ▶ 独立运行。</p></div></div></div></div></section>`
 }
 
 function programsPage() {
@@ -735,4 +795,192 @@ function reportsPage() {
 
 function settingsPage() {
   return `<section class="page" id="page-settings"><div class="page-header"><div><h1>设置</h1><p class="subtle">模型、本地后端、导出和界面偏好</p></div></div><div class="card grid"><label>默认导出目录 <input class="search" value="outputs/bank_ledger_match/"></label><label>默认超时秒数 <input id="run-timeout" type="number" value="5" style="height:32px;width:80px;padding:0 8px;"></label></div></section>`
+}
+
+// ============================================================
+// 新工作流 UI 函数：Detect → Confirm → Check
+// ============================================================
+
+/**
+ * Step 1 - Detect 结果渲染：在聊天区域展示 LLM 识别结果
+ */
+export function renderDetectResult(result) {
+  if (!result || !result.task_config) return
+
+  const chat = $('#chat')
+  if (!chat) return
+
+  const identifications = result.identifications || []
+  const bankItems = identifications.filter((i) => i.type === 'bank_statement')
+  const ledgerItems = identifications.filter((i) => i.type === 'ledger')
+
+  const idTable = (items, title) => {
+    if (items.length === 0) return `<div class="subtle">未识别到${title}</div>`
+    return `<div style="margin-top:6px;">
+      <div class="label" style="margin-bottom:4px;">${escapeHtml(title)} (${items.length} 个)</div>
+      <table class="table" style="font-size:12px;">
+        <thead><tr><th>ID</th><th>文件名</th><th>银行/来源</th><th>时间段</th><th>解析器</th><th>置信度</th></tr></thead>
+        <tbody>${items.map((i) => `<tr>
+          <td><strong>${escapeHtml(i.id)}</strong></td>
+          <td>${escapeHtml(i.name || '')}</td>
+          <td>${escapeHtml(i.bank_name || '')}</td>
+          <td>${escapeHtml(i.date_from || '')} ~ ${escapeHtml(i.date_to || '')}</td>
+          <td><span class="badge">${escapeHtml(i.parser || '')}</span></td>
+          <td>${((i.confidence || 0) * 100).toFixed(0)}%</td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </div>`
+  }
+
+  const block = document.createElement('div')
+  block.className = 'message'
+  const time = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+
+  let llmStatusHtml = ''
+  if (result.llm_used && result.llm_error) {
+    llmStatusHtml = `<p style="color:#f0ad4e;">⚠️ LLM 调用失败，已回退到本地关键词识别。</p>
+      <details style="margin:8px 0;font-size:12px;">
+        <summary style="cursor:pointer;color:var(--accent);">查看 LLM 错误详情</summary>
+        <pre style="background:var(--bg);padding:8px;border-radius:4px;margin-top:4px;white-space:pre-wrap;word-break:break-all;max-height:200px;overflow-y:auto;font-size:11px;color:#d9534f;">${escapeHtml(result.llm_error.message || '')}
+${escapeHtml(result.llm_error.traceback || '')}</pre>
+      </details>`
+  } else if (result.llm_used) {
+    llmStatusHtml = `<p>LLM 识别: <strong style="color:#5cb85c;">✅ 已启用</strong></p>`
+  } else {
+    llmStatusHtml = `<p>识别方式: <strong>📜 脚本（关键词）</strong></p>`
+  }
+
+  block.innerHTML = `
+    <div class="message-head"><span>Agent · 文件识别结果</span><span>${escapeHtml(time)}</span></div>
+    <p>扫描到 <strong>${result.files_count}</strong> 个文件。</p>
+    ${llmStatusHtml}
+    ${idTable(bankItems, '银行流水')}
+    ${idTable(ledgerItems, '序时账')}
+    <p style="margin-top:8px;" class="subtle">task.yml 已自动生成 → 进入下一步「确认配置」进行审核。</p>
+  `
+  chat.appendChild(block)
+  block.scrollIntoView({ behavior: 'smooth', block: 'end' })
+}
+
+/**
+ * Step 2 - Config Confirm: 展示可编辑的 YAML 配置面板
+ */
+export function renderConfigConfirm(yamlContent, customerName, taskName) {
+  const llmPanel = $('#llm-code-panel')
+  if (!llmPanel) return
+
+  llmPanel.innerHTML = `
+    <div class="llm-code-head">
+      <strong>📝 Task 配置确认</strong>
+      <span class="llm-code-path">outputs/${escapeHtml(customerName)}/${escapeHtml(taskName)}/task.yml</span>
+    </div>
+    <div style="margin-bottom:8px;display:flex;gap:8px;">
+      <button id="save-config-btn" class="primary" style="padding:4px 12px;font-size:13px;">💾 保存配置</button>
+      <button id="reload-config-btn" style="padding:4px 12px;font-size:13px;">⟳ 重新加载</button>
+      <span id="config-save-status" class="subtle" style="line-height:28px;"></span>
+    </div>
+    <textarea id="config-yml-editor" style="
+      width:100%;height:480px;font-family:'Consolas','Courier New',monospace;
+      font-size:13px;line-height:1.5;padding:10px;border:1px solid var(--border);
+      border-radius:6px;background:var(--bg);color:var(--text);
+      resize:vertical;white-space:pre;tab-size:2;
+    " spellcheck="false">${escapeHtml(yamlContent)}</textarea>
+  `
+
+  // 绑定保存按钮
+  document.getElementById('save-config-btn')?.addEventListener('click', async () => {
+    const editor = document.getElementById('config-yml-editor')
+    const statusEl = document.getElementById('config-save-status')
+    if (!editor || !statusEl) return
+    const content = editor.value
+    statusEl.textContent = '保存中...'
+    statusEl.className = 'subtle'
+    try {
+      // 动态导入 actions 中的 saveConfig
+      const { saveConfig } = await import('./actions.js')
+      await saveConfig(customerName, taskName, content)
+      statusEl.textContent = '✓ 已保存'
+      statusEl.className = 'badge'
+    } catch (err) {
+      statusEl.textContent = '✗ 保存失败: ' + err.message
+      statusEl.className = 'badge high'
+    }
+  })
+
+  // 绑定重新加载按钮
+  document.getElementById('reload-config-btn')?.addEventListener('click', async () => {
+    const statusEl = document.getElementById('config-save-status')
+    if (statusEl) {
+      statusEl.textContent = '重新加载中...'
+      statusEl.className = 'subtle'
+    }
+    try {
+      const { api } = await import('./api.js')
+      const res = await api.workflowGetConfig(customerName, taskName)
+      if (res.ok) {
+        const editor = document.getElementById('config-yml-editor')
+        if (editor) editor.value = res.content
+        if (statusEl) { statusEl.textContent = '✓ 已重新加载'; statusEl.className = 'badge' }
+      } else {
+        if (statusEl) { statusEl.textContent = '✗ ' + (res.error || '加载失败'); statusEl.className = 'badge high' }
+      }
+    } catch (err) {
+      if (statusEl) { statusEl.textContent = '✗ ' + err.message; statusEl.className = 'badge high' }
+    }
+  })
+}
+
+/**
+ * Step 4 - Check Result: 展示月度流量核查报告
+ */
+export function renderCheckResult(result) {
+  if (!result) return
+
+  const chat = $('#chat')
+  if (!chat) return
+
+  const summary = result.summary || {}
+  const mismatches = result.mismatches || []
+  const allRows = result.rows || []
+
+  let mismatchTable = ''
+  if (mismatches.length > 0) {
+    mismatchTable = `<div style="margin-top:8px;">
+      <div class="label" style="margin-bottom:4px;color:#e74c3c;">⚠️ 差异明细 (${mismatches.length} 项)</div>
+      <div style="max-height:300px;overflow-y:auto;">
+        <table class="table" style="font-size:12px;">
+          <thead><tr><th>账号</th><th>月份</th><th>方向</th><th>银行笔数</th><th>银行金额</th><th>账务笔数</th><th>账务金额</th><th>差异</th><th>状态</th></tr></thead>
+          <tbody>${mismatches.map((r) => `<tr class="${r.status === 'mismatch' ? 'row-warn' : ''}">
+            <td>${escapeHtml(r.account_no || '')}</td>
+            <td>${escapeHtml(r.month || '')}</td>
+            <td>${escapeHtml(r.flow || '')}</td>
+            <td>${escapeHtml(r.bank_count || '')}</td>
+            <td>${escapeHtml(r.bank_total || '')}</td>
+            <td>${escapeHtml(r.ledger_count || '')}</td>
+            <td>${escapeHtml(r.ledger_total || '')}</td>
+            <td><strong style="color:#e74c3c;">${escapeHtml(r.amount_diff || '')}</strong></td>
+            <td><span class="badge high">${escapeHtml(r.status || 'mismatch')}</span></td>
+          </tr>`).join('')}</tbody>
+        </table>
+      </div>
+    </div>`
+  }
+
+  const block = document.createElement('div')
+  block.className = 'message'
+  const time = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+  block.innerHTML = `
+    <div class="message-head"><span>Agent · 数据完备性检查</span><span>${escapeHtml(time)}</span></div>
+    <div class="grid metrics" style="margin-bottom:8px;">
+      <div class="card" style="text-align:center;"><div class="card-title">总计</div><div class="card-value">${summary.total_rows || 0}</div></div>
+      <div class="card" style="text-align:center;"><div class="card-title">✓ 一致</div><div class="card-value" style="color:#27ae60;">${summary.ok_count || 0}</div></div>
+      <div class="card" style="text-align:center;"><div class="card-title">✗ 不一致</div><div class="card-value" style="color:#e74c3c;">${summary.mismatch_count || 0}</div></div>
+    </div>
+    ${result.all_ok
+      ? '<p style="color:#27ae60;font-weight:bold;">✅ 所有月份/账户的银行流水与序时账流入流出一致，数据完备！</p>'
+      : '<p style="color:#e74c3c;font-weight:bold;">⚠️ 存在不一致项，请检查原始数据是否有遗漏或错误。</p>'}
+    ${mismatchTable}
+  `
+  chat.appendChild(block)
+  block.scrollIntoView({ behavior: 'smooth', block: 'end' })
 }

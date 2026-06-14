@@ -3,3 +3,6 @@ outputs/
 generated_parsers/
 __pycache__/
 *.pyc
+.venv/
+inputs/
+outputs/

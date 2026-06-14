@@ -18,8 +18,8 @@ export const state = {
   /** 如果 activeProjectId 为 null，用户手动输入的客户名称 */
   customCustomerName: '',
   /** 如果 activeProjectId 为 null，用户手动选择的任务名称 */
-  customTaskName: workflowTasks[0].name,
-}
+  customTaskName: workflowTasks[0].name,  /** Detect 步骤的识别方式: 'llm' | 'script' */
+  detectMethod: 'llm',}
 
 export function activeTask() {
   return workflowTasks.find((task) => task.id === state.activeTaskId) || workflowTasks[0]

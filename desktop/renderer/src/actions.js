@@ -2,7 +2,7 @@ import { api } from './api.js'
 import { llmCodePath, workflowTasks } from './config.js'
 import { activeTask, findWorkflowTaskByName, getProjectBasePath, resolveProjectPath, markStep, state, stepStatus } from './state.js'
 import { $ } from './dom.js'
-import { addMessage, renderFileError, renderFileTree, renderFiles, renderLlmCode, renderStepFiles, renderTimeline, renderWorkflowWorkspace, setAgentStatus, startTimer, stopTimer } from './ui.js'
+import { addMessage, renderFileError, renderFileTree, renderFiles, renderLlmCode, renderStepFiles, renderTimeline, renderWorkflowWorkspace, setAgentStatus, startTimer, stopTimer, renderDetectResult, renderConfigConfirm, renderCheckResult } from './ui.js'
 import { openCsvPreview } from './previewModal.js'
 import { openReviewEditor } from './reviewEditor.js'
 
@@ -54,6 +54,10 @@ export async function runStep(stepIndex = state.activeStepIndex) {
   setAgentStatus('Running', 28)
   startTimer()
 
+  const customerName = state.customCustomerName || ''
+  const taskName = state.customTaskName || 'bank_ledger_match'
+  const taskDirName = (findWorkflowTaskByName(taskName) || {}).dirName || 'bank_ledger_match'
+
   try {
     if (!step.endpoint) {
       const message = '该步骤需要先通过自然语言在 LLM 代码区生成并执行处理脚本。'
@@ -62,12 +66,81 @@ export async function runStep(stepIndex = state.activeStepIndex) {
       setAgentStatus('Completed', 100)
       return { ok: true, skippedToLlm: true }
     }
-    const result = await api.workflow(step.endpoint)
-    markStep(task.id, step.id, 'completed', result)
-    addMessage({ title: step.title, body: '步骤执行完成，右侧已更新生成文件。', result })
+
+    let result
+
+    // ── Step 1: Detect ──
+    if (step.id === 'detect') {
+      if (!customerName) {
+        throw new Error('请先在项目选择器中输入客户名称。')
+      }
+      const useLlm = state.detectMethod === 'llm'
+      result = await api.workflowDetect(customerName, taskDirName, useLlm)
+
+      let bodyText = `扫描完成：找到 ${result.files_count} 个文件。`
+      if (result.llm_error) {
+        bodyText += `\n⚠️ LLM 调用失败，已回退到本地关键词识别。错误原因：${result.llm_error.message}`
+      } else if (result.llm_used) {
+        bodyText += `\n🤖 LLM 识别已启用。`
+      } else {
+        bodyText += `\n📜 使用脚本（关键词）识别。`
+      }
+
+      markStep(task.id, step.id, 'completed', result)
+      addMessage({
+        title: step.title,
+        body: bodyText,
+        result,
+      })
+      // Detect 完成后自动加载配置并展示
+      if (result.ok && result.task_config) {
+        await renderDetectResult(result)
+      }
+    }
+    // ── Step 2: Confirm ──
+    else if (step.id === 'confirm') {
+      // 获取当前配置内容
+      const configRes = await api.workflowGetConfig(customerName, taskDirName)
+      if (!configRes.ok) {
+        throw new Error(configRes.error || '尚未生成配置，请先执行 Detect 步骤。')
+      }
+      // 展示配置确认 UI
+      renderConfigConfirm(configRes.content, customerName, taskDirName)
+      markStep(task.id, step.id, 'completed', { mode: 'config_confirm', configRes })
+      addMessage({ title: step.title, body: '已加载 task.yml 配置，请在右侧面板确认或修改。' })
+      result = { ok: true, configShown: true }
+    }
+    // ── Step 4: Check ──
+    else if (step.id === 'check') {
+      result = await api.workflowCheck(customerName, taskDirName)
+      markStep(task.id, step.id, result.ok ? 'completed' : 'failed', result)
+      if (result.ok && result.all_ok) {
+        addMessage({ title: step.title, body: '✅ 数据完备性检查通过！银行流水与序时账月度流入流出一致。', result })
+      } else if (result.ok && !result.all_ok) {
+        addMessage({
+          title: step.title,
+          body: `⚠️ 发现 ${result.summary.mismatch_count} 个月份/账户数据不一致，请检查。`,
+          result,
+          failed: true,
+        })
+        renderCheckResult(result)
+      } else {
+        addMessage({ title: step.title, body: result.error || '检查失败', failed: true })
+      }
+    }
+    // ── 其他步骤（clean, match, fill）── 使用通用 workflow + customer 参数
+    else {
+      const form = new FormData()
+      form.append('customer_name', customerName)
+      form.append('task_name', taskDirName)
+      result = await api.workflow(step.endpoint, form)
+      markStep(task.id, step.id, 'completed', result)
+      addMessage({ title: step.title, body: '步骤执行完成，右侧已更新生成文件。', result })
+    }
+
     setAgentStatus('Completed', 100)
     await refreshFiles()
-    // 步骤完成后，如果该工作流配置了复核文件，自动弹出第一个复核文件编辑器
+    // 自动弹出复核文件
     const wfTask = findWorkflowTaskByName(state.customTaskName)
     const reviewFiles = wfTask ? wfTask.reviewFiles || [] : []
     if (reviewFiles.length > 0) {
@@ -248,4 +321,29 @@ export function updateCustomTaskName(taskName) {
   }
   state.activeStepIndex = 0
   renderWorkflowWorkspace()
+}
+
+/**
+ * 更新 Detect 步骤的识别方式：'llm' | 'script'
+ */
+export function updateDetectMethod(method) {
+  state.detectMethod = method
+  renderWorkflowWorkspace()
+}
+
+/**
+ * 保存用户确认/修改后的 task.yml 配置
+ */
+export async function saveConfig(customerName, taskName, content) {
+  try {
+    setAgentStatus('Saving', 50)
+    const result = await api.workflowSaveConfig(customerName, taskName, content)
+    addMessage({ title: '配置已保存', body: `task.yml 已保存到 ${result.path}` })
+    setAgentStatus('Completed', 100)
+    return result
+  } catch (error) {
+    addMessage({ title: '保存配置失败', body: error.message, failed: true })
+    setAgentStatus('Failed', 100)
+    throw error
+  }
 }

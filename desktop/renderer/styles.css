@@ -663,3 +663,69 @@ button.danger:hover {
   z-index: 2;
   white-space: nowrap;
 }
+
+/* ============================================================
+   新工作流 UI：Detect / Confirm / Check
+   ============================================================ */
+
+/* Detect 识别结果表格中的警告行 */
+.table tbody tr.row-warn {
+  background: rgba(220, 38, 38, 0.06);
+}
+
+/* Config YAML 编辑器 */
+#config-yml-editor {
+  tab-size: 2;
+  -moz-tab-size: 2;
+}
+
+#config-yml-editor:focus {
+  outline: 2px solid var(--primary);
+  border-color: var(--primary);
+}
+
+/* Check 结果指标卡片（内嵌于 message） */
+.message .metrics {
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.message .metrics .card {
+  padding: 8px;
+  text-align: center;
+  border-radius: 8px;
+}
+
+.message .metrics .card .card-title {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.message .metrics .card .card-value {
+  font-size: 22px;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+/* 保存配置按钮区域 */
+#config-save-status {
+  font-size: 12px;
+}
+
+#config-save-status.badge {
+  font-size: 12px;
+}
+
+/* Detect 识别结果表格内嵌于 message */
+.message table.table {
+  font-size: 12px;
+  margin-top: 4px;
+  width: 100%;
+}
+
+.message table.table th,
+.message table.table td {
+  padding: 4px 8px;
+}

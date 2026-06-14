@@ -11,6 +11,7 @@
 
 ## 快速运行
 
+python -m uvicorn desktop.api:app --host 127.0.0.1 --port 8000 --reload
 ```powershell
 python -m audit_workflow.bank_ledger_match run -c config.example.yml
 ```

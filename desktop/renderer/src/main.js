@@ -2,7 +2,7 @@ import { workflowTasks } from './config.js'
 import { findWorkflowTaskByName, state } from './state.js'
 import { $, $$ } from './dom.js'
 import { renderShell, renderWorkflowWorkspace, setAgentStatus, showPage } from './ui.js'
-import { commitAll, createProject, deleteProject, loadProjects, previewFile, refreshFiles, refreshLog, runAllSteps, runNextStep, runStep, selectProject, sendPrompt, toggleCustomMode, updateCustomCustomerName, updateCustomTaskName, updateProject, uploadFile } from './actions.js'
+import { commitAll, createProject, deleteProject, loadProjects, previewFile, refreshFiles, refreshLog, runAllSteps, runNextStep, runStep, selectProject, sendPrompt, toggleCustomMode, updateCustomCustomerName, updateCustomTaskName, updateDetectMethod, updateProject, uploadFile } from './actions.js'
 import { openReviewEditor } from './reviewEditor.js'
 import { renderProjectsTable, showProjectFormModal } from './ui.js'
 
@@ -56,6 +56,10 @@ function bindEvents() {
     // 自定义任务名称下拉
     if (event.target.id === 'project-task-select') {
       updateCustomTaskName(event.target.value)
+    }
+    // Detect 识别方式 radio
+    if (event.target.name === 'detect-method') {
+      updateDetectMethod(event.target.value)
     }
   })
 

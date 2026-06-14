@@ -4,195 +4,369 @@
 
 默认后端：`http://127.0.0.1:8000`（通过 `python -m desktop.api` 或由 Electron 启动时自动运行）。
 
-注意：后端允许跨域（CORS），多数接口接受表单（form）或 JSON 字段；某些接口会将文件写入仓库并尝试用 git 提交。
-
 ---
 
-## 启动后端（开发）
+## 启动后端
 
 ```powershell
-# 在项目根目录
 cd desktop
-# 启动后端
 python -m desktop.api
+# 或带热重载
+python -m uvicorn desktop.api:app --host 127.0.0.1 --port 8000 --reload
 ```
-
-Electron 前端会在 `desktop/package.json` 中运行 `npm run start`，它会自动启动后端并加载前端界面。
-
----
 
 ## 通用说明
 - 基本 URL: `http://127.0.0.1:8000`
-- 大部分 `POST` 接口接受 `application/x-www-form-urlencoded` 或 `multipart/form-data`（上传文件时）。
-- 若需使用 LLM 相关接口，请先在环境或 `.env` 中设置 `OPENAI_API_KEY`。
+- `POST` 接口接受 `application/x-www-form-urlencoded` 或 `multipart/form-data`（上传文件时）。
+- 部分接口接受 `application/json`（详见各接口说明）。
+- 写/上传接口会尝试把文件加入 git 并提交。
+
+---
+
+## 配置架构
+
+配置已拆分为两层，通过 `task_configs` 数据库表关联：
+
+```
+config.example.llm.yml          ← LLM 模型/API 配置（全局）
+outputs/{客户}/{任务}/task.yml  ← 任务文件相关配置（由 Detect 生成）
+```
+
+运行时由 `_build_full_config(customer_name, task_name)` 合并两者。
 
 ---
 
 ## 接口一览
 
-1. GET /files/list
-   - 描述：列出指定目录下的所有文件（相对于仓库根或当前工作目录）。
-   - 参数：`root`（query，可选，默认 `outputs`）
-   - 示例：
-     ```bash
-     curl "http://127.0.0.1:8000/files/list?root=outputs"
-     ```
-   - 返回：{"files": ["outputs/clean/bank_transactions.csv", ...]}
+### 项目管理
 
-2. GET /files/read
-   - 描述：读取文件内容（文本文件）。
-   - 参数：`path`（query，必填，文件路径）
-   - 示例：
-     ```bash
-     curl "http://127.0.0.1:8000/files/read?path=outputs/clean/bank_transactions.csv"
-     ```
-   - 返回：{"content": "...file content..."}
+#### 1. GET /projects/dirs
+扫描 `inputs/` 和 `outputs/` 下实际存在的项目目录。
+- 返回: `{"dirs": [{"customer_name": "...", "task_name": "..."}, ...]}`
 
-3. POST /files/write
-   - 描述：写入文本文件并尝试用 git 提交。
-   - 请求体（JSON）：
-     - `path` (string) — 写入的相对或绝对路径
-     - `content` (string) — 文件内容
-     - `commit_message` (string, 可选) — git 提交信息，默认 `update from desktop app`
-   - 示例：
-     ```bash
-     curl -X POST "http://127.0.0.1:8000/files/write" -H "Content-Type: application/json" -d '{"path":"outputs/notes.txt","content":"hello","commit_message":"add note"}'
-     ```
-   - 返回：{"ok": true, "path": "outputs/notes.txt"}
+#### 2. GET /projects/list
+列出所有项目（从 projects.db）。
+- 返回: `{"projects": [{id, task_name, customer_name, status, created_at, responsible_person, risk}, ...]}`
 
-4. POST /files/upload
-   - 描述：上传文件到后端指定目录并写入仓库（multipart 表单）。
-   - 表单字段：`file` (file), `dest` (string，可选，默认 `outputs/`)；若 `dest` 是目录则以上传文件名保存，否则 `dest` 可指定完整路径。
-   - 示例：
-     ```bash
-     curl -F "file=@./inputs/bank.xlsm" -F "dest=outputs/bank/" http://127.0.0.1:8000/files/upload
-     ```
-   - 返回：{"ok": true, "path": "outputs/bank/bank.xlsm"}
+#### 3. POST /projects/create
+创建新项目，同时自动创建 `inputs/` 和 `outputs/` 子目录。
+- Body (JSON):
+  - `task_name` (string, 必填)
+  - `customer_name` (string)
+  - `status` (string, 默认 "Planning")
+  - `responsible_person` (string)
+  - `risk` (string, 默认 "Medium")
+- 返回: `{"project": {...}}`
 
-5. POST /git/commit
-   - 描述：对仓库当前更改执行 `git add --all` + `git commit`。
-   - 参数（表单或 query）：`message`（string，可选，默认 `commit from desktop app`）
-   - 示例：
-     ```bash
-     curl -X POST -d "message=save changes" http://127.0.0.1:8000/git/commit
-     ```
-   - 返回：{"ok": true}
+#### 4. PUT /projects/{project_id}
+更新项目信息。
+- Body (JSON): 任意可更新字段 (`task_name, customer_name, status, created_at, responsible_person, risk`)
+- 返回: `{"project": {...}}`
 
-6. POST /git/revert
-   - 描述：撤销指定路径的本地修改（git checkout -- path）。
-   - 参数（form/query）：`path`（string，必填）
-   - 示例：
-     ```bash
-     curl -X POST -d "path=outputs/notes.txt" http://127.0.0.1:8000/git/revert
-     ```
-   - 返回：{"ok": true} 或错误信息。
-
-7. GET /git/log
-   - 描述：返回最近的 git 提交记录。
-   - 参数：`limit`（query，可选，默认 20）
-   - 示例：
-     ```bash
-     curl "http://127.0.0.1:8000/git/log?limit=10"
-     ```
-   - 返回：{"commits": [{"hexsha":..., "message":..., "author":..., "date":...}, ...]}
-
-8. POST /workflow/clean
-   - 描述：运行清洗流程（生成 `bank_transactions.csv` 和 `ledger_entries.csv`）。
-   - 参数（form，可选）：`config`（string，JSON 序列化的配置对象；若为空则使用默认路径/配置）
-   - 示例（直接传 JSON 字符串）：
-     ```bash
-     curl -X POST -F 'config={"output_dir":"outputs"}' http://127.0.0.1:8000/workflow/clean
-     ```
-   - 返回：{"bank_csv": "...", "ledger_csv": "..."}
-
-
-9. POST /workflow/bank_ledger_match/match
-   - 描述：运行匹配流程（bank_ledger_match），生成 `matches.csv` 与未匹配清单。
-   - 参数（form，可选）：`config`（JSON 字符串）
-   - 示例：
-     ```bash
-     curl -X POST -F 'config={"output_dir":"outputs"}' http://127.0.0.1:8000/workflow/bank_ledger_match/match
-     ```
-   - 返回：{"matches": "...", "unmatched_bank": "...", "unmatched_ledger": "..."}
-
-
-10. POST /workflow/bank_ledger_match/approve
-    - 描述：运行批准/审批相关流程（bank_ledger_match 的 `run_approve` 输出）。
-    - 参数（form，可选）：`config`（JSON 字符串）
-    - 示例：
-      ```bash
-      curl -X POST -F 'config={}' http://127.0.0.1:8000/workflow/bank_ledger_match/approve
-      ```
-    - 返回：{"result": ["...", ...]}
-
-
-11. POST /workflow/bank_ledger_match/verify
-    - 描述：检查 `bank_ledger_match` 输出目录中关键 CSV 是否存在并返回行数统计。
-    - 参数（form，可选）：`config`（JSON 字符串）
-    - 示例：
-      ```bash
-      curl -X POST -F 'config={"output_dir":"outputs"}' http://127.0.0.1:8000/workflow/bank_ledger_match/verify
-      ```
-    - 返回示例：
-      {
-        "matches": {"exists": true, "rows": 123, "path": "..."},
-        "unmatched_bank": {...},
-        "unmatched_ledger": {...},
-        "ok": true
-      }
-
-
-12. POST /workflow/bank_ledger_match/fill
-    - 描述：把 `bank_ledger_match` 的匹配结果填入工作底稿（生成或更新 xlsm）。
-    - 参数（form，可选）：`config`（JSON 字符串）
-    - 示例：
-      ```bash
-      curl -X POST -F 'config={}' http://127.0.0.1:8000/workflow/bank_ledger_match/fill
-      ```
-    - 返回：{"working_paper": "path/to/工作底稿.xlsm"}
-
-13. POST /workflow/full
-    - 描述：一次性跑完整流水：clean + match + fill 等（`run_all`）。
-    - 参数（form，可选）：`config`（JSON 字符串）
-    - 示例：
-      ```bash
-      curl -X POST -F 'config={}' http://127.0.0.1:8000/workflow/full
-      ```
-    - 返回：按键值返回各阶段产物路径的 JSON 对象。
-
-14. POST /llm/generate
-    - 描述：发送 prompt 到配置的 OpenAI 兼容接口，结果写入指定路径（文本）。若未配置 API key，会把 prompt 回显为占位内容。
-    - 表单字段：`prompt`（string，必填），`target_path`（string，可选，默认 `outputs/clean/generated_from_llm.txt`）
-    - 示例：
-      ```bash
-      curl -X POST -F 'prompt=请把下面文本转换为 CSV...' -F 'target_path=outputs/clean/generated.txt' http://127.0.0.1:8000/llm/generate
-      ```
-    - 返回：{"path": "...", "ok": true}
-
-15. POST /llm/generate_and_run
-    - 描述：生成 LLM 内容并写入文件；当 `target_path` 以 `.py` 结尾且 `run_code` 为真时，会先做语法检查并尝试在独立进程中执行（有 `timeout` 秒限制）。
-    - 表单字段：
-      - `prompt`（string，必填）
-      - `target_path`（string，可选，默认 `outputs/clean/generated_from_llm.py`）
-      - `run_code`（string/flag，可选，'true'/'false'/'1' 等皆可，被解析为布尔值，默认 'false'）
-      - `timeout`（int，可选，执行超时秒数，默认 5）
-    - 示例（仅生成）：
-      ```bash
-      curl -X POST -F 'prompt=生成一个简单的 Python 脚本' -F 'target_path=outputs/clean/foo.py' http://127.0.0.1:8000/llm/generate_and_run
-      ```
-    - 示例（生成并执行）：
-      ```bash
-      curl -X POST -F 'prompt=print("hello")' -F 'target_path=outputs/clean/runme.py' -F 'run_code=true' -F 'timeout=3' http://127.0.0.1:8000/llm/generate_and_run
-      ```
-    - 返回：{"path":"...","ok":true,"run_result": {"returncode":0,"stdout":"...","stderr":"..."}} 或 超时/错误信息。
+#### 5. DELETE /projects/{project_id}
+删除项目。
+- 返回: `{"ok": true}`
 
 ---
 
-## 使用建议
-- 调用写/上传接口会尝试把文件加入 git 并提交；若不需要该行为，请在本地调用前备份或忽略 `.git`。
-- 对于 `config` 字段，推荐先在本地准备好 `config.example.yml` 或 JSON，然后把其内容作为字符串发送。
-- 当调用需要较长时间的后台任务（例如复杂匹配），建议在前端显示等待或使用后台任务并轮询 `workflow/verify` 以确认产物就绪。
+### 文件管理
+
+#### 6. GET /files/list
+列出指定目录下的所有文件。
+- 参数: `root` (query, 可选, 默认 `outputs`)
+- 示例:
+  ```bash
+  curl "http://127.0.0.1:8000/files/list?root=outputs"
+  ```
+- 返回: `{"files": ["outputs/clean/bank_transactions.csv", ...]}`
+
+#### 7. GET /files/read
+读取文本文件内容。
+- 参数: `path` (query, 必填)
+- 示例:
+  ```bash
+  curl "http://127.0.0.1:8000/files/read?path=outputs/clean/bank_transactions.csv"
+  ```
+- 返回: `{"content": "..."}`
+
+#### 8. POST /files/write
+写入文本文件并 git 提交。
+- Body (JSON):
+  - `path` (string, 必填)
+  - `content` (string, 必填)
+  - `commit_message` (string, 可选)
+- 示例:
+  ```bash
+  curl -X POST "http://127.0.0.1:8000/files/write" \
+    -H "Content-Type: application/json" \
+    -d '{"path":"outputs/notes.txt","content":"hello"}'
+  ```
+- 返回: `{"ok": true, "path": "outputs/notes.txt"}`
+
+#### 9. DELETE /files/delete
+删除指定文件。
+- 参数: `path` (query, 必填)
+- 返回: `{"ok": true, "path": "..."}`
+
+#### 10. POST /files/upload
+上传文件（multipart 表单）。
+- 表单字段:
+  - `file` (file, 必填)
+  - `dest` (string, 可选, 默认 `outputs/`)
+- 示例:
+  ```bash
+  curl -F "file=@./bank.xlsm" -F "dest=inputs/桂平金山/bank_ledger_match/" \
+    http://127.0.0.1:8000/files/upload
+  ```
+- 返回: `{"ok": true, "path": "inputs/桂平金山/bank_ledger_match/bank.xlsm"}`
 
 ---
 
-如果你希望我把这份文档也添加到仓库根 README 中并放置链接，我可以继续把 `docs/backend_endpoints.md` 的链接加到 [README.md](README.md)。
+### Git 版本管理
+
+#### 11. POST /git/commit
+`git add --all` + `git commit`。
+- 参数: `message` (string, 可选)
+- 返回: `{"ok": true}`
+
+#### 12. POST /git/revert
+撤销指定路径的本地修改 (`git checkout -- path`)。
+- 参数: `path` (string, 必填)
+- 返回: `{"ok": true}`
+
+#### 13. GET /git/log
+返回最近 git 提交记录。
+- 参数: `limit` (query, 可选, 默认 20)
+- 返回: `{"commits": [{"hexsha":..., "message":..., "author":..., "date":...}, ...]}`
+
+---
+
+### 新工作流 API（6 步流水线）
+
+工作流: **Detect → Confirm → Clean → Check → Match → Fill**
+
+#### 14. POST /workflow/detect（Step 1）
+扫描 `inputs/{customer}/{task}/` 下的 Excel 文件，用 LLM 自动识别文件类型（银行流水/序时账）、银行名称、时间段，生成 `task.yml` 并写入 `task_configs` 表。
+- 表单字段:
+  - `customer_name` (string, 必填) — 客户名称
+  - `task_name` (string, 可选, 默认 `bank_ledger_match`)
+  - `use_llm` (string, 可选, 默认 `true`) — 是否启用 LLM 识别
+- 示例:
+  ```bash
+  curl -X POST -F "customer_name=桂平金山" -F "task_name=bank_ledger_match" \
+    http://127.0.0.1:8000/workflow/detect
+  ```
+- 返回:
+  ```json
+  {
+    "ok": true,
+    "files_count": 2,
+    "files": [{"path": "...", "name": "...", ...}],
+    "identifications": [{"id": "icbc_bank_2022", "type": "bank_statement", "bank_name": "...", ...}],
+    "task_config": {...},
+    "task_yml_path": "outputs/桂平金山/bank_ledger_match/task.yml",
+    "llm_used": true
+  }
+  ```
+
+#### 15. GET /workflow/config
+获取已生成的 `task.yml` 内容（从 `task_configs` 表查路径）。
+- 参数:
+  - `customer_name` (query, 必填)
+  - `task_name` (query, 可选, 默认 `bank_ledger_match`)
+- 示例:
+  ```bash
+  curl "http://127.0.0.1:8000/workflow/config?customer_name=桂平金山&task_name=bank_ledger_match"
+  ```
+- 返回: `{"ok": true, "content": "...YAML...", "path": "..."}`
+
+#### 16. POST /workflow/config/save（Step 2）
+保存用户确认/修改后的 `task.yml`，同步更新 `task_configs` 表。
+- 表单字段:
+  - `customer_name` (string, 必填)
+  - `task_name` (string, 可选, 默认 `bank_ledger_match`)
+  - `content` (string, 必填) — YAML 文本内容
+- 示例:
+  ```bash
+  curl -X POST -F "customer_name=桂平金山" -F "task_name=bank_ledger_match" \
+    -F "content=$(cat task.yml)" http://127.0.0.1:8000/workflow/config/save
+  ```
+- 返回: `{"ok": true, "path": "...", "parsed": {...}}`
+- 错误: 400 (YAML 语法错误)
+
+#### 17. POST /workflow/bank_ledger_match/clean（Step 3）
+按 task.yml 配置清洗原始数据，生成 `clean/bank_transactions.csv` 和 `clean/ledger_entries.csv`。
+- 表单字段:
+  - `customer_name` (string) — 推荐，自动从 DB 加载配置
+  - `task_name` (string, 可选, 默认 `bank_ledger_match`)
+  - `config` (string, 可选) — 直接传 JSON 配置（兼容旧版）
+- 示例:
+  ```bash
+  curl -X POST -F "customer_name=桂平金山" \
+    http://127.0.0.1:8000/workflow/bank_ledger_match/clean
+  ```
+- 返回: `{"bank_csv": "...", "ledger_csv": "..."}`
+
+#### 18. POST /workflow/bank_ledger_match/check（Step 4）
+读取 `monthly_flow_check.csv`，返回数据完备性报告（按月/账号检查流入流出是否一致）。
+- 表单字段:
+  - `customer_name` (string, 必填)
+  - `task_name` (string, 可选, 默认 `bank_ledger_match`)
+- 示例:
+  ```bash
+  curl -X POST -F "customer_name=桂平金山" \
+    http://127.0.0.1:8000/workflow/bank_ledger_match/check
+  ```
+- 返回:
+  ```json
+  {
+    "ok": true,
+    "all_ok": false,
+    "summary": {"total_rows": 12, "ok_count": 10, "mismatch_count": 2},
+    "rows": [...],
+    "mismatches": [...]
+  }
+  ```
+- 注意: `monthly_flow_check.csv` 由 Match 步骤生成，Check 需在 Match 之后执行。
+
+#### 19. POST /workflow/bank_ledger_match/match（Step 5）
+执行银行流水 ↔ 序时账自动匹配，生成 `matches/matches.csv`、`unmatched_bank.csv`、`unmatched_ledger.csv`、`monthly_flow_check.csv`。
+- 表单字段:
+  - `customer_name` (string) — 推荐
+  - `task_name` (string, 可选)
+  - `config` (string, 可选) — 兼容旧版
+- 示例:
+  ```bash
+  curl -X POST -F "customer_name=桂平金山" \
+    http://127.0.0.1:8000/workflow/bank_ledger_match/match
+  ```
+- 返回: `{"matches": "...", "unmatched_bank": "...", "unmatched_ledger": "..."}`
+
+#### 20. POST /workflow/bank_ledger_match/fill（Step 6）
+将匹配结果填入 Excel 工作底稿模板。
+- 表单字段:
+  - `customer_name` (string) — 推荐
+  - `task_name` (string, 可选)
+  - `config` (string, 可选) — 兼容旧版
+- 示例:
+  ```bash
+  curl -X POST -F "customer_name=桂平金山" \
+    http://127.0.0.1:8000/workflow/bank_ledger_match/fill
+  ```
+- 返回: `{"working_paper": "outputs/.../working_paper/资金流水专项核查工作底稿-自动填报.xlsm"}`
+
+---
+
+### 其他工作流辅助
+
+#### 21. POST /workflow/bank_ledger_match/approve
+运行批准/复核流程。
+- 表单字段: `config` (string, 可选, JSON)
+- 返回: `{"result": ["...", ...]}`
+
+#### 22. POST /workflow/bank_ledger_match/verify
+检查关键产物 CSV 是否存在并返回行数统计。
+- 表单字段:
+  - `customer_name` (string, 可选)
+  - `task_name` (string, 可选)
+  - `config` (string, 可选, JSON)
+- 返回:
+  ```json
+  {
+    "matches": {"exists": true, "rows": 123, "path": "..."},
+    "unmatched_bank": {"exists": true, "rows": 45, "path": "..."},
+    "unmatched_ledger": {"exists": true, "rows": 30, "path": "..."},
+    "ok": true
+  }
+  ```
+
+---
+
+### LLM 代码生成
+
+#### 23. POST /llm/generate
+发送 prompt 到 LLM，结果写入指定路径。
+- 表单字段:
+  - `prompt` (string, 必填)
+  - `target_path` (string, 可选, 默认 `outputs/clean/generated_from_llm.txt`)
+- 返回: `{"path": "...", "ok": true}`
+
+#### 24. POST /llm/generate_and_run
+LLM 生成代码 + 可选执行（`.py` 文件）。
+- 表单字段:
+  - `prompt` (string, 必填)
+  - `target_path` (string, 可选, 默认 `outputs/clean/generated_from_llm.py`)
+  - `run_code` (string, 可选, `true`/`false`, 默认 `false`)
+  - `timeout` (int, 可选, 默认 5 秒)
+- 示例:
+  ```bash
+  curl -X POST -F 'prompt=print("hello")' \
+    -F 'target_path=outputs/clean/runme.py' \
+    -F 'run_code=true' -F 'timeout=3' \
+    http://127.0.0.1:8000/llm/generate_and_run
+  ```
+- 返回: `{"path":"...","ok":true,"run_result":{"returncode":0,"stdout":"...","stderr":"..."}}`
+
+---
+
+## 典型使用流程
+
+```bash
+# 1. 创建项目
+curl -X POST http://127.0.0.1:8000/projects/create \
+  -H "Content-Type: application/json" \
+  -d '{"task_name":"序时账银行流水匹配","customer_name":"桂平金山"}'
+
+# 2. 上传文件
+curl -F "file=@./bank.xlsm" \
+  http://127.0.0.1:8000/files/upload?dest=inputs/桂平金山/bank_ledger_match/
+
+# 3. Step 1: 扫描 + LLM 识别 → 生成 task.yml
+curl -X POST -F "customer_name=桂平金山" \
+  http://127.0.0.1:8000/workflow/detect
+
+# 4. Step 2: 查看并确认配置（前端 YAML 编辑器）
+curl "http://127.0.0.1:8000/workflow/config?customer_name=桂平金山"
+
+# 5. Step 3: 清洗
+curl -X POST -F "customer_name=桂平金山" \
+  http://127.0.0.1:8000/workflow/bank_ledger_match/clean
+
+# 6. Step 5: 匹配（会生成 monthly_flow_check.csv）
+curl -X POST -F "customer_name=桂平金山" \
+  http://127.0.0.1:8000/workflow/bank_ledger_match/match
+
+# 7. Step 4: 核查月度流量
+curl -X POST -F "customer_name=桂平金山" \
+  http://127.0.0.1:8000/workflow/bank_ledger_match/check
+
+# 8. Step 6: 填入底稿
+curl -X POST -F "customer_name=桂平金山" \
+  http://127.0.0.1:8000/workflow/bank_ledger_match/fill
+```
+
+## 数据库表结构
+
+### projects 表
+| 列 | 类型 | 说明 |
+|----|------|------|
+| id | INTEGER | 主键 |
+| task_name | TEXT | 任务名称 |
+| customer_name | TEXT | 客户名称 |
+| status | TEXT | 状态 (Planning/Reviewing/Completed) |
+| created_at | TEXT | 创建日期 |
+| responsible_person | TEXT | 负责人 |
+| risk | TEXT | 风险等级 |
+
+### task_configs 表（新增）
+| 列 | 类型 | 说明 |
+|----|------|------|
+| id | INTEGER | 主键 |
+| customer_name | TEXT | 客户名称 |
+| task_name | TEXT | 任务名称 |
+| task_yml_path | TEXT | task.yml 文件路径 |
+| llm_yml_path | TEXT | llm.yml 文件路径 |
+| created_at | TEXT | 创建时间 |
+| updated_at | TEXT | 更新时间 |
+
+UNIQUE(customer_name, task_name) — 每个公司+任务对应唯一一条 yml 路径映射。
