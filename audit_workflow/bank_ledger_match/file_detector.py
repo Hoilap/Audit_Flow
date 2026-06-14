@@ -149,7 +149,7 @@ def _preview_excel(path: Path) -> dict[str, Any]:
 # LLM 驱动的智能识别
 # ============================================================
 
-_FILE_IDENTIFY_SYSTEM_PROMPT = """你是一个审计数据分析助手，专门识别银行流水文件和序时账文件。
+_FILE_IDENTIFY_SYSTEM_PROMPT = """你是一个审计数据分析助手，专门识别银行流水文件/序时账文件/底稿文件。
 
 你需要分析给定的文件信息（文件名、sheet 名、数据预览），判断：
 1. **文件类型**: "bank_statement"（银行流水）或 "ledger"（序时账/明细账）
@@ -487,7 +487,7 @@ def save_task_config(config: dict[str, Any], path: str | Path) -> Path:
         f.write(f"# 生成时间: {config.get('_meta', {}).get('generated_at', '')}\n")
         f.write("# 请检查并修改后确认\n")
         f.write("# ============================================================\n\n")
-        yaml.dump(clean, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
+        yaml.dump(clean, f, allow_unicode=True, default_flow_style=False, sort_keys=False, width=1000000)
     return out
 
 

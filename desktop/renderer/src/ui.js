@@ -464,9 +464,11 @@ export function addMessage({ role = 'Agent', title = '', body = '', result = nul
   block.className = 'message'
   const time = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
   block.innerHTML = `
-    <div class="message-head"><span>${escapeHtml(role)}${title ? ` · ${escapeHtml(title)}` : ''}</span><span>${failed ? 'Failed' : time}</span></div>
-    ${body ? `<p>${escapeHtml(body)}</p>` : ''}
-    ${result ? `<pre class="log-block">${escapeHtml(JSON.stringify(result, null, 2))}</pre>` : ''}
+    <div class="message-head"><span>${escapeHtml(role)}${title ? ` · ${escapeHtml(title)}` : ''}</span><span>${failed ? 'Failed' : time} <span class="message-collapse-btn">▼</span></span></div>
+    <div class="message-body">
+      ${body ? `<p>${escapeHtml(body)}</p>` : ''}
+      ${result ? `<pre class="log-block">${escapeHtml(JSON.stringify(result, null, 2))}</pre>` : ''}
+    </div>
   `
   chat.appendChild(block)
   block.scrollIntoView({ behavior: 'smooth', block: 'end' })
@@ -851,12 +853,14 @@ ${escapeHtml(result.llm_error.traceback || '')}</pre>
   }
 
   block.innerHTML = `
-    <div class="message-head"><span>Agent · 文件识别结果</span><span>${escapeHtml(time)}</span></div>
+    <div class="message-head"><span>Agent · 文件识别结果</span><span>${escapeHtml(time)} <span class="message-collapse-btn">▼</span></span></div>
+    <div class="message-body">
     <p>扫描到 <strong>${result.files_count}</strong> 个文件。</p>
     ${llmStatusHtml}
     ${idTable(bankItems, '银行流水')}
     ${idTable(ledgerItems, '序时账')}
     <p style="margin-top:8px;" class="subtle">task.yml 已自动生成 → 进入下一步「确认配置」进行审核。</p>
+    </div>
   `
   chat.appendChild(block)
   block.scrollIntoView({ behavior: 'smooth', block: 'end' })
@@ -870,10 +874,11 @@ export function renderConfigConfirm(yamlContent, customerName, taskName) {
   if (!llmPanel) return
 
   llmPanel.innerHTML = `
-    <div class="llm-code-head">
+    <div class="llm-code-head" style="cursor:pointer;user-select:none;">
       <strong>📝 Task 配置确认</strong>
-      <span class="llm-code-path">outputs/${escapeHtml(customerName)}/${escapeHtml(taskName)}/task.yml</span>
+      <span class="llm-code-path">outputs/${escapeHtml(customerName)}/${escapeHtml(taskName)}/task.yml <span class="message-collapse-btn">▼</span></span>
     </div>
+    <div class="message-body">
     <div style="margin-bottom:8px;display:flex;gap:8px;">
       <button id="save-config-btn" class="primary" style="padding:4px 12px;font-size:13px;">💾 保存配置</button>
       <button id="reload-config-btn" style="padding:4px 12px;font-size:13px;">⟳ 重新加载</button>
@@ -885,6 +890,7 @@ export function renderConfigConfirm(yamlContent, customerName, taskName) {
       border-radius:6px;background:var(--bg);color:var(--text);
       resize:vertical;white-space:pre;tab-size:2;
     " spellcheck="false">${escapeHtml(yamlContent)}</textarea>
+    </div>
   `
 
   // 绑定保存按钮
@@ -970,7 +976,8 @@ export function renderCheckResult(result) {
   block.className = 'message'
   const time = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
   block.innerHTML = `
-    <div class="message-head"><span>Agent · 数据完备性检查</span><span>${escapeHtml(time)}</span></div>
+    <div class="message-head"><span>Agent · 数据完备性检查</span><span>${escapeHtml(time)} <span class="message-collapse-btn">▼</span></span></div>
+    <div class="message-body">
     <div class="grid metrics" style="margin-bottom:8px;">
       <div class="card" style="text-align:center;"><div class="card-title">总计</div><div class="card-value">${summary.total_rows || 0}</div></div>
       <div class="card" style="text-align:center;"><div class="card-title">✓ 一致</div><div class="card-value" style="color:#27ae60;">${summary.ok_count || 0}</div></div>
@@ -980,6 +987,7 @@ export function renderCheckResult(result) {
       ? '<p style="color:#27ae60;font-weight:bold;">✅ 所有月份/账户的银行流水与序时账流入流出一致，数据完备！</p>'
       : '<p style="color:#e74c3c;font-weight:bold;">⚠️ 存在不一致项，请检查原始数据是否有遗漏或错误。</p>'}
     ${mismatchTable}
+    </div>
   `
   chat.appendChild(block)
   block.scrollIntoView({ behavior: 'smooth', block: 'end' })

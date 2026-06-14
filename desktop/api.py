@@ -346,6 +346,7 @@ def workflow_verify(
     customer_name: str = Form(""),
     task_name: str = Form("bank_ledger_match"),
 ):
+    """Step - Verify: 将人工复核通过的项目加入 matches.csv，从 unmatched 中移除。"""
     if customer_name:
         cfg = _build_full_config(customer_name, task_name)
     elif config:
@@ -353,24 +354,23 @@ def workflow_verify(
     else:
         cfg = {}
     try:
-        if cfg:
-            out = blm_pipeline.output_dir(cfg)
-        else:
-            out = Path("outputs") / customer_name / task_name
-        files = {
-            "matches": out / "matches" / "matches.csv",
-            "unmatched_bank": out / "matches" / "unmatched_bank.csv",
-            "unmatched_ledger": out / "matches" / "unmatched_ledger.csv",
+        if not cfg:
+            raise HTTPException(status_code=400, detail="缺少配置参数")
+        # 调用 approver 执行实际的人工复核合并逻辑
+        matches_path, unmatched_bank_path, unmatched_ledger_path, review_path = blm_pipeline.run_approve(cfg)
+        # 统计行数
+        def _count_rows(p):
+            if not p.exists():
+                return 0
+            with open(p, "r", encoding="utf-8", errors="ignore", newline="") as f:
+                return max(sum(1 for _ in csv.reader(f)) - 1, 0)
+        result = {
+            "ok": True,
+            "matches": {"path": str(matches_path), "rows": _count_rows(matches_path)},
+            "unmatched_bank": {"path": str(unmatched_bank_path), "rows": _count_rows(unmatched_bank_path)},
+            "unmatched_ledger": {"path": str(unmatched_ledger_path), "rows": _count_rows(unmatched_ledger_path)},
+            "review": {"path": str(review_path), "rows": _count_rows(review_path)},
         }
-        result = {}
-        for name, path in files.items():
-            if not path.exists():
-                result[name] = {"exists": False, "rows": 0, "path": str(path)}
-                continue
-            with open(path, "r", encoding="utf-8", errors="ignore", newline="") as f:
-                rows = max(sum(1 for _ in csv.reader(f)) - 1, 0)
-            result[name] = {"exists": True, "rows": rows, "path": str(path)}
-        result["ok"] = all(item["exists"] for item in result.values() if isinstance(item, dict))
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

@@ -41,6 +41,13 @@ function bindEvents() {
 
     const fileRow = event.target.closest('[data-file]')
     if (fileRow) previewFile(fileRow.dataset.file)
+
+    // 消息/配置面板折叠切换
+    const collapseHead = event.target.closest('.message-head, .llm-code-head')
+    if (collapseHead) {
+      const container = collapseHead.closest('.message') || collapseHead.closest('.llm-code-panel')
+      if (container) container.classList.toggle('collapsed')
+    }
   })
 
   // 项目选择器事件（通过 DOM 事件代理，因为这些元素在 renderWorkflowWorkspace 中动态生成）

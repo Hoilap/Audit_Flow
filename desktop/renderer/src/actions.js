@@ -128,7 +128,7 @@ export async function runStep(stepIndex = state.activeStepIndex) {
         addMessage({ title: step.title, body: result.error || '检查失败', failed: true })
       }
     }
-    // ── 其他步骤（clean, match, fill）── 使用通用 workflow + customer 参数
+    // ── 其他步骤（clean, match, verify, fill）── 使用通用 workflow + customer 参数
     else {
       const form = new FormData()
       form.append('customer_name', customerName)
@@ -140,12 +140,14 @@ export async function runStep(stepIndex = state.activeStepIndex) {
 
     setAgentStatus('Completed', 100)
     await refreshFiles()
-    // 自动弹出复核文件
-    const wfTask = findWorkflowTaskByName(state.customTaskName)
-    const reviewFiles = wfTask ? wfTask.reviewFiles || [] : []
-    if (reviewFiles.length > 0) {
-      const resolved = resolveProjectPath(reviewFiles[0])
-      if (resolved) openReviewEditor(resolved)
+    // 自动弹出复核文件 —— 仅在 match 步骤后
+    if (step.id === 'match') {
+      const wfTask = findWorkflowTaskByName(state.customTaskName)
+      const reviewFiles = wfTask ? wfTask.reviewFiles || [] : []
+      if (reviewFiles.length > 0) {
+        const resolved = resolveProjectPath(reviewFiles[0])
+        if (resolved) openReviewEditor(resolved)
+      }
     }
     return result
   } catch (error) {

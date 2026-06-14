@@ -13,7 +13,7 @@ export const workflowTasks = [
   {
     id: 'bank-ledger-match',
     name: '序时账银行流水匹配',
-    description: 'Detect扫描→LLM识别→确认配置→清洗→核查→匹配→填入底稿。',
+    description: 'Detect扫描→LLM识别→确认配置→清洗→核查→匹配→人工复核→填入底稿。',
     risk: 'High',
     dirName: 'bank_ledger_match',
     prompt: '请在数据源页面将银行流水和序时账文件上传到 inputs/{客户名}/bank_ledger_match/ 目录下，然后从 Detect 步骤开始执行。',
@@ -68,6 +68,14 @@ export const workflowTasks = [
         title: '执行流水匹配',
         description: '对清洗后的银行流水和序时账执行自动匹配',
         endpoint: '/workflow/bank_ledger_match/match',
+        outputs: ['matches/matches.csv', 'matches/unmatched_bank.csv', 'matches/unmatched_ledger.csv'],
+      },
+      {
+        id: 'verify',
+        label: 'Verify',
+        title: '应用人工复核',
+        description: '将人工复核通过的项目加入 matches.csv，从 unmatched 中移除',
+        endpoint: '/workflow/bank_ledger_match/verify',
         outputs: ['matches/matches.csv', 'matches/unmatched_bank.csv', 'matches/unmatched_ledger.csv'],
       },
       {
