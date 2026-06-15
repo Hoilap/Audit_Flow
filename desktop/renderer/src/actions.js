@@ -128,7 +128,17 @@ export async function runStep(stepIndex = state.activeStepIndex) {
         addMessage({ title: step.title, body: result.error || '检查失败', failed: true })
       }
     }
-    // ── 其他步骤（clean, match, verify, fill）── 使用通用 workflow + customer 参数
+    // ── Step 6: Fill ──
+    else if (step.id === 'fill') {
+      const useLlm = state.detectMethod === 'llm'
+      result = useLlm
+        ? await api.workflowFillLlm(customerName, taskDirName)
+        : await api.workflowFill(customerName, taskDirName)
+      const methodLabel = useLlm ? '🤖 LLM 自适应填表' : '📜 脚本填表'
+      markStep(task.id, step.id, 'completed', result)
+      addMessage({ title: step.title, body: `${methodLabel} 完成，右侧已更新生成文件。`, result })
+    }
+    // ── 其他步骤（clean, match, verify）── 使用通用 workflow + customer 参数
     else {
       const form = new FormData()
       form.append('customer_name', customerName)

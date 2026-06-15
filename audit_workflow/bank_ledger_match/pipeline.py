@@ -10,6 +10,7 @@ from .cleaners import clean_to_csv
 from .config import output_dir
 from .matcher import match_to_csv
 from .working_paper import fill_working_paper
+from .llm_filler import fill_working_paper_llm
 
 
 def run_clean(config: dict[str, Any]) -> tuple[Path, Path]:
@@ -27,6 +28,11 @@ def run_approve(config: dict[str, Any]) -> tuple[Path, Path, Path, Path]:
 def run_fill(config: dict[str, Any]) -> Path:
     _ensure_can_fill(config)
     return fill_working_paper(config)
+
+
+def run_fill_llm(config: dict[str, Any]) -> Path:
+    _ensure_can_fill(config)
+    return fill_working_paper_llm(config)
 
 
 def run_all(config: dict[str, Any]) -> dict[str, Path | tuple[Path, ...]]:

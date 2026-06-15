@@ -1,9 +1,19 @@
-# Audit Workflow: 资金流水专项核查
+# Audit Workflow
 
-这套工作流用于把银行流水和新纪元序时账清洗成标准 CSV，自动匹配银行流水与账面记录，并把结果填入资金流水专项核查底稿。
+## 如何启动
+
+- 前端 
+```
+npm install
+npm start run
+```
+- 后端 
+```
+python -m uvicorn desktop.api:app --host 127.0.0.1 --port 8000 --reload
+```
 
 ## 设计原则
-
+这套工作流用于把银行流水和新纪元序时账清洗成标准 CSV，自动匹配银行流水与账面记录，并把结果填入资金流水专项核查底稿。
 - 银行流水格式不稳定：优先使用已知固定解析器；未知格式可让 LLM 生成 Python 解析脚本，并缓存到 `generated_parsers/` 复用。
 - 新纪元序时账格式稳定：使用固定解析器 `xinjiyuan_bank_ledger`，不调用 LLM。
 - 匹配结果保留置信度、未匹配清单和低置信信息，方便审计人员复核。
@@ -11,7 +21,7 @@
 
 ## 快速运行
 
-python -m uvicorn desktop.api:app --host 127.0.0.1 --port 8000 --reload
+
 ```powershell
 python -m audit_workflow.bank_ledger_match run -c config.example.yml
 ```

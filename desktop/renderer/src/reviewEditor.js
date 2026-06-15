@@ -90,7 +90,7 @@ export async function openReviewEditor(filePath) {
           </select>
         </td>
         <td class="cell-id">${escapeHtml(cid)}</td>
-        <td>${escapeHtml(row[colIndex['match_type']] || '')}</td>
+        <td class="cell-match-type">${escapeHtml(row[colIndex['match_type']] || '')}</td>
         <td class="cell-wide"><textarea class="review-ta" data-cid="${escapeHtml(cid)}" data-field="bank_summary" rows="4">${escapeHtml(st.bank_summary)}</textarea></td>
         <td class="cell-wide"><textarea class="review-ta" data-cid="${escapeHtml(cid)}" data-field="ledger_summary" rows="4">${escapeHtml(st.ledger_summary)}</textarea></td>
         <td class="cell-wide"><textarea class="review-ta" data-cid="${escapeHtml(cid)}" data-field="llm_reason" rows="4">${escapeHtml(st.llm_reason)}</textarea></td>

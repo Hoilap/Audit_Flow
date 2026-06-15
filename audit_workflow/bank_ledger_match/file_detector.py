@@ -27,15 +27,15 @@ _SUPPORTED_EXTS = {".xlsx", ".xls", ".xlsm", ".csv"}
 
 # 文件名关键词 → 类型提示
 _KEYWORD_HINTS = {
-    "bank": [
-        "银行流水", "银行对账单", "bank", "流水", "交易明细",
-        "historydetail", "银行账", "工行", "农行", "中行", "建行",
-        "icbc", "boc", "abc", "ccb", "cmb",
-    ],
     "ledger": [
         "序时账", "明细账", "ledger", "新纪元", "账务", "科目",
         "凭证", "记账", "金蝶", "用友", "xinjiyuan",
     ],
+    "bank": [
+        "银行流水", "银行对账单", "bank", "流水", "交易明细",
+        "historydetail", "银行账"
+    ],
+    "working_paper":["底稿"]
 }
 
 _BANK_NAME_HINTS: dict[str, tuple[str, str]] = {
@@ -152,7 +152,7 @@ def _preview_excel(path: Path) -> dict[str, Any]:
 _FILE_IDENTIFY_SYSTEM_PROMPT = """你是一个审计数据分析助手，专门识别银行流水文件/序时账文件/底稿文件。
 
 你需要分析给定的文件信息（文件名、sheet 名、数据预览），判断：
-1. **文件类型**: "bank_statement"（银行流水）或 "ledger"（序时账/明细账）
+1. **文件类型**: "bank_statement"（银行流水）或 "ledger"（序时账/明细账）或"working_paper"（底稿）
 2. **银行名称**: 如"中国工商银行贵港桂平新区支行"，尽量完整
 3. **银行账号**: 从数据中提取
 4. **时间范围**: 数据覆盖的起止日期（YYYY-MM-DD 格式），从数据预览中提取实际日期
@@ -440,14 +440,45 @@ def generate_task_config(
         match_cfg.update(matching_defaults)
 
     # 底稿参数默认值
+    # 注：wp03/wp02 的详细配置维持默认，只有 output_file 根据项目信息生成
+    output_dir_relative = f"outputs/{project_info.get('name', '')}/{project_info.get('task', 'bank_ledger_match')}"
     wp_cfg = {
         "enabled": True,
         "fill_only_when_fully_matched": False,
+        "output_file": f"{output_dir_relative}/working_paper/资金流水专项核查工作底稿-自动填报.xlsm",
+        "wp03": {
+            "enabled": True,
+            "sheet": "WP-03",
+            "start_row": 6,
+            "min_amount": 70000,
+            "columns": {
+                "entity": "B",
+                "bank_date": "C",
+                "bank_debit": "D",
+                "bank_credit": "E",
+                "counterparty": "F",
+                "ledger_date": "G",
+                "voucher_no": "H",
+                "ledger_summary": "I",
+                "ledger_counterparty": "J",
+                "ledger_debit": "K",
+                "ledger_credit": "L",
+            },
+        },
+        "wp02": {
+            "enabled": True,
+            "sheet": "WP-02",
+        },
     }
     if working_paper_defaults:
-        wp_cfg.update(working_paper_defaults)
+        # 允许外部覆盖 wp_cfg，但保留 wp03/wp02 的默认结构
+        for k, v in working_paper_defaults.items():
+            if k in ("wp03", "wp02"):
+                wp_cfg[k].update(v)
+            else:
+                wp_cfg[k] = v
 
-    output_dir = f"outputs/{project_info.get('name', '')}/{project_info.get('task', 'bank_ledger_match')}"
+    output_dir = output_dir_relative
 
     config = {
         "project": {

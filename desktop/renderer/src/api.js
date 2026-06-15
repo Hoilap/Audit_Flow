@@ -68,12 +68,19 @@ export const api = {
     form.append('task_name', taskName)
     return request('/workflow/bank_ledger_match/match', { method: 'POST', body: form })
   },
-  /** Step 6: 填入底稿 */
+  /** Step 6: 填入底稿（脚本方式） */
   workflowFill: (customerName, taskName) => {
     const form = new FormData()
     form.append('customer_name', customerName)
     form.append('task_name', taskName)
     return request('/workflow/bank_ledger_match/fill', { method: 'POST', body: form })
+  },
+  /** Step 6: 填入底稿（LLM 方式，自适应模板布局） */
+  workflowFillLlm: (customerName, taskName) => {
+    const form = new FormData()
+    form.append('customer_name', customerName)
+    form.append('task_name', taskName)
+    return request('/workflow/bank_ledger_match/fill_llm', { method: 'POST', body: form })
   },
 
   // ---------- Project CRUD ----------

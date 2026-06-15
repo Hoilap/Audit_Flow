@@ -320,9 +320,14 @@ h3 { font-size: 14px; }
   font-size: 12px;
   color: var(--text-soft);
 }
+.review-table .cell-match-type {
+  max-width: 100px;
+  font-size: 12px;
+  word-break: break-word;
+}
 .review-table textarea.review-ta {
   width: 100%;
-  min-height: 60px;
+  min-height: 100px;
   resize: vertical;
   font-size: 12px;
   font-family: "JetBrains Mono", Consolas, monospace;

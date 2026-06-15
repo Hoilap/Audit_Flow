@@ -808,5 +808,25 @@ def workflow_bank_ledger_match_fill(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/workflow/bank_ledger_match/fill_llm")
+def workflow_bank_ledger_match_fill_llm(
+    config: str = Form(None),
+    customer_name: str = Form(""),
+    task_name: str = Form("bank_ledger_match"),
+):
+    """使用 LLM 生成填表代码并执行，自适应任意模板布局。"""
+    if customer_name:
+        cfg = _build_full_config(customer_name, task_name)
+    elif config:
+        cfg = json.loads(config)
+    else:
+        cfg = {}
+    try:
+        path = blm_pipeline.run_fill_llm(cfg)
+        return {"working_paper": str(path)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8000)
