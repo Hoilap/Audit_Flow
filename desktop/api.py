@@ -387,8 +387,10 @@ def _default_llm_config() -> dict:
 
 @app.post("/llm/generate")
 def llm_generate(prompt: str = Form(...), target_path: str = Form("outputs/clean/generated_from_llm.txt")):
+    usage_info = {}
     try:
-        content = audit_llm_generate(_default_llm_config(), prompt)
+        content, usage_info = audit_llm_generate(_default_llm_config(), prompt)
+        _record_token_usage(usage_info)
     except RuntimeError as e:
         # LLM 未配置，回退为占位文本
         content = f"[LLM not configured] {e}\nPrompt received:\n{prompt}"
@@ -404,7 +406,7 @@ def llm_generate(prompt: str = Form(...), target_path: str = Form("outputs/clean
         repo.index.commit(f"llm write to {target_path}")
     except Exception:
         pass
-    return {"path": os.path.relpath(p), "ok": True}
+    return {"path": os.path.relpath(p), "ok": True, "usage": usage_info}
 
 
 @app.post("/llm/generate_and_run")
@@ -420,8 +422,10 @@ def llm_generate_and_run(
     run_flag = str(run_code).lower() in ("1", "true", "yes", "on")
 
     # generate content via shared LLM agent
+    usage_info = {}
     try:
-        content = audit_llm_generate(_default_llm_config(), prompt)
+        content, usage_info = audit_llm_generate(_default_llm_config(), prompt)
+        _record_token_usage(usage_info)
     except RuntimeError as e:
         if run_flag and target_path.endswith('.py'):
             content = prompt
@@ -453,7 +457,7 @@ def llm_generate_and_run(
         except subprocess.TimeoutExpired:
             run_result = {"error": "timeout"}
 
-    return {"path": os.path.relpath(p), "ok": True, "run_result": run_result}
+    return {"path": os.path.relpath(p), "ok": True, "run_result": run_result, "usage": usage_info}
 
 
 # ============================================================
@@ -473,8 +477,18 @@ def _load_llm_config() -> dict:
     llm_yml_path = _default_llm_yml_path()
     if os.path.exists(llm_yml_path):
         with open(llm_yml_path, "r", encoding="utf-8") as f:
-            return yaml_lib.safe_load(f) or {}
-    return {"llm": {"enabled": False}}
+            llm_cfg = yaml_lib.safe_load(f) or {}
+    else:
+        llm_cfg = {"llm": {"enabled": False}}
+
+    matching_yml_path = _default_matching_yml_path()
+    if os.path.exists(matching_yml_path):
+        with open(matching_yml_path, "r", encoding="utf-8") as f:
+            matching_cfg = yaml_lib.safe_load(f) or {}
+        llm_cfg.setdefault("llm", {})
+        llm_cfg["llm"]["matching"] = matching_cfg.get("matching", {})
+
+    return llm_cfg
 
 
 def _project_root() -> str:
@@ -485,6 +499,11 @@ def _project_root() -> str:
 def _default_llm_yml_path() -> str:
     """llm.yml 的默认路径（项目根目录下的 config.example.llm.yml）。"""
     return os.path.join(_project_root(), "config.example.llm.yml")
+
+
+def _default_matching_yml_path() -> str:
+    """matching.yml 的默认路径（项目根目录下的 config.example.matching.yml）。"""
+    return os.path.join(_project_root(), "config.example.matching.yml")
 
 
 def _resolve_task_config_paths(customer_name: str, task_name: str) -> dict:
@@ -543,6 +562,13 @@ def _build_full_config(customer_name: str, task_name: str) -> dict:
         with open(paths["llm_yml_path"], "r", encoding="utf-8") as f:
             llm_cfg = yaml_lib.safe_load(f) or {}
 
+    matching_yml_path = _default_matching_yml_path()
+    if os.path.exists(matching_yml_path):
+        with open(matching_yml_path, "r", encoding="utf-8") as f:
+            matching_cfg = yaml_lib.safe_load(f) or {}
+        llm_cfg.setdefault("llm", {})
+        llm_cfg["llm"]["matching"] = matching_cfg.get("matching", {})
+
     # 加载 task.yml
     task_cfg = {}
     if os.path.exists(paths["task_yml_path"]):
@@ -593,11 +619,12 @@ async def workflow_detect(
 
         if llm_enabled:
             try:
-                identifications = await file_detector.identify_files_with_llm_async(
+                identifications, detect_usage = await file_detector.identify_files_with_llm_async(
                     files,
                     llm_cfg.get("llm", {}),
                     project_info,
                 )
+                _record_token_usage(detect_usage)
             except Exception as llm_exc:
                 # LLM 调用失败：记录错误原因，回退到本地识别
                 import traceback
@@ -826,6 +853,85 @@ def workflow_bank_ledger_match_fill_llm(
         return {"working_paper": str(path)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/llm/config")
+def get_llm_config():
+    """读取 llm.yml 中的 LLM 配置（模型、base_url 等）。"""
+    llm_yml_path = _default_llm_yml_path()
+    if not os.path.exists(llm_yml_path):
+        return {"ok": False, "error": "llm.yml 不存在", "config": {}}
+    with open(llm_yml_path, "r", encoding="utf-8") as f:
+        llm_cfg = yaml_lib.safe_load(f) or {}
+    llm_section = llm_cfg.get("llm", {})
+    return {
+        "ok": True,
+        "config": {
+            "enabled": llm_section.get("enabled", False),
+            "model": llm_section.get("model", ""),
+            "base_url": llm_section.get("base_url", ""),
+            "api_key": llm_section.get("api_key", "")[:8] + "****" if llm_section.get("api_key") else "",
+        },
+        "path": llm_yml_path,
+    }
+
+
+@app.post("/llm/config")
+def update_llm_config(
+    model: str = Form(""),
+    base_url: str = Form(""),
+    api_key: str = Form(""),
+    enabled: str = Form(""),
+):
+    """更新 llm.yml 中的模型/URL/Key 配置。"""
+    llm_yml_path = _default_llm_yml_path()
+    if os.path.exists(llm_yml_path):
+        with open(llm_yml_path, "r", encoding="utf-8") as f:
+            llm_cfg = yaml_lib.safe_load(f) or {}
+    else:
+        llm_cfg = {}
+
+    if "llm" not in llm_cfg:
+        llm_cfg["llm"] = {}
+
+    if model:
+        llm_cfg["llm"]["model"] = model
+    if base_url:
+        llm_cfg["llm"]["base_url"] = base_url
+    if api_key and api_key != "****":
+        llm_cfg["llm"]["api_key"] = api_key
+    if enabled in ("true", "false"):
+        llm_cfg["llm"]["enabled"] = enabled == "true"
+
+    os.makedirs(os.path.dirname(llm_yml_path), exist_ok=True)
+    with open(llm_yml_path, "w", encoding="utf-8") as f:
+        yaml_lib.dump(llm_cfg, f, allow_unicode=True, default_flow_style=False)
+
+    return {"ok": True, "path": llm_yml_path}
+
+
+@app.get("/llm/tokens")
+def get_llm_tokens():
+    """获取当前会话累计 token 消耗。"""
+    return {
+        "ok": True,
+        "total_tokens": _token_usage.get("total_tokens", 0),
+        "prompt_tokens": _token_usage.get("prompt_tokens", 0),
+        "completion_tokens": _token_usage.get("completion_tokens", 0),
+    }
+
+
+# ── 全局 token 计数器 ──
+_token_usage = {"total_tokens": 0, "prompt_tokens": 0, "completion_tokens": 0}
+
+
+def _record_token_usage(usage_info: dict):
+    """记录一次 LLM 调用的 token 消耗。"""
+    if not usage_info:
+        return
+    _token_usage["total_tokens"] += usage_info.get("total_tokens", 0)
+    _token_usage["prompt_tokens"] += usage_info.get("prompt_tokens", 0)
+    _token_usage["completion_tokens"] += usage_info.get("completion_tokens", 0)
 
 
 if __name__ == "__main__":

@@ -359,3 +359,76 @@ export async function saveConfig(customerName, taskName, content) {
     throw error
   }
 }
+
+// ────────── LLM 配置与 Token 计数 ──────────
+
+/**
+ * 从后端读取 LLM 配置并更新前端模型下拉菜单
+ */
+export async function syncLlmConfig() {
+  try {
+    const result = await api.getLlmConfig()
+    if (result.ok && result.config) {
+      const modelSelect = $('#model-select')
+      if (modelSelect) {
+        const model = result.config.model || 'qwen3.7'
+        modelSelect.innerHTML = `<option value="${model}">${model}</option>`
+        modelSelect.value = model
+        updateStatusModel(model)
+      }
+    }
+  } catch (error) {
+    console.error('Failed to sync LLM config:', error)
+  }
+}
+
+/**
+ * 更新顶部状态栏中显示的模型名称
+ */
+function updateStatusModel(modelName) {
+  const el = $('#status-model')
+  if (el) el.textContent = modelName || 'qwen3.7'
+}
+
+/**
+ * 定期轮询后端获取 token 使用情况，并更新前端显示
+ */
+export function startTokenPolling(intervalMs = 3000) {
+  if (state.tokenPollingInterval) clearInterval(state.tokenPollingInterval)
+  
+  const pollOnce = async () => {
+    try {
+      const result = await api.getLlmTokens()
+      if (result.ok) {
+        const { total_tokens } = result
+        const el = $('#tokens')
+        if (el) el.textContent = `${total_tokens.toLocaleString()} tokens`
+      }
+    } catch (error) {
+      // 忽略轮询错误
+    }
+  }
+
+  state.tokenPollingInterval = setInterval(pollOnce, intervalMs)
+  pollOnce() // 立即执行一次
+}
+
+export function stopTokenPolling() {
+  if (state.tokenPollingInterval) {
+    clearInterval(state.tokenPollingInterval)
+    state.tokenPollingInterval = null
+  }
+}
+
+/**
+ * 保存用户在模型选择下拉菜单中的选择到后端
+ */
+export async function updateLlmModel(modelName) {
+  try {
+    await api.updateLlmConfig(modelName, '', '', undefined)
+    updateStatusModel(modelName)
+    addMessage({ title: 'LLM 模型已更新', body: `当前模型：${modelName}` })
+  } catch (error) {
+    addMessage({ title: '模型更新失败', body: error.message, failed: true })
+  }
+}

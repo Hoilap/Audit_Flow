@@ -2,7 +2,7 @@ import { workflowTasks } from './config.js'
 import { findWorkflowTaskByName, state } from './state.js'
 import { $, $$ } from './dom.js'
 import { renderShell, renderWorkflowWorkspace, setAgentStatus, showPage } from './ui.js'
-import { commitAll, createProject, deleteProject, loadProjects, previewFile, refreshFiles, refreshLog, runAllSteps, runNextStep, runStep, selectProject, sendPrompt, toggleCustomMode, updateCustomCustomerName, updateCustomTaskName, updateDetectMethod, updateProject, uploadFile } from './actions.js'
+import { commitAll, createProject, deleteProject, loadProjects, previewFile, refreshFiles, refreshLog, runAllSteps, runNextStep, runStep, selectProject, sendPrompt, toggleCustomMode, updateCustomCustomerName, updateCustomTaskName, updateDetectMethod, updateProject, uploadFile, syncLlmConfig, startTokenPolling, stopTokenPolling, updateLlmModel } from './actions.js'
 import { openReviewEditor } from './reviewEditor.js'
 import { renderProjectsTable, showProjectFormModal } from './ui.js'
 
@@ -124,7 +124,7 @@ function bindEvents() {
   $('#commit-all').addEventListener('click', () => withDisabled('#commit-all', commitAll))
 
   $('#model-select').addEventListener('change', (event) => {
-    $('#status-model').textContent = event.target.value
+    updateLlmModel(event.target.value)
   })
 
   // ────────── 项目管理页面事件（click 代理）──────────
@@ -228,6 +228,10 @@ async function init() {
     if (wfTask) state.activeTaskId = wfTask.id
     renderWorkflowWorkspace()
   }
+  
+  // 初始化 LLM 配置和 token 轮询
+  await syncLlmConfig()
+  startTokenPolling(2000)
   refreshAll()
 }
 

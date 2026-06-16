@@ -9,6 +9,7 @@ export const state = {
   status: 'Idle',
   startedAt: null,
   timer: null,
+  tokenPollingInterval: null,
   chatHidden: false,
   sidebarHidden: false,
   /** @type {Array<{id:number,task_name:string,customer_name:string,status:string,created_at:string,responsible_person:string,risk:string}>} */

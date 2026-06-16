@@ -1,0 +1,50 @@
+matching:
+  acceptance_confidence: 0.72
+  batch_size: 5
+  candidate_window_days: 45
+  enabled: false
+  manual_amount_enumeration:
+    contiguous_time_window: true
+    enabled: true
+    max_dp_cents: 10000000
+    max_results_per_ledger: 5
+    max_search_nodes: 100000
+    max_size: 60
+    max_total_candidates: 100
+    pool_limit: 80
+    prioritize: date_proximity
+    same_flow: true
+    window_days: 365
+  manual_review_file: manual_review_candidates.csv
+  manual_window_many_to_many:
+    bank_window_max_size: 80
+    block_auto_accept: true
+    block_top_candidates: 50
+    compare: signed_or_abs
+    enabled: true
+    ledger_window_max_size: 12
+    max_total_candidates: 50
+    min_bank_count: 2
+    min_ledger_count: 2
+  max_candidates: 160
+  monthly_balance_enumeration:
+    bank_pool_limit: 90
+    enabled: true
+    full_bucket_max_records: 120
+    ledger_pool_limit: 30
+    llm_review_max_records: 80
+    max_bank_subset_size: 40
+    max_ledger_subset_size: 8
+    max_ledger_subsets: 180
+    max_results_per_bucket: 8
+    max_search_nodes: 200000
+    max_total_candidates: 80
+  relaxed_amount_groups:
+    enabled: true
+    max_search_nodes: 200000
+    max_size: 10
+    min_amount: 0
+    pool_limit: 32
+    window_days: 90
+  request_timeout_seconds: 45
+  reuse_decisions: true

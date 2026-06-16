@@ -463,8 +463,21 @@ export function addMessage({ role = 'Agent', title = '', body = '', result = nul
   const block = document.createElement('div')
   block.className = 'message'
   const time = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  
+  // 从 result 中提取 token 使用信息
+  let tokenInfo = ''
+  if (result && result.usage) {
+    const u = result.usage
+    const total = u.total_tokens || 0
+    const prompt = u.prompt_tokens || 0
+    const completion = u.completion_tokens || 0
+    if (total > 0) {
+      tokenInfo = ` | 📊 Tokens: ${total} (提示:${prompt} 完成:${completion})`
+    }
+  }
+  
   block.innerHTML = `
-    <div class="message-head"><span>${escapeHtml(role)}${title ? ` · ${escapeHtml(title)}` : ''}</span><span>${failed ? 'Failed' : time} <span class="message-collapse-btn">▼</span></span></div>
+    <div class="message-head"><span>${escapeHtml(role)}${title ? ` · ${escapeHtml(title)}` : ''}</span><span>${failed ? 'Failed' : time}${tokenInfo} <span class="message-collapse-btn">▼</span></span></div>
     <div class="message-body">
       ${body ? `<p>${escapeHtml(body)}</p>` : ''}
       ${result ? `<pre class="log-block">${escapeHtml(JSON.stringify(result, null, 2))}</pre>` : ''}
@@ -838,6 +851,16 @@ export function renderDetectResult(result) {
   block.className = 'message'
   const time = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
 
+  // 从 result 中提取 token 信息
+  let tokenInfo = ''
+  if (result.usage) {
+    const u = result.usage
+    const total = u.total_tokens || 0
+    if (total > 0) {
+      tokenInfo = ` | 📊 Tokens: ${total}`
+    }
+  }
+
   let llmStatusHtml = ''
   if (result.llm_used && result.llm_error) {
     llmStatusHtml = `<p style="color:#f0ad4e;">⚠️ LLM 调用失败，已回退到本地关键词识别。</p>
@@ -853,7 +876,7 @@ ${escapeHtml(result.llm_error.traceback || '')}</pre>
   }
 
   block.innerHTML = `
-    <div class="message-head"><span>Agent · 文件识别结果</span><span>${escapeHtml(time)} <span class="message-collapse-btn">▼</span></span></div>
+    <div class="message-head"><span>Agent · 文件识别结果</span><span>${escapeHtml(time)}${tokenInfo} <span class="message-collapse-btn">▼</span></span></div>
     <div class="message-body">
     <p>扫描到 <strong>${result.files_count}</strong> 个文件。</p>
     ${llmStatusHtml}

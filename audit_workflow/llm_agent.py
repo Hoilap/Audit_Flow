@@ -53,18 +53,28 @@ def llm_generate(llm_config: dict[str, Any], prompt: str, system_prompt: str = "
         llm_config: LLM 配置字典
         prompt: 用户提示词
         system_prompt: 可选系统提示词
+
+    返回:
+        str: 当 return_usage=False 时返回纯文本
+        dict: 当 return_usage=True 时返回 {"text": str, "usage": {...}}
     """
     import asyncio
     agent = build_agent(llm_config, system_prompt or "You are a helpful assistant.")
     result = agent.run_sync(prompt)
-    return _agent_output_text(result)
+    text = _agent_output_text(result)
+    usage = _extract_token_usage(result)
+    return text, usage
 
 
 async def llm_generate_async(llm_config: dict[str, Any], prompt: str, system_prompt: str = "") -> str:
-    """异步版本：通用文本生成。"""
+    """异步版本：通用文本生成。
+    返回: (text, usage) 元组
+    """
     agent = build_agent(llm_config, system_prompt or "You are a helpful assistant.")
     result = await agent.run(prompt)
-    return _agent_output_text(result)
+    text = _agent_output_text(result)
+    usage = _extract_token_usage(result)
+    return text, usage
 
 
 def llm_generate_structured(
@@ -75,15 +85,13 @@ def llm_generate_structured(
 ) -> Any:
     """通用结构化生成：给定 LLM 配置、prompt 和 Pydantic 输出类型，返回结构化结果。
 
-    参数:
-        llm_config: LLM 配置字典
-        prompt: 用户提示词（可以是 JSON 字符串）
-        output_type: Pydantic model 类型
-        system_prompt: 系统提示词
+    返回: (output, usage) 元组
     """
     agent = build_agent(llm_config, system_prompt, output_type)
     result = agent.run_sync(prompt)
-    return _agent_output(result)
+    output = _agent_output(result)
+    usage = _extract_token_usage(result)
+    return output, usage
 
 
 async def llm_generate_structured_async(
@@ -92,10 +100,14 @@ async def llm_generate_structured_async(
     output_type: Any,
     system_prompt: str = "",
 ) -> Any:
-    """异步版本：通用结构化生成。"""
+    """异步版本：通用结构化生成。
+    返回: (output, usage) 元组
+    """
     agent = build_agent(llm_config, system_prompt, output_type)
     result = await agent.run(prompt)
-    return _agent_output(result)
+    output = _agent_output(result)
+    usage = _extract_token_usage(result)
+    return output, usage
 
 
 def _agent_output(result: Any) -> Any:
@@ -115,6 +127,31 @@ def _agent_output_text(result: Any) -> str:
     if hasattr(output, "content") and isinstance(output.content, str):
         return output.content
     return str(output)
+
+
+def _extract_token_usage(result: Any) -> dict:
+    """从 pydantic-ai result 中提取 token 用量信息。
+    返回 {"total_tokens": int, "prompt_tokens": int, "completion_tokens": int}
+    """
+    usage = {"total_tokens": 0, "prompt_tokens": 0, "completion_tokens": 0}
+    try:
+        # pydantic-ai 0.8.x: usage() 方法返回 Usage 对象
+        if hasattr(result, "usage") and callable(result.usage):
+            u = result.usage()
+            usage["total_tokens"] = getattr(u, "total_tokens", 0) or 0
+            usage["prompt_tokens"] = getattr(u, "request_tokens", 0) or getattr(u, "prompt_tokens", 0) or 0
+            usage["completion_tokens"] = getattr(u, "response_tokens", 0) or getattr(u, "completion_tokens", 0) or 0
+            return usage
+        # 尝试从 _usage 属性获取
+        if hasattr(result, "_usage"):
+            u = result._usage
+            usage["total_tokens"] = getattr(u, "total_tokens", 0) or 0
+            usage["prompt_tokens"] = getattr(u, "prompt_tokens", 0) or getattr(u, "request_tokens", 0) or 0
+            usage["completion_tokens"] = getattr(u, "completion_tokens", 0) or getattr(u, "response_tokens", 0) or 0
+            return usage
+    except Exception:
+        pass
+    return usage
 
 
 def _llm_api_key(llm_config: dict[str, Any]) -> str:

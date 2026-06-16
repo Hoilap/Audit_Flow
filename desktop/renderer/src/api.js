@@ -97,4 +97,16 @@ export const api = {
     body: JSON.stringify(payload),
   }),
   deleteProject: (id) => request(`/projects/${id}`, { method: 'DELETE' }),
+
+  // ---------- LLM 配置 ----------
+  getLlmConfig: () => request('/llm/config'),
+  updateLlmConfig: (model, baseUrl, apiKey, enabled) => {
+    const form = new FormData()
+    if (model) form.append('model', model)
+    if (baseUrl) form.append('base_url', baseUrl)
+    if (apiKey) form.append('api_key', apiKey)
+    if (enabled !== undefined) form.append('enabled', enabled)
+    return request('/llm/config', { method: 'POST', body: form })
+  },
+  getLlmTokens: () => request('/llm/tokens'),
 }

@@ -240,7 +240,7 @@ def identify_files_with_llm(
         return _identify_files_local(files, project_info or {})
 
     prompt = _build_llm_identify_prompt(files, project_info or {})
-    result = llm_generate_structured(
+    result, usage = llm_generate_structured(
         llm_config,
         prompt,
         FileIdentificationBatch,
@@ -272,8 +272,10 @@ async def identify_files_with_llm_async(
     files: list[dict[str, Any]],
     llm_config: dict[str, Any],
     project_info: dict[str, Any] | None = None,
-) -> list[dict[str, Any]]:
-    """异步版本：调用 LLM 对扫描到的文件做智能识别。"""
+) -> tuple[list[dict[str, Any]], dict]:
+    """异步版本：调用 LLM 对扫描到的文件做智能识别。
+    返回: (identifications, usage) 元组
+    """
     from audit_workflow.llm_agent import llm_generate_structured_async
     from pydantic import BaseModel, Field
 
@@ -294,10 +296,10 @@ async def identify_files_with_llm_async(
         results: list[FileIdentification] = Field(description="所有文件的识别结果列表")
 
     if not llm_config.get("enabled", False):
-        return _identify_files_local(files, project_info or {})
+        return _identify_files_local(files, project_info or {}), {}
 
     prompt = _build_llm_identify_prompt(files, project_info or {})
-    result = await llm_generate_structured_async(
+    result, usage = await llm_generate_structured_async(
         llm_config,
         prompt,
         FileIdentificationBatch,
@@ -321,7 +323,7 @@ async def identify_files_with_llm_async(
             "confidence": item.confidence,
             "notes": item.notes,
         })
-    return results
+    return results, usage
 
 
 def _identify_files_local(

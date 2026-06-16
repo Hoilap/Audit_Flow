@@ -16,7 +16,7 @@
           <div class="progress-track"><div id="agent-progress" class="progress-fill"></div></div>
           <span id="elapsed" class="metric-inline">00:00</span>
           <span id="tokens" class="metric-inline">0 tokens</span>
-          <span id="status-model" class="metric-inline">GPT-5.5</span>
+          <span id="status-model" class="metric-inline">qwen3.7</span>
         </div>
         <div class="status-right">
           <button id="toggle-sidebar" class="ghost" title="隐藏/显示左栏">◀</button>
@@ -37,10 +37,7 @@
             <div class="model-card">
               <div class="label">当前模型</div>
               <select id="model-select">
-                <option>GPT-5.5</option>
-                <option>Claude</option>
-                <option>Gemini</option>
-                <option>本地模型</option>
+                <option value="qwen3.7">qwen3.7</option>
               </select>
             </div>
             <button id="commit-all">提交当前证据链</button>
