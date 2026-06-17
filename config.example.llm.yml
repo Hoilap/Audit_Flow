@@ -1,9 +1,39 @@
+# ─────────────────────────────────────────────────────────────
+# LLM 配置 — providers 格式（支持多个 API 提供商）
+# ─────────────────────────────────────────────────────────────
+# 使用方式：
+#   1. 复制本文件为 config.llm.yml
+#   2. 在 providers 下定义你的 API 提供商（可定义多个）
+#   3. 通过 default 指定默认使用的提供商
+#   4. 在 matching.llm 中可通过 provider: <名称> 为匹配任务单独指定提供商
+#   5. API Key 建议通过 .env 环境变量管理，不要在 YAML 中写明文
+
 llm:
-  api_key: REDACTED_DASHSCOPE_API_KEY
-  api_key_env: DASHSCOPE_API_KEY
-  base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
-  base_url_env: DASHSCOPE_BASE_URL
   enabled: true
   generated_parser_dir: generated_parsers
-  model: qwen3.7-plus
-  model_env: DASHSCOPE_MODEL
+
+  # 默认使用哪个 provider（对应 providers 下的 key 名）
+  default: dashscope
+
+  # ── Provider 注册表 ────────────────────────────────────────
+  # 每个 provider 支持以下字段：
+  #   api_key      — 直接填写 API Key（不推荐，建议用 api_key_env）
+  #   api_key_env  — 环境变量名，从 .env 或系统环境变量读取
+  #   base_url     — API 端点地址
+  #   base_url_env — 环境变量名（可选）
+  #   model        — 模型名称
+  #   model_env    — 环境变量名（可选）
+
+  providers:
+    dashscope:
+      api_key_env: DASHSCOPE_API_KEY
+      base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+      base_url_env: DASHSCOPE_BASE_URL
+      model: qwen3.7-plus
+      model_env: DASHSCOPE_MODEL
+
+    openai:
+      api_key_env: OPENAI_API_KEY
+      base_url: https://api.openai.com/v1
+      model: gpt-4o
+

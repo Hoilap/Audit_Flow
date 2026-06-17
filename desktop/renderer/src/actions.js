@@ -5,6 +5,7 @@ import { $ } from './dom.js'
 import { addMessage, renderFileError, renderFileTree, renderFiles, renderLlmCode, renderStepFiles, renderTimeline, renderWorkflowWorkspace, setAgentStatus, startTimer, stopTimer, renderDetectResult, renderConfigConfirm, renderCheckResult } from './ui.js'
 import { openCsvPreview } from './previewModal.js'
 import { openReviewEditor } from './reviewEditor.js'
+import { logger } from './logger.js'
 
 export async function refreshFiles() {
   try {
@@ -48,6 +49,7 @@ export async function runStep(stepIndex = state.activeStepIndex) {
   const task = activeTask()
   const step = task.steps[stepIndex]
   state.activeStepIndex = stepIndex
+  logger.info('runStep', `${step.title} (id=${step.id})`)
   markStep(task.id, step.id, 'running')
   renderWorkflowWorkspace()
   renderTimeline(step.id)
@@ -161,6 +163,7 @@ export async function runStep(stepIndex = state.activeStepIndex) {
     }
     return result
   } catch (error) {
+    logger.error('runStep', `${step.title} 失败: ${error.message}`)
     markStep(task.id, step.id, 'failed', { error: error.message })
     renderTimeline(step.id, true)
     addMessage({ title: step.title, body: error.message, failed: true })
@@ -193,6 +196,7 @@ export async function runAllSteps() {
 export async function sendPrompt() {
   const prompt = $('#prompt').value.trim()
   if (!prompt) return
+  logger.info('sendPrompt', `用户提交 prompt (${prompt.length} chars)`)
   setAgentStatus('Running', 20)
   startTimer()
   addMessage({ role: 'User', body: prompt })
@@ -222,6 +226,7 @@ export async function sendPrompt() {
 export async function uploadFile() {
   const input = $('#upload-file')
   if (!input.files?.length) return
+  logger.info('uploadFile', `上传文件: ${input.files[0].name}`)
   const form = new FormData()
   form.append('file', input.files[0])
   form.append('dest', $('#upload-dest').value || 'inputs/')
@@ -363,7 +368,9 @@ export async function saveConfig(customerName, taskName, content) {
 // ────────── LLM 配置与 Token 计数 ──────────
 
 /**
- * 从后端读取 LLM 配置并更新前端模型下拉菜单
+ * 从后端读取 LLM 配置并更新前端模型下拉菜单。
+ * 后端返回 providers 列表，前端为每个 provider 生成一个 <option>，
+ * 并将当前 default provider 设为选中项。
  */
 export async function syncLlmConfig() {
   try {
@@ -371,10 +378,21 @@ export async function syncLlmConfig() {
     if (result.ok && result.config) {
       const modelSelect = $('#model-select')
       if (modelSelect) {
-        const model = result.config.model || 'qwen3.7'
-        modelSelect.innerHTML = `<option value="${model}">${model}</option>`
-        modelSelect.value = model
-        updateStatusModel(model)
+        const providers = result.config.providers || []
+        const defaultName = result.config.default || ''
+
+        if (providers.length > 0) {
+          modelSelect.innerHTML = providers.map(p => {
+            const selected = p.name === defaultName ? ' selected' : ''
+            const label = `${p.model} (${p.name})`
+            return `<option value="${p.name}"${selected}>${label}</option>`
+          }).join('')
+        } else {
+          modelSelect.innerHTML = '<option value="">未配置 Provider</option>'
+        }
+
+        const currentProvider = providers.find(p => p.name === defaultName)
+        updateStatusModel(currentProvider ? currentProvider.model : 'unknown')
       }
     }
   } catch (error) {
@@ -387,7 +405,7 @@ export async function syncLlmConfig() {
  */
 function updateStatusModel(modelName) {
   const el = $('#status-model')
-  if (el) el.textContent = modelName || 'qwen3.7'
+  if (el) el.textContent = modelName || 'unknown'
 }
 
 /**
@@ -423,11 +441,15 @@ export function stopTokenPolling() {
 /**
  * 保存用户在模型选择下拉菜单中的选择到后端
  */
-export async function updateLlmModel(modelName) {
+export async function updateLlmModel(providerName) {
   try {
-    await api.updateLlmConfig(modelName, '', '', undefined)
-    updateStatusModel(modelName)
-    addMessage({ title: 'LLM 模型已更新', body: `当前模型：${modelName}` })
+    await api.updateLlmConfig(providerName, undefined)
+    // 更新状态栏显示：找到当前选中 option 的文本，提取其中的 model 名
+    const modelSelect = $('#model-select')
+    const selectedOption = modelSelect ? modelSelect.options[modelSelect.selectedIndex] : null
+    const modelLabel = selectedOption ? selectedOption.text.split(' (')[0] : providerName
+    updateStatusModel(modelLabel)
+    addMessage({ title: 'LLM 模型已更新', body: `当前 Provider：${providerName}` })
   } catch (error) {
     addMessage({ title: '模型更新失败', body: error.message, failed: true })
   }

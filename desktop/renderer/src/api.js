@@ -100,13 +100,15 @@ export const api = {
 
   // ---------- LLM 配置 ----------
   getLlmConfig: () => request('/llm/config'),
-  updateLlmConfig: (model, baseUrl, apiKey, enabled) => {
+  updateLlmConfig: (defaultProvider, enabled) => {
     const form = new FormData()
-    if (model) form.append('model', model)
-    if (baseUrl) form.append('base_url', baseUrl)
-    if (apiKey) form.append('api_key', apiKey)
+    if (defaultProvider) form.append('default_provider', defaultProvider)
     if (enabled !== undefined) form.append('enabled', enabled)
     return request('/llm/config', { method: 'POST', body: form })
   },
   getLlmTokens: () => request('/llm/tokens'),
+
+  // ---------- 日志 ----------
+  /** 获取后端日志（最近 lines 行） */
+  getLogs: (lines = 100) => request(`/logs?lines=${lines}`),
 }

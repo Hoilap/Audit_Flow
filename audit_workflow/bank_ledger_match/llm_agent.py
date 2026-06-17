@@ -19,7 +19,9 @@ def run_match_decision_agent(
     config: dict[str, Any], prompt: dict[str, Any], system_prompt: str
 ) -> Any:
     models = _output_models()
-    agent = build_agent(config.get("matching", {}).get("llm", {}), system_prompt, models["MatchDecisionBatch"])
+    llm_config = config.get("llm", {})
+    task_config = config.get("matching", {}).get("llm", {})
+    agent = build_agent(llm_config, system_prompt, models["MatchDecisionBatch"], task_config=task_config)
     result = agent.run_sync(json.dumps(prompt, ensure_ascii=False))
     return _agent_output(result)
 

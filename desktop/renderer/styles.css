@@ -159,6 +159,19 @@ h3 { font-size: 14px; }
 .message-head:hover { color: var(--text-soft); }
 .message-collapse-btn { flex-shrink: 0; margin-left: 8px; font-size: 11px; transition: transform 0.15s; }
 .message.collapsed .message-collapse-btn { transform: rotate(-90deg); }
+.message-delete-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; margin-left: 6px; padding: 0;
+  border: none; background: transparent; color: var(--text-muted);
+  font-size: 12px; line-height: 1; cursor: pointer; border-radius: 4px;
+  transition: background 0.15s, color 0.15s; vertical-align: middle;
+}
+.message-delete-btn:hover { background: var(--danger); color: #fff; }
+@keyframes message-fade-out {
+  from { opacity: 1; max-height: 400px; margin-bottom: 12px; padding: 14px; }
+  to   { opacity: 0; max-height: 0; margin-bottom: 0; padding: 0; overflow: hidden; }
+}
+.message-deleting { animation: message-fade-out 0.3s ease forwards; pointer-events: none; }
 .message-body { }
 .code-block, .log-block, pre { background: var(--surface-muted); border: 1px solid var(--border); border-radius: 8px; padding: 12px; overflow: auto; white-space: pre-wrap; font: 12px/1.6 "JetBrains Mono", Consolas, monospace; color: var(--text-soft); }
 .llm-code-panel { margin-top: 12px; display: grid; gap: 8px; }

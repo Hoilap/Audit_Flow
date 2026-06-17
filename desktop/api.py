@@ -2,6 +2,8 @@ import os
 import sqlite3
 from datetime import datetime
 from pathlib import Path
+import logging
+from logging.handlers import RotatingFileHandler
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -23,6 +25,15 @@ from audit_workflow.llm_agent import llm_generate as audit_llm_generate
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# ---------- Logging configuration ----------
+_log_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_log_file = os.path.join(_log_dir, "audit_workflow.log")
+_handler = RotatingFileHandler(_log_file, maxBytes=5 * 1024 * 1024, backupCount=3, encoding="utf-8")
+_handler.setFormatter(logging.Formatter("[%(asctime)s] %(levelname)-7s %(name)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"))
+logger = logging.getLogger("audit_workflow")
+logger.setLevel(logging.INFO)
+logger.addHandler(_handler)
 
 app = FastAPI()
 app.add_middleware(
@@ -155,6 +166,7 @@ def list_projects():
 
 @app.post("/projects/create")
 def create_project(payload: ProjectCreate):
+    logger.info("创建项目: customer=%s, task=%s", payload.customer_name, payload.task_name)
     created_at = payload.created_at or datetime.now().strftime('%Y-%m-%d')
     conn = get_db()
     cur = conn.execute(
@@ -190,6 +202,7 @@ def update_project(project_id: int, payload: ProjectUpdate):
 
 @app.delete("/projects/{project_id}")
 def delete_project(project_id: int):
+    logger.info("删除项目: id=%s", project_id)
     conn = get_db()
     existing = conn.execute("SELECT * FROM projects WHERE id=?", (project_id,)).fetchone()
     if not existing:
@@ -300,6 +313,7 @@ async def upload_file(file: UploadFile = File(...), dest: str = Form("outputs/")
     with open(full_path, "wb") as f:
         content = await file.read()
         f.write(content)
+    logger.info("上传文件: %s -> %s", file.filename, os.path.relpath(full_path))
     repo = find_repo(full_path)
     try:
         repo.index.add([os.path.relpath(full_path, repo.working_tree_dir)])
@@ -315,6 +329,7 @@ def workflow_match(
     customer_name: str = Form(""),
     task_name: str = Form("bank_ledger_match"),
 ):
+    logger.info("开始 Match: customer=%s, task=%s", customer_name, task_name)
     if customer_name:
         cfg = _build_full_config(customer_name, task_name)
     elif config:
@@ -387,10 +402,12 @@ def _default_llm_config() -> dict:
 
 @app.post("/llm/generate")
 def llm_generate(prompt: str = Form(...), target_path: str = Form("outputs/clean/generated_from_llm.txt")):
+    logger.info("LLM 生成请求: target=%s, prompt_len=%d", target_path, len(prompt))
     usage_info = {}
     try:
         content, usage_info = audit_llm_generate(_default_llm_config(), prompt)
         _record_token_usage(usage_info)
+        logger.info("LLM 生成完成: tokens=%s", usage_info.get("total_tokens", 0))
     except RuntimeError as e:
         # LLM 未配置，回退为占位文本
         content = f"[LLM not configured] {e}\nPrompt received:\n{prompt}"
@@ -418,6 +435,7 @@ def llm_generate_and_run(
 ):
     import ast
     import sys
+    logger.info("LLM 生成并执行: target=%s, run=%s, timeout=%ds", target_path, run_code, timeout)
     # normalize run_code flag (accept 'true'/'false' from forms)
     run_flag = str(run_code).lower() in ("1", "true", "yes", "on")
 
@@ -426,6 +444,7 @@ def llm_generate_and_run(
     try:
         content, usage_info = audit_llm_generate(_default_llm_config(), prompt)
         _record_token_usage(usage_info)
+        logger.info("LLM 生成完成: tokens=%s", usage_info.get("total_tokens", 0))
     except RuntimeError as e:
         if run_flag and target_path.endswith('.py'):
             content = prompt
@@ -454,8 +473,10 @@ def llm_generate_and_run(
         try:
             proc = subprocess.run([sys.executable, p], capture_output=True, text=True, timeout=timeout)
             run_result = {"returncode": proc.returncode, "stdout": proc.stdout, "stderr": proc.stderr}
+            logger.info("LLM 代码执行完成: returncode=%d", proc.returncode)
         except subprocess.TimeoutExpired:
             run_result = {"error": "timeout"}
+            logger.warning("LLM 代码执行超时: %s", target_path)
 
     return {"path": os.path.relpath(p), "ok": True, "run_result": run_result, "usage": usage_info}
 
@@ -553,6 +574,9 @@ def _upsert_task_config(customer_name: str, task_name: str, task_yml_path: str =
 def _build_full_config(customer_name: str, task_name: str) -> dict:
     """构建完整的 pipeline 配置：llm.yml + task.yml。
     优先从 task_configs 表查询 yml 路径，找不到则用默认路径。
+
+    LLM 开关由前端 Detect 步骤的 use_llm 决定，而非配置文件中的静态 enabled 字段。
+    优先级：task.yml 中的 use_llm > _workflow_state 中的 llm_used > 配置文件默认值。
     """
     paths = _resolve_task_config_paths(customer_name, task_name)
 
@@ -575,7 +599,22 @@ def _build_full_config(customer_name: str, task_name: str) -> dict:
         with open(paths["task_yml_path"], "r", encoding="utf-8") as f:
             task_cfg = yaml_lib.safe_load(f) or {}
 
-    return file_detector.merge_llm_into_full_config(task_cfg, llm_cfg)
+    cfg = file_detector.merge_llm_into_full_config(task_cfg, llm_cfg)
+
+    # ── use_llm 覆盖 matching.llm.enabled ──
+    # 前端 Detect 步骤勾选了「使用 LLM」时，匹配步骤也应启用 LLM 辅助；
+    # 反之则关闭。优先从 task.yml 读取（持久化），其次从内存状态读取。
+    use_llm = task_cfg.get("use_llm")
+    if use_llm is None:
+        state_key = _resolve_workflow_state_key(customer_name, task_name)
+        state = _workflow_state.get(state_key, {})
+        use_llm = state.get("llm_used")
+
+    if use_llm is not None:
+        cfg.setdefault("matching", {}).setdefault("llm", {})
+        cfg["matching"]["llm"]["enabled"] = bool(use_llm)
+
+    return cfg
 
 
 @app.post("/workflow/detect")
@@ -589,6 +628,7 @@ async def workflow_detect(
                      用 LLM 自动识别文件类型、银行、时间段，生成 task.yml。
     use_llm: "true" → LLM 识别, "false" → 本地脚本/关键词识别。
     """
+    logger.info("开始 Detect: customer=%s, task=%s, use_llm=%s", customer_name, task_name, use_llm)
     try:
         # 1. 扫描文件
         root_dir = _project_root()
@@ -642,6 +682,9 @@ async def workflow_detect(
             identifications, project_info
         )
 
+        # 将前端 use_llm 选择持久化到 task.yml，供后续 Match 步骤读取
+        task_cfg["use_llm"] = llm_enabled
+
         # 5. 保存到 outputs/{customer}/{task}/task.yml
         task_yml_path = os.path.join(
             root_dir, "outputs", customer_name, task_name, "task.yml"
@@ -668,6 +711,7 @@ async def workflow_detect(
         # 去掉 excel_preview 减少返回体积（那是给 LLM 看的 prompt 数据）
         files_light = [{k: v for k, v in f.items() if k != "excel_preview"} for f in files]
 
+        logger.info("Detect 完成: customer=%s, task=%s, files=%d, llm_used=%s", customer_name, task_name, len(files), llm_enabled)
         return {
             "ok": True,
             "files_count": len(files),
@@ -708,6 +752,7 @@ def workflow_save_config(
     """
     Step 2 - Confirm: 前端用户确认/修改 task.yml 后保存。
     """
+    logger.info("保存配置: customer=%s, task=%s", customer_name, task_name)
     try:
         paths = _resolve_task_config_paths(customer_name, task_name)
         task_yml_path = paths["task_yml_path"]
@@ -758,6 +803,7 @@ def workflow_bank_ledger_match_clean(
     """
     Step 3 - Clean: 用 task.yml 配置执行清洗。
     """
+    logger.info("开始 Clean: customer=%s, task=%s", customer_name, task_name)
     if customer_name:
         cfg = _build_full_config(customer_name, task_name)
     elif config:
@@ -780,6 +826,7 @@ def workflow_bank_ledger_match_check(
     Step 4 - Check: 读取 monthly_flow_check.csv 返回数据完备性报告。
     检查银行流水和序时账按月/账号的流入流出是否一致。
     """
+    logger.info("开始 Check: customer=%s, task=%s", customer_name, task_name)
     try:
         check_path = os.path.join(
             _project_root(), "outputs", customer_name, task_name,
@@ -822,6 +869,7 @@ def workflow_bank_ledger_match_fill(
     customer_name: str = Form(""),
     task_name: str = Form("bank_ledger_match"),
 ):
+    logger.info("开始 Fill: customer=%s, task=%s", customer_name, task_name)
     if customer_name:
         cfg = _build_full_config(customer_name, task_name)
     elif config:
@@ -830,6 +878,7 @@ def workflow_bank_ledger_match_fill(
         cfg = {}
     try:
         path = blm_pipeline.run_fill(cfg)
+        logger.info("Fill 完成: %s", path)
         return {"working_paper": str(path)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -842,6 +891,7 @@ def workflow_bank_ledger_match_fill_llm(
     task_name: str = Form("bank_ledger_match"),
 ):
     """使用 LLM 生成填表代码并执行，自适应任意模板布局。"""
+    logger.info("开始 Fill (LLM): customer=%s, task=%s", customer_name, task_name)
     if customer_name:
         cfg = _build_full_config(customer_name, task_name)
     elif config:
@@ -857,33 +907,63 @@ def workflow_bank_ledger_match_fill_llm(
 
 @app.get("/llm/config")
 def get_llm_config():
-    """读取 llm.yml 中的 LLM 配置（模型、base_url 等）。"""
+    """读取 llm.yml 中的 LLM 配置，返回 providers 列表和当前默认 provider。"""
     llm_yml_path = _default_llm_yml_path()
     if not os.path.exists(llm_yml_path):
         return {"ok": False, "error": "llm.yml 不存在", "config": {}}
     with open(llm_yml_path, "r", encoding="utf-8") as f:
         llm_cfg = yaml_lib.safe_load(f) or {}
     llm_section = llm_cfg.get("llm", {})
-    return {
-        "ok": True,
-        "config": {
-            "enabled": llm_section.get("enabled", False),
-            "model": llm_section.get("model", ""),
-            "base_url": llm_section.get("base_url", ""),
-            "api_key": llm_section.get("api_key", "")[:8] + "****" if llm_section.get("api_key") else "",
-        },
-        "path": llm_yml_path,
-    }
+
+    providers = llm_section.get("providers")
+    if providers and isinstance(providers, dict):
+        # providers 格式：返回所有 provider 的名称和 model，以及当前 default
+        default_name = llm_section.get("default", next(iter(providers)))
+        provider_list = []
+        for name, pcfg in providers.items():
+            provider_list.append({
+                "name": name,
+                "model": pcfg.get("model", name),
+                "base_url": pcfg.get("base_url", ""),
+            })
+        return {
+            "ok": True,
+            "config": {
+                "enabled": llm_section.get("enabled", False),
+                "default": default_name,
+                "providers": provider_list,
+            },
+            "path": llm_yml_path,
+        }
+    else:
+        # 旧扁平格式：包装成单个 provider
+        model = llm_section.get("model", "")
+        return {
+            "ok": True,
+            "config": {
+                "enabled": llm_section.get("enabled", False),
+                "default": "_default",
+                "providers": [{
+                    "name": "_default",
+                    "model": model or "unknown",
+                    "base_url": llm_section.get("base_url", ""),
+                }],
+            },
+            "path": llm_yml_path,
+        }
 
 
 @app.post("/llm/config")
 def update_llm_config(
-    model: str = Form(""),
-    base_url: str = Form(""),
-    api_key: str = Form(""),
+    default_provider: str = Form(""),
     enabled: str = Form(""),
 ):
-    """更新 llm.yml 中的模型/URL/Key 配置。"""
+    """更新 llm.yml 中的默认 provider 或启用状态。
+
+    新格式（providers）下，通过 default_provider 指定默认 provider 名称。
+    旧格式（扁平）下，不再支持通过此接口修改 model/base_url/api_key，
+    请直接编辑 YAML 文件。
+    """
     llm_yml_path = _default_llm_yml_path()
     if os.path.exists(llm_yml_path):
         with open(llm_yml_path, "r", encoding="utf-8") as f:
@@ -894,12 +974,14 @@ def update_llm_config(
     if "llm" not in llm_cfg:
         llm_cfg["llm"] = {}
 
-    if model:
-        llm_cfg["llm"]["model"] = model
-    if base_url:
-        llm_cfg["llm"]["base_url"] = base_url
-    if api_key and api_key != "****":
-        llm_cfg["llm"]["api_key"] = api_key
+    if default_provider:
+        providers = llm_cfg["llm"].get("providers", {})
+        if default_provider in providers:
+            llm_cfg["llm"]["default"] = default_provider
+        else:
+            # 旧格式兼容：直接把 default_provider 当 model 名写入
+            llm_cfg["llm"]["model"] = default_provider
+
     if enabled in ("true", "false"):
         llm_cfg["llm"]["enabled"] = enabled == "true"
 
@@ -932,6 +1014,17 @@ def _record_token_usage(usage_info: dict):
     _token_usage["total_tokens"] += usage_info.get("total_tokens", 0)
     _token_usage["prompt_tokens"] += usage_info.get("prompt_tokens", 0)
     _token_usage["completion_tokens"] += usage_info.get("completion_tokens", 0)
+
+
+@app.get("/logs")
+def get_logs(lines: int = 100):
+    """返回最近的日志行，供前端展示。"""
+    if not os.path.exists(_log_file):
+        return {"ok": True, "lines": [], "total": 0}
+    with open(_log_file, "r", encoding="utf-8") as f:
+        all_lines = f.readlines()
+    limit = min(max(lines, 1), 500)
+    return {"ok": True, "lines": [l.rstrip("\n") for l in all_lines[-limit:]], "total": len(all_lines)}
 
 
 if __name__ == "__main__":

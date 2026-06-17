@@ -1,0 +1,8 @@
+[2026-06-17 00:22:58] INFO    audit_workflow - 开始 Detect: customer=桂平金山, task=bank_ledger_match, use_llm=false
+[2026-06-17 00:23:02] INFO    audit_workflow - Detect 完成: customer=桂平金山, task=bank_ledger_match, files=7, llm_used=False
+[2026-06-17 14:04:38] INFO    audit_workflow - 开始 Detect: customer=桂平金山, task=bank_ledger_match, use_llm=true
+[2026-06-17 14:05:03] INFO    audit_workflow - Detect 完成: customer=桂平金山, task=bank_ledger_match, files=7, llm_used=True
+[2026-06-17 14:10:16] INFO    audit_workflow - 保存配置: customer=桂平金山, task=bank_ledger_match
+[2026-06-17 14:10:32] INFO    audit_workflow - 开始 Match: customer=桂平金山, task=bank_ledger_match
+[2026-06-17 14:21:11] INFO    audit_workflow - 开始 Match: customer=桂平金山, task=bank_ledger_match
+[2026-06-17 14:34:43] INFO    audit_workflow - 开始 Match: customer=桂平金山, task=bank_ledger_match

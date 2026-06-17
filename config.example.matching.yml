@@ -1,8 +1,11 @@
 matching:
+  # LLM 辅助匹配的开关由前端 Detect 步骤的「使用 LLM」决定，
+  # 不再在此文件中设置静态 enabled。CLI 用户可通过 task.yml 中的
+  # use_llm: true/false 控制。
+  llm: {}
   acceptance_confidence: 0.72
   batch_size: 5
   candidate_window_days: 45
-  enabled: false
   manual_amount_enumeration:
     contiguous_time_window: true
     enabled: true

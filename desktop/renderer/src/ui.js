@@ -463,7 +463,7 @@ export function addMessage({ role = 'Agent', title = '', body = '', result = nul
   const block = document.createElement('div')
   block.className = 'message'
   const time = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-  
+
   // 从 result 中提取 token 使用信息
   let tokenInfo = ''
   if (result && result.usage) {
@@ -475,14 +475,23 @@ export function addMessage({ role = 'Agent', title = '', body = '', result = nul
       tokenInfo = ` | 📊 Tokens: ${total} (提示:${prompt} 完成:${completion})`
     }
   }
-  
+
   block.innerHTML = `
-    <div class="message-head"><span>${escapeHtml(role)}${title ? ` · ${escapeHtml(title)}` : ''}</span><span>${failed ? 'Failed' : time}${tokenInfo} <span class="message-collapse-btn">▼</span></span></div>
+    <div class="message-head"><span>${escapeHtml(role)}${title ? ` · ${escapeHtml(title)}` : ''}</span><span>${failed ? 'Failed' : time}${tokenInfo} <button class="message-delete-btn" title="删除此消息">✕</button><span class="message-collapse-btn">▼</span></span></div>
     <div class="message-body">
       ${body ? `<p>${escapeHtml(body)}</p>` : ''}
       ${result ? `<pre class="log-block">${escapeHtml(JSON.stringify(result, null, 2))}</pre>` : ''}
     </div>
   `
+
+  // 删除按钮事件：阻止冒泡以避免触发折叠，点击后淡出并移除
+  const deleteBtn = block.querySelector('.message-delete-btn')
+  deleteBtn.addEventListener('click', (e) => {
+    e.stopPropagation()
+    block.classList.add('message-deleting')
+    block.addEventListener('animationend', () => block.remove())
+  })
+
   chat.appendChild(block)
   block.scrollIntoView({ behavior: 'smooth', block: 'end' })
 }
