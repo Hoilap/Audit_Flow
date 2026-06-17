@@ -617,6 +617,30 @@ def _build_full_config(customer_name: str, task_name: str) -> dict:
     return cfg
 
 
+@app.get("/workflow/readmes")
+async def get_workflow_readmes():
+    """
+    扫描 audit_workflow 下各任务子目录的 readme.md，返回内容列表。
+    前端根据 dir_name 匹配 config.workflowTasks 的 dirName 显示任务名。
+    """
+    import pathlib
+
+    audit_dir = pathlib.Path(__file__).resolve().parent.parent / "audit_workflow"
+    readmes = []
+    for p in sorted(audit_dir.glob("*")):
+        if not p.is_dir() or p.name.startswith("_") or p.name.startswith("."):
+            continue
+        candidates = list(p.glob("readme.md")) + list(p.glob("README.md"))
+        if not candidates:
+            continue
+        content = candidates[0].read_text(encoding="utf-8")
+        readmes.append({
+            "dir_name": p.name,
+            "content": content,
+        })
+    return {"readmes": readmes}
+
+
 @app.post("/workflow/detect")
 async def workflow_detect(
     customer_name: str = Form(...),

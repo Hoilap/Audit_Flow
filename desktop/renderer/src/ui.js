@@ -806,7 +806,193 @@ function agentPage() {
 }
 
 function programsPage() {
-  return `<section class="page" id="page-programs"><div class="page-header"><div><h1>审计程序</h1><p class="subtle">可解释、可复核的程序模板</p></div></div><div class="grid two-col"><div class="card"><h2>序时账银行流水匹配</h2><p class="subtle" style="margin-top:8px;">Clean → Match → Verify → Fill。</p></div><div class="card"><h2>出库表核对</h2><p class="subtle" style="margin-top:8px;">字段识别 → 三表核对 → 差异校验 → 结论生成。</p></div></div></section>`
+  return `<section class="page" id="page-programs"><div class="page-header"><div><h1>审计程序</h1><p class="subtle">可解释、可复核的程序模板</p></div></div><div id="programs-list" class="programs-list"><p class="subtle" style="padding:40px;text-align:center;">加载中...</p></div></section>`
+}
+
+/**
+ * 根据 api 返回的 readmes 数组渲染审计程序卡片。
+ * 每个 readme 匹配 config.workflowTasks 中的任务名和风险等级。
+ * 没有 readme 的任务显示占位卡片。
+ * Mermaid 图表会通过动态加载 mermaid.js 渲染为交互式 SVG。
+ */
+export function renderProgramsList(readmes) {
+  const container = $('#programs-list')
+  if (!container) return
+
+  // 建立 dir_name → readme 映射
+  const readmeMap = {}
+  for (const r of (readmes || [])) {
+    readmeMap[r.dir_name] = r
+  }
+
+  const cards = workflowTasks.map((task) => {
+    const readme = readmeMap[task.dirName]
+    const title = task.name
+    const riskBadge = task.risk === 'High'
+      ? '<span class="badge badge-high">高风险</span>'
+      : task.risk === 'Medium'
+        ? '<span class="badge badge-medium">中风险</span>'
+        : '<span class="badge badge-low">低风险</span>'
+
+    if (readme) {
+      const html = markdownToHtml(readme.content)
+      return `<div class="card readme-card">
+        <div class="readme-card-head">
+          <span class="readme-toggle-arrow">▼</span>
+          <h2>${escapeHtml(title)}</h2>
+          ${riskBadge}
+          <span class="subtle" style="font-size:11px;margin-left:8px;">来源: audit_workflow/${escapeHtml(task.dirName)}/readme.md</span>
+        </div>
+        <div class="readme-content">${html}</div>
+      </div>`
+    } else {
+      return `<div class="card readme-card readme-card-empty">
+        <div class="readme-card-head">
+          <span class="readme-toggle-arrow">▼</span>
+          <h2>${escapeHtml(title)}</h2>
+          ${riskBadge}
+        </div>
+        <div class="readme-content">
+          <p class="subtle">暂无程序文档。请在 audit_workflow/${escapeHtml(task.dirName)}/ 下创建 readme.md。</p>
+          <p class="subtle">${escapeHtml(task.description)}</p>
+        </div>
+      </div>`
+    }
+  })
+
+  container.innerHTML = cards.join('')
+
+  // ── Mermaid 图表渲染 ──
+  // 将 markdown 中的 <pre class="language-mermaid"><code>...</code></pre> 转换为
+  // <div class="mermaid">...</div>，然后调用 mermaid.run() 渲染为 SVG。
+  const mermaidBlocks = container.querySelectorAll('pre.language-mermaid')
+  if (mermaidBlocks.length > 0) {
+    for (const pre of mermaidBlocks) {
+      const code = pre.querySelector('code')
+      const mermaidCode = code ? code.textContent : pre.textContent
+      const div = document.createElement('div')
+      div.className = 'mermaid'
+      div.textContent = mermaidCode
+      pre.replaceWith(div)
+    }
+    renderMermaidDiagrams(container)
+  }
+}
+
+/**
+ * 动态加载 mermaid.js 并渲染页面中的 .mermaid 元素。
+ */
+let _mermaidLoading = null
+let _mermaidReady = false
+
+function renderMermaidDiagrams(container) {
+  if (_mermaidReady) {
+    // 已初始化，直接调用 run
+    if (window.mermaid) {
+      window.mermaid.run({ querySelector: '.mermaid' }).catch(() => {})
+    }
+    return
+  }
+
+  if (_mermaidLoading) {
+    // 正在加载中，等待完成后重试
+    _mermaidLoading.then(() => {
+      _mermaidReady = true
+      if (window.mermaid) window.mermaid.run({ querySelector: '.mermaid' }).catch(() => {})
+    })
+    return
+  }
+
+  _mermaidLoading = new Promise((resolve) => {
+    const script = document.createElement('script')
+    script.src = 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js'
+    script.onload = () => {
+      window.mermaid.initialize({ startOnLoad: false, theme: 'default' })
+      window.mermaid.run({ querySelector: '.mermaid' }).catch(() => {})
+      resolve()
+    }
+    script.onerror = () => {
+      console.warn('Failed to load mermaid.js, diagrams will not render')
+      resolve()
+    }
+    document.head.appendChild(script)
+  })
+}
+
+// ============================================================
+// 简易 Markdown → HTML 转换器
+// ============================================================
+
+function markdownToHtml(md) {
+  if (!md) return ''
+
+  // 先提取并保护代码块和 mermaid 块
+  const blocks = []
+  // 保存围栏代码块
+  let text = md.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
+    const idx = blocks.length
+    const langClass = lang ? ` class="language-${escapeHtml(lang)}"` : ''
+    blocks.push(`<pre${langClass}><code>${escapeHtml(code.trimEnd())}</code></pre>`)
+    return `\x00BLOCK${idx}\x00`
+  })
+
+  // 处理标题
+  text = text.replace(/^#### (.+)$/gm, '<h4>$1</h4>')
+  text = text.replace(/^### (.+)$/gm, '<h3>$1</h3>')
+  text = text.replace(/^## (.+)$/gm, '<h2>$1</h2>')
+  text = text.replace(/^# (.+)$/gm, '<h1>$1</h1>')
+
+  // 处理粗体和斜体
+  text = text.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
+  text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+  text = text.replace(/\*(.+?)\*/g, '<em>$1</em>')
+
+  // 处理行内代码
+  text = text.replace(/`([^`]+)`/g, '<code>$1</code>')
+
+  // 处理链接
+  text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
+
+  // 按双换行分割段落
+  const paragraphs = text.split(/\n\n+/)
+  const result = []
+
+  for (const para of paragraphs) {
+    const trimmed = para.trim()
+    if (!trimmed) continue
+
+    // 已经是 HTML 块元素（h1-h4, pre）则直接保留
+    if (/^<(h[1-4]|pre|ul|ol|table|div)/.test(trimmed)) {
+      result.push(trimmed)
+      continue
+    }
+
+    // 处理无序列表
+    if (/^[-*+]\s/.test(trimmed)) {
+      const items = trimmed.split(/\n/).filter((l) => /^[-*+]\s/.test(l.trim()))
+      const lis = items.map((l) => `<li>${l.replace(/^[-*+]\s+/, '')}</li>`).join('')
+      result.push(`<ul>${lis}</ul>`)
+      continue
+    }
+
+    // 处理有序列表
+    if (/^\d+[.)]\s/.test(trimmed)) {
+      const items = trimmed.split(/\n/).filter((l) => /^\d+[.)]\s/.test(l.trim()))
+      const lis = items.map((l) => `<li>${l.replace(/^\d+[.)]\s+/, '')}</li>`).join('')
+      result.push(`<ol>${lis}</ol>`)
+      continue
+    }
+
+    // 普通段落
+    result.push(`<p>${trimmed.replace(/\n/g, '<br>')}</p>`)
+  }
+
+  text = result.join('\n')
+
+  // 恢复代码块
+  text = text.replace(/\x00BLOCK(\d+)\x00/g, (_, idx) => blocks[Number(idx)])
+
+  return text
 }
 
 function workpapersPage() {

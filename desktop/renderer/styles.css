@@ -638,6 +638,130 @@ button.danger:hover {
   white-space: nowrap;
 }
 
+/* ===== 审计程序（README 渲染） ===== */
+.programs-list {
+  display: grid;
+  gap: 16px;
+}
+.readme-card {
+  padding: 18px;
+}
+.readme-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  cursor: pointer;
+  user-select: none;
+}
+.readme-card-head:hover {
+  opacity: 0.8;
+}
+.readme-card-head h2 {
+  font-size: 17px;
+  margin: 0;
+}
+.readme-toggle-arrow {
+  font-size: 11px;
+  color: var(--text-muted);
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+.readme-card.collapsed .readme-toggle-arrow {
+  transform: rotate(-90deg);
+}
+.readme-card.collapsed .readme-content {
+  display: none;
+}
+.readme-card-empty {
+  opacity: 0.6;
+}
+.readme-content {
+  font-size: 13px;
+  line-height: 1.7;
+  max-height: 600px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+.readme-content::-webkit-scrollbar {
+  width: 6px;
+}
+.readme-content::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 999px;
+}
+.readme-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+.readme-content h1,
+.readme-content h2,
+.readme-content h3,
+.readme-content h4 {
+  margin-top: 18px;
+  margin-bottom: 8px;
+  font-weight: 650;
+}
+.readme-content h1 { font-size: 20px; }
+.readme-content h2 { font-size: 16px; }
+.readme-content h3 { font-size: 14px; }
+.readme-content h4 { font-size: 13px; }
+.readme-content p {
+  margin: 0 0 10px;
+  color: var(--text-soft);
+}
+.readme-content ul,
+.readme-content ol {
+  margin: 0 0 10px;
+  padding-left: 22px;
+  color: var(--text-soft);
+}
+.readme-content li {
+  margin-bottom: 4px;
+}
+.readme-content pre {
+  margin: 8px 0 14px;
+  max-height: 360px;
+  overflow: auto;
+}
+.readme-content code {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 12px;
+  background: var(--surface-muted);
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+.readme-content pre code {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.readme-content a {
+  color: var(--primary);
+  text-decoration: none;
+}
+.readme-content a:hover {
+  text-decoration: underline;
+}
+.readme-content strong {
+  color: var(--text);
+}
+.readme-content .language-mermaid,
+.readme-content .mermaid-block {
+  background: var(--surface-muted);
+  border: 1px dashed var(--border-strong);
+  border-radius: 8px;
+  padding: 14px;
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+
 /* ===== 数据画像 ===== */
 .profile-stats {
   display: flex;

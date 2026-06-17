@@ -2,7 +2,7 @@ import { workflowTasks } from './config.js'
 import { findWorkflowTaskByName, state } from './state.js'
 import { $, $$ } from './dom.js'
 import { renderShell, renderWorkflowWorkspace, setAgentStatus, showPage } from './ui.js'
-import { commitAll, createProject, deleteProject, loadProjects, previewFile, refreshFiles, refreshLog, runAllSteps, runNextStep, runStep, selectProject, sendPrompt, toggleCustomMode, updateCustomCustomerName, updateCustomTaskName, updateDetectMethod, updateProject, uploadFile, syncLlmConfig, startTokenPolling, stopTokenPolling, updateLlmModel } from './actions.js'
+import { commitAll, createProject, deleteProject, loadProjects, loadProgramReadmes, previewFile, refreshFiles, refreshLog, runAllSteps, runNextStep, runStep, selectProject, sendPrompt, toggleCustomMode, updateCustomCustomerName, updateCustomTaskName, updateDetectMethod, updateProject, uploadFile, syncLlmConfig, startTokenPolling, stopTokenPolling, updateLlmModel } from './actions.js'
 import { openReviewEditor } from './reviewEditor.js'
 import { renderProjectsTable, showProjectFormModal } from './ui.js'
 
@@ -20,6 +20,10 @@ function bindEvents() {
       if (navButton.dataset.page === 'agent') {
         await loadProjects()
         renderWorkflowWorkspace()
+      }
+      // 切换到审计程序页面时加载 README 文档
+      if (navButton.dataset.page === 'programs') {
+        await loadProgramReadmes()
       }
     }
 
@@ -42,10 +46,10 @@ function bindEvents() {
     const fileRow = event.target.closest('[data-file]')
     if (fileRow) previewFile(fileRow.dataset.file)
 
-    // 消息/配置面板折叠切换
-    const collapseHead = event.target.closest('.message-head, .llm-code-head')
+    // 消息/配置面板/README卡片折叠切换
+    const collapseHead = event.target.closest('.message-head, .llm-code-head, .readme-card-head')
     if (collapseHead) {
-      const container = collapseHead.closest('.message') || collapseHead.closest('.llm-code-panel')
+      const container = collapseHead.closest('.message') || collapseHead.closest('.llm-code-panel') || collapseHead.closest('.readme-card')
       if (container) container.classList.toggle('collapsed')
     }
   })

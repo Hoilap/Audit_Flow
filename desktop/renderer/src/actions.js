@@ -2,7 +2,7 @@ import { api } from './api.js'
 import { llmCodePath, workflowTasks } from './config.js'
 import { activeTask, findWorkflowTaskByName, getProjectBasePath, resolveProjectPath, markStep, state, stepStatus } from './state.js'
 import { $ } from './dom.js'
-import { addMessage, renderFileError, renderFileTree, renderFiles, renderLlmCode, renderStepFiles, renderTimeline, renderWorkflowWorkspace, setAgentStatus, startTimer, stopTimer, renderDetectResult, renderConfigConfirm, renderCheckResult } from './ui.js'
+import { addMessage, renderFileError, renderFileTree, renderFiles, renderLlmCode, renderStepFiles, renderTimeline, renderWorkflowWorkspace, setAgentStatus, startTimer, stopTimer, renderDetectResult, renderConfigConfirm, renderCheckResult, renderProgramsList } from './ui.js'
 import { openCsvPreview } from './previewModal.js'
 import { openReviewEditor } from './reviewEditor.js'
 import { logger } from './logger.js'
@@ -452,5 +452,18 @@ export async function updateLlmModel(providerName) {
     addMessage({ title: 'LLM 模型已更新', body: `当前 Provider：${providerName}` })
   } catch (error) {
     addMessage({ title: '模型更新失败', body: error.message, failed: true })
+  }
+}
+
+/**
+ * 加载所有任务子目录下的 readme.md 内容并渲染到审计程序页面。
+ */
+export async function loadProgramReadmes() {
+  try {
+    const data = await api.getReadmes()
+    renderProgramsList(data.readmes || [])
+  } catch (error) {
+    console.error('Failed to load READMEs:', error)
+    renderProgramsList([])
   }
 }

@@ -108,6 +108,10 @@ export const api = {
   },
   getLlmTokens: () => request('/llm/tokens'),
 
+  // ---------- Workflow README ----------
+  /** 获取所有任务子目录下的 readme.md 内容 */
+  getReadmes: () => request('/workflow/readmes'),
+
   // ---------- 日志 ----------
   /** 获取后端日志（最近 lines 行） */
   getLogs: (lines = 100) => request(`/logs?lines=${lines}`),
