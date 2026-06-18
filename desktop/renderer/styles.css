@@ -197,6 +197,10 @@ h3 { font-size: 14px; }
 .evidence-header { padding: 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .evidence-body { padding: 12px; overflow-y: auto; display: grid; gap: 12px; }
 .panel-section { display: grid; gap: 8px; }
+.panel-section-header { display: flex; justify-content: space-between; align-items: center; cursor: default; }
+.section-toggle { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 10px; padding: 2px 4px; line-height: 1; border-radius: 3px; transition: background .15s; }
+.section-toggle:hover { background: var(--surface-muted); color: var(--text); }
+.panel-section.collapsed .panel-section-body { display: none; }
 .timeline { padding: 10px; display: grid; gap: 8px; }
 .timeline-item { display: grid; grid-template-columns: 18px 1fr; gap: 8px; color: var(--text-soft); font-size: 13px; }
 .timeline-mark { width: 16px; height: 16px; border-radius: 999px; display: grid; place-items: center; background: var(--surface-muted); color: var(--text-muted); font-size: 10px; }

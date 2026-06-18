@@ -6,3 +6,4 @@
 [2026-06-17 14:10:32] INFO    audit_workflow - 开始 Match: customer=桂平金山, task=bank_ledger_match
 [2026-06-17 14:21:11] INFO    audit_workflow - 开始 Match: customer=桂平金山, task=bank_ledger_match
 [2026-06-17 14:34:43] INFO    audit_workflow - 开始 Match: customer=桂平金山, task=bank_ledger_match
+[2026-06-18 02:53:32] INFO    audit_workflow - 创建项目: customer=SYSU, task=test

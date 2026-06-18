@@ -14,7 +14,7 @@ export const workflowTasks = [
     id: 'bank-ledger-match',
     name: '序时账银行流水匹配',
     description: 'Detect扫描→LLM识别→确认配置→清洗→核查→匹配→人工复核→填入底稿。',
-    risk: 'High',
+    //risk: 'High',
     dirName: 'bank_ledger_match',
     prompt: '请在数据源页面将银行流水和序时账文件上传到 inputs/{客户名}/bank_ledger_match/ 目录下，然后从 Detect 步骤开始执行。',
     reviewFiles: [
@@ -126,20 +126,44 @@ export const workflowTasks = [
   },
 ]
 
+/**
+ * 自定义任务通用工作流模板。
+ * 当用户创建的任务名称不在预定义 workflowTasks 中时，使用此模板替代，
+ * 避免显示特定工作流（如 bank-ledger-match）的步骤。
+ */
+export const customWorkflowTask = {
+  id: '__custom__',
+  name: '自定义任务',
+  description: '通过 LLM 代码生成完成自定义审计任务。请在下方输入自然语言指令，生成并执行处理代码。',
+  risk: 'Medium',
+  dirName: null,
+  prompt: '请描述您的审计任务需求，并说明输入数据路径（如 inputs/{客户名}/ 下的文件）和期望的输出结果路径（如 outputs/{客户名}/ 下的文件）。',
+  reviewFiles: [],
+  steps: [
+    { id: 'understand', label: 'Understand', title: '理解任务需求', endpoint: null, outputs: ['llm_code/generated_from_llm.py'] },
+    { id: 'profile', label: 'Profile', title: '分析数据结构', endpoint: null, outputs: ['llm_code/generated_from_llm.py'] },
+    { id: 'code', label: 'Code', title: '生成处理代码', endpoint: null, outputs: ['llm_code/generated_from_llm.py'] },
+    { id: 'run', label: 'Run', title: '执行代码', endpoint: null, outputs: ['llm_code/generated_from_llm.py'] },
+    { id: 'validate', label: 'Validate', title: '校验结果', endpoint: null, outputs: ['llm_code/generated_from_llm.py'] },
+    { id: 'export', label: 'Export', title: '输出工作底稿', endpoint: null, outputs: ['llm_code/generated_from_llm.py'] },
+  ],
+}
+
 export const llmCodePath = 'outputs/llm_code/generated_from_llm.py'
 
 /**
  * 右栏（证据面板）区块顺序配置。
- * 调整数组顺序即可自定义右栏显示顺序，删除某条即隐藏该区块。
- * 每条: [id, 标题, 是否有刷新按钮]
+ * 调整数组顺序即可自定义右栏显示顺序。
+ * 每条: [id, 标题, 是否可见, 是否有刷新按钮, 是否可折叠]
  *   - id 对应 HTML 容器 id（如 'timeline'）
+ *   - visible 为 false 时整个区块不渲染
+ *   - collapsible 为 true 时标题栏显示折叠/展开按钮，默认收起
  *   - 特殊 id: 'step-files' / 'all-files' / 'git-log' / 'review-editor'
  */
 export const evidencePanelSections = [
-  ['timeline',    '执行时间线',   true],
-  ['review-editor', '人工复核',    true],
-  ['step-files',  '本任务生成文件', true],
-  ['all-files',   '所有输出文件',  false],
-  ['git-log',     'Git 历史',     true],
-
+  ['timeline',      '执行时间线',    true,  false, false],
+  ['review-editor', '人工复核',      true,  false, false],
+  ['step-files',    '本任务生成文件', true,  false, false],
+  ['all-files',     '所有输出文件',   false, false, false],
+  ['git-log',       'Git 历史',      true,  true,  true],
 ]

@@ -1,4 +1,4 @@
-import { workflowTasks } from './config.js'
+import { customWorkflowTask, workflowTasks } from './config.js'
 
 export const state = {
   files: [],
@@ -9,7 +9,6 @@ export const state = {
   status: 'Idle',
   startedAt: null,
   timer: null,
-  tokenPollingInterval: null,
   chatHidden: false,
   sidebarHidden: false,
   /** @type {Array<{id:number,task_name:string,customer_name:string,status:string,created_at:string,responsible_person:string,risk:string}>} */
@@ -20,10 +19,13 @@ export const state = {
   customCustomerName: '',
   /** 如果 activeProjectId 为 null，用户手动选择的任务名称 */
   customTaskName: workflowTasks[0].name,  /** Detect 步骤的识别方式: 'llm' | 'script' */
-  detectMethod: 'llm',}
+  detectMethod: 'llm',
+  /** 右栏区块折叠状态，key 为 section id，value 为 true 表示已折叠 */
+  collapsedSections: { 'git-log': true },
+}
 
 export function activeTask() {
-  return workflowTasks.find((task) => task.id === state.activeTaskId) || workflowTasks[0]
+  return workflowTasks.find((task) => task.id === state.activeTaskId) || customWorkflowTask
 }
 
 export function activeStep() {

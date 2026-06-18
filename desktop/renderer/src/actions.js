@@ -1,5 +1,5 @@
 import { api } from './api.js'
-import { llmCodePath, workflowTasks } from './config.js'
+import { llmCodePath } from './config.js'
 import { activeTask, findWorkflowTaskByName, getProjectBasePath, resolveProjectPath, markStep, state, stepStatus } from './state.js'
 import { $ } from './dom.js'
 import { addMessage, renderFileError, renderFileTree, renderFiles, renderLlmCode, renderStepFiles, renderTimeline, renderWorkflowWorkspace, setAgentStatus, startTimer, stopTimer, renderDetectResult, renderConfigConfirm, renderCheckResult, renderProgramsList } from './ui.js'
@@ -152,6 +152,7 @@ export async function runStep(stepIndex = state.activeStepIndex) {
 
     setAgentStatus('Completed', 100)
     await refreshFiles()
+    await refreshTokens()
     // 自动弹出复核文件 —— 仅在 match 步骤后
     if (step.id === 'match') {
       const wfTask = findWorkflowTaskByName(state.customTaskName)
@@ -214,6 +215,7 @@ export async function sendPrompt() {
     addMessage({ title: 'LLM 代码生成', body: '代码已写入独立目录，可继续执行下一步。', result })
     setAgentStatus('Completed', 100)
     await refreshFiles()
+    await refreshTokens()
   } catch (error) {
     renderLlmCode(llmCodePath, '', { error: error.message })
     addMessage({ title: 'LLM 代码生成失败', body: error.message, failed: true })
@@ -294,10 +296,14 @@ export function selectProject(projectId) {
       const wfTask = findWorkflowTaskByName(project.task_name)
       if (wfTask) {
         state.activeTaskId = wfTask.id
-        $('#prompt').value = wfTask.prompt || ''
+        // 预定义任务不预制 prompt，让用户自由输入
+        if ($('#prompt')) $('#prompt').value = ''
       } else {
-        // 自定义任务名：使用第一个 workflow 模板
-        state.activeTaskId = workflowTasks[0].id
+        // 自定义任务名：使用通用自定义工作流模板，并提示用户包含路径信息
+        state.activeTaskId = '__custom__'
+        if ($('#prompt')) {
+          $('#prompt').value = '请描述您的审计任务需求，并说明输入数据路径（如 inputs/{客户名}/ 下的文件）和期望的输出结果路径（如 outputs/{客户名}/ 下的文件）。'
+        }
       }
     }
   } else {
@@ -334,7 +340,14 @@ export function updateCustomTaskName(taskName) {
   const wfTask = findWorkflowTaskByName(taskName)
   if (wfTask) {
     state.activeTaskId = wfTask.id
-    $('#prompt').value = wfTask.prompt || ''
+    // 预定义任务不预制 prompt
+    if ($('#prompt')) $('#prompt').value = ''
+  } else {
+    state.activeTaskId = '__custom__'
+    // 自定义任务提示用户包含路径信息
+    if ($('#prompt')) {
+      $('#prompt').value = '请描述您的审计任务需求，并说明输入数据路径（如 inputs/{客户名}/ 下的文件）和期望的输出结果路径（如 outputs/{客户名}/ 下的文件）。'
+    }
   }
   state.activeStepIndex = 0
   renderWorkflowWorkspace()
@@ -409,32 +422,19 @@ function updateStatusModel(modelName) {
 }
 
 /**
- * 定期轮询后端获取 token 使用情况，并更新前端显示
+ * 单次请求后端获取 token 使用情况并更新显示。
+ * 在每次 LLM 调用完成后调用，替代定时轮询。
  */
-export function startTokenPolling(intervalMs = 3000) {
-  if (state.tokenPollingInterval) clearInterval(state.tokenPollingInterval)
-  
-  const pollOnce = async () => {
-    try {
-      const result = await api.getLlmTokens()
-      if (result.ok) {
-        const { total_tokens } = result
-        const el = $('#tokens')
-        if (el) el.textContent = `${total_tokens.toLocaleString()} tokens`
-      }
-    } catch (error) {
-      // 忽略轮询错误
+export async function refreshTokens() {
+  try {
+    const result = await api.getLlmTokens()
+    if (result.ok) {
+      const { total_tokens } = result
+      const el = $('#tokens')
+      if (el) el.textContent = `${total_tokens.toLocaleString()} tokens`
     }
-  }
-
-  state.tokenPollingInterval = setInterval(pollOnce, intervalMs)
-  pollOnce() // 立即执行一次
-}
-
-export function stopTokenPolling() {
-  if (state.tokenPollingInterval) {
-    clearInterval(state.tokenPollingInterval)
-    state.tokenPollingInterval = null
+  } catch (error) {
+    // 忽略错误
   }
 }
 

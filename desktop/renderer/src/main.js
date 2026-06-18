@@ -1,8 +1,8 @@
 import { workflowTasks } from './config.js'
 import { findWorkflowTaskByName, state } from './state.js'
 import { $, $$ } from './dom.js'
-import { renderShell, renderWorkflowWorkspace, setAgentStatus, showPage } from './ui.js'
-import { commitAll, createProject, deleteProject, loadProjects, loadProgramReadmes, previewFile, refreshFiles, refreshLog, runAllSteps, runNextStep, runStep, selectProject, sendPrompt, toggleCustomMode, updateCustomCustomerName, updateCustomTaskName, updateDetectMethod, updateProject, uploadFile, syncLlmConfig, startTokenPolling, stopTokenPolling, updateLlmModel } from './actions.js'
+import { renderEvidencePanel, renderShell, renderWorkflowWorkspace, setAgentStatus, showPage } from './ui.js'
+import { commitAll, createProject, deleteProject, loadProjects, loadProgramReadmes, previewFile, refreshFiles, refreshLog, refreshTokens, runAllSteps, runNextStep, runStep, selectProject, sendPrompt, toggleCustomMode, updateCustomCustomerName, updateCustomTaskName, updateDetectMethod, updateProject, uploadFile, syncLlmConfig, updateLlmModel } from './actions.js'
 import { openReviewEditor } from './reviewEditor.js'
 import { renderProjectsTable, showProjectFormModal } from './ui.js'
 
@@ -51,6 +51,18 @@ function bindEvents() {
     if (collapseHead) {
       const container = collapseHead.closest('.message') || collapseHead.closest('.llm-code-panel') || collapseHead.closest('.readme-card')
       if (container) container.classList.toggle('collapsed')
+    }
+
+    // 右栏区块折叠/展开
+    const sectionToggle = event.target.closest('[data-toggle-section]')
+    if (sectionToggle) {
+      const sectionId = sectionToggle.dataset.toggleSection
+      state.collapsedSections[sectionId] = !state.collapsedSections[sectionId]
+      renderEvidencePanel()
+      // 展开 git-log 时自动刷新内容
+      if (sectionId === 'git-log' && !state.collapsedSections[sectionId]) {
+        refreshLog()
+      }
     }
   })
 
@@ -229,13 +241,17 @@ async function init() {
     state.customCustomerName = p.customer_name
     state.customTaskName = p.task_name
     const wfTask = findWorkflowTaskByName(p.task_name)
-    if (wfTask) state.activeTaskId = wfTask.id
+    if (wfTask) {
+      state.activeTaskId = wfTask.id
+    } else {
+      state.activeTaskId = '__custom__'
+    }
     renderWorkflowWorkspace()
   }
   
-  // 初始化 LLM 配置和 token 轮询
+  // 初始化 LLM 配置和 token 显示
   await syncLlmConfig()
-  startTokenPolling(2000)
+  refreshTokens()
   refreshAll()
 }
 

@@ -34,7 +34,18 @@ export function renderEvidencePanel() {
   const body = $('#evidence-body')
   if (!body) return
 
-  body.innerHTML = evidencePanelSections.map(([id, title, hasRefresh]) => {
+  body.innerHTML = evidencePanelSections
+    .filter(([, , visible]) => visible !== false)
+    .map(([id, title, , hasRefresh, collapsible]) => {
+    const collapsed = collapsible && state.collapsedSections[id]
+    const collapseClass = collapsed ? ' collapsed' : ''
+    let headerActions = ''
+    if (hasRefresh && id === 'git-log') {
+      headerActions += `<button id="refresh-log" class="section-toggle" title="刷新历史">↻</button>`
+    }
+    if (collapsible) {
+      headerActions += `<button class="section-toggle" data-toggle-section="${id}" title="${collapsed ? '展开' : '折叠'}">${collapsed ? '▶' : '▼'}</button>`
+    }
     let inner = ''
     if (id === 'timeline') {
       inner = `<div class="timeline" id="timeline"></div>`
@@ -43,18 +54,15 @@ export function renderEvidencePanel() {
     } else if (id === 'all-files') {
       inner = `<div id="file-list" class="grid file-scroll-list"></div>`
     } else if (id === 'git-log') {
-      inner = `<div id="git-log" class="timeline"></div>
-        ${hasRefresh ? `<button id="refresh-log">刷新历史</button>` : ''}`
+      inner = `<div id="git-log" class="timeline"></div>`
     } else if (id === 'review-editor') {
       inner = `<div id="review-file-list" class="grid file-scroll-list"></div>`
     }
-    return `<section class="panel-section">
-      <h3>${escapeHtml(title)}</h3>
-      ${inner}
+    return `<section class="panel-section${collapseClass}">
+      <h3 class="panel-section-header">${escapeHtml(title)}<span class="panel-section-actions">${headerActions}</span></h3>
+      <div class="panel-section-body">${inner}</div>
     </section>`
   }).join('')
-
-  // 刷新按钮事件已在 main.js 中通过 id 绑定，此处仅渲染结构
 }
 
 export function showPage(page) {
@@ -138,7 +146,12 @@ export function renderTimeline(activeStepId = null, failed = false) {
 export function renderWorkflowWorkspace() {
   const task = activeTask()
   const promptEl = $('#prompt')
-  if (promptEl && !promptEl.value.trim()) promptEl.value = task.prompt
+  if (promptEl && !promptEl.value.trim()) {
+    // 自定义任务填充引导 prompt；预定义任务不预制
+    if (task.id === '__custom__') {
+      promptEl.value = '请描述您的审计任务需求，并说明输入数据路径（如 inputs/{客户名}/ 下的文件）和期望的输出结果路径（如 outputs/{客户名}/ 下的文件）。'
+    }
+  }
 
   // ------ 项目选择器（替代原 task-list） ------
   const taskList = $('#workflow-task-list')
@@ -177,7 +190,11 @@ export function renderWorkflowWorkspace() {
   }
 
   const title = $('#active-task-title')
-  if (title) title.textContent = task.name
+  if (title) {
+    title.textContent = task.id === '__custom__'
+      ? (state.customTaskName || '自定义任务')
+      : task.name
+  }
   const desc = $('#active-task-desc')
   if (desc) {
     const wfTask = findWorkflowTaskByName(state.customTaskName)
@@ -208,6 +225,11 @@ function renderProjectSelector() {
     const sel = t.name === state.customTaskName ? 'selected' : ''
     return `<option value="${escapeHtml(t.name)}" ${sel}>${escapeHtml(t.name)}</option>`
   }).join('')
+  // 如果当前自定义任务名不在预定义列表中，动态添加选项
+  const isCustomName = state.customTaskName && !workflowTasks.some((t) => t.name === state.customTaskName)
+  const customTaskOption = isCustomName
+    ? `<option value="${escapeHtml(state.customTaskName)}" selected>${escapeHtml(state.customTaskName)} (自定义)</option>`
+    : ''
 
   return `
     <div class="project-bar-inner">
@@ -221,7 +243,7 @@ function renderProjectSelector() {
       </label>
       <span id="project-custom-fields" class="project-bar-fields" style="display:${state.activeProjectId === null ? 'inline-flex' : 'none'};">
         <input id="project-customer-input" class="project-bar-input" placeholder="客户名称" value="${customerVal}" />
-        <select id="project-task-select" class="project-bar-select">${taskOptions}</select>
+        <select id="project-task-select" class="project-bar-select">${customTaskOption}${taskOptions}</select>
       </span>
     </div>
   `
