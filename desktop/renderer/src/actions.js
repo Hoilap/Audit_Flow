@@ -204,18 +204,45 @@ export async function sendPrompt() {
 
   const form = new FormData()
   form.append('prompt', prompt)
-  form.append('target', llmCodePath)
-  form.append('run', $('#run-after-generate').checked ? 'true' : 'false')
+  form.append('run_code', $('#run-after-generate').checked ? 'true' : 'false')
   form.append('timeout', $('#composer-timeout').value || '5')
+  form.append('customer_name', state.customCustomerName || '')
+  form.append('task_name', state.customTaskName || '')
 
   try {
+    setAgentStatus('Running', 40, '代码生成中…')
     const result = await api.generateAndRun(form)
-    const code = await api.readFile(llmCodePath).catch(() => ({ content: result.code || '' }))
-    renderLlmCode(llmCodePath, code.content || result.code || '', result)
-    addMessage({ title: 'LLM 代码生成', body: '代码已写入独立目录，可继续执行下一步。', result })
-    setAgentStatus('Completed', 100)
+    const actualPath = result.path || llmCodePath
+    const code = await api.readFile(actualPath).catch(() => ({ content: result.code || '' }))
+    renderLlmCode(actualPath, code.content || result.code || '', result)
+    // 更新底部路径标签
+    const label = $('#llm-target-label')
+    if (label) label.textContent = actualPath
     await refreshFiles()
     await refreshTokens()
+
+    if (result.error_detail) {
+      // 重试耗尽，仍有错误 — 文件已保存，展示代码和错误
+      const typeLabel = result.error_type === 'syntax' ? '语法错误' : '运行错误'
+      const retryInfo = result.retries > 0 ? `（已自动重试 ${result.retries} 次）` : ''
+      addMessage({
+        title: `LLM 代码生成 — ${typeLabel}`,
+        body: `生成的代码存在${typeLabel}${retryInfo}，文件已保存到 ${actualPath}。\n错误: ${result.error_detail}`,
+        failed: true,
+      })
+      setAgentStatus('Failed', 100)
+    } else if (result.retries > 0) {
+      // 重试后成功修复
+      addMessage({
+        title: 'LLM 代码生成',
+        body: `经过 ${result.retries} 次自动重试，错误已修复。代码已写入 ${actualPath}。`,
+        result,
+      })
+      setAgentStatus('Completed', 100)
+    } else {
+      addMessage({ title: 'LLM 代码生成', body: `代码已写入 ${actualPath}，可继续执行下一步。`, result })
+      setAgentStatus('Completed', 100)
+    }
   } catch (error) {
     renderLlmCode(llmCodePath, '', { error: error.message })
     addMessage({ title: 'LLM 代码生成失败', body: error.message, failed: true })

@@ -170,7 +170,8 @@ def llm_generate(
         dict: 当 return_usage=True 时返回 {"text": str, "usage": {...}}
     """
     import asyncio
-    agent = build_agent(llm_config, system_prompt or "You are a helpful assistant.", task_config=task_config)
+    GENERAL_SYSTEM_PROMPT = "你是一个审计人员代码助手。请直接输出纯 Python 代码，不要用 ``` 代码块包裹，不要任何多余的解释。"
+    agent = build_agent(llm_config, system_prompt or GENERAL_SYSTEM_PROMPT, task_config=task_config)
     result = agent.run_sync(prompt)
     text = _agent_output_text(result)
     usage = _extract_token_usage(result)
@@ -251,24 +252,29 @@ def _extract_token_usage(result: Any) -> dict:
     """从 pydantic-ai result 中提取 token 用量信息。
     返回 {"total_tokens": int, "prompt_tokens": int, "completion_tokens": int}
     """
+    import logging
+    _log = logging.getLogger(__name__)
+
     usage = {"total_tokens": 0, "prompt_tokens": 0, "completion_tokens": 0}
     try:
-        # pydantic-ai 0.8.x: usage() 方法返回 Usage 对象
+        # pydantic-ai 0.8.x: usage() 方法返回 RunUsage 对象
+        # 属性名: total_tokens, request_tokens, response_tokens
         if hasattr(result, "usage") and callable(result.usage):
             u = result.usage()
             usage["total_tokens"] = getattr(u, "total_tokens", 0) or 0
             usage["prompt_tokens"] = getattr(u, "request_tokens", 0) or getattr(u, "prompt_tokens", 0) or 0
             usage["completion_tokens"] = getattr(u, "response_tokens", 0) or getattr(u, "completion_tokens", 0) or 0
             return usage
-        # 尝试从 _usage 属性获取
         if hasattr(result, "_usage"):
             u = result._usage
             usage["total_tokens"] = getattr(u, "total_tokens", 0) or 0
             usage["prompt_tokens"] = getattr(u, "prompt_tokens", 0) or getattr(u, "request_tokens", 0) or 0
             usage["completion_tokens"] = getattr(u, "completion_tokens", 0) or getattr(u, "response_tokens", 0) or 0
             return usage
-    except Exception:
-        pass
+        _log.warning("_extract_token_usage: result(%s) 无 usage 属性，token 计数为 0",
+                      type(result).__name__)
+    except Exception as e:
+        _log.warning("_extract_token_usage 异常: %s", e)
     return usage
 
 

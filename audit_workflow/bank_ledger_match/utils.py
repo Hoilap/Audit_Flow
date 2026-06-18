@@ -10,6 +10,9 @@ from typing import Iterable, Sequence
 
 import pandas as pd
 
+def strip_code_fence(value: str) -> str:
+    match = re.search(r"```(?:python)?\s*(.*?)```", value, flags=re.S)
+    return match.group(1).strip() if match else value.strip()
 
 def text(value: object) -> str:
     if value is None:

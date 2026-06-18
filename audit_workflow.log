@@ -7,3 +7,71 @@
 [2026-06-17 14:21:11] INFO    audit_workflow - 开始 Match: customer=桂平金山, task=bank_ledger_match
 [2026-06-17 14:34:43] INFO    audit_workflow - 开始 Match: customer=桂平金山, task=bank_ledger_match
 [2026-06-18 02:53:32] INFO    audit_workflow - 创建项目: customer=SYSU, task=test
+[2026-06-18 13:50:00] INFO    audit_workflow - 上传文件: 对账单.xlsx -> inputs\SYSU\test\对账单.xlsx
+[2026-06-18 13:51:17] INFO    audit_workflow - LLM 生成并执行: target=outputs/clean/generated_from_llm.py, run=false, timeout=5s
+[2026-06-18 13:52:15] INFO    audit_workflow - LLM 生成并执行: target=outputs/clean/generated_from_llm.py, run=false, timeout=300s
+[2026-06-18 13:54:37] INFO    audit_workflow - LLM 生成并执行: target=outputs/clean/generated_from_llm.py, run=false, timeout=300s
+[2026-06-18 14:06:04] INFO    audit_workflow - LLM 生成并执行: target=outputs/clean/generated_from_llm.py, run=false, timeout=300s
+[2026-06-18 14:08:09] INFO    audit_workflow - LLM 生成完成: tokens=5801
+[2026-06-18 15:58:45] INFO    audit_workflow - LLM 生成并执行: target=outputs\SYSU\test\llm_code\generated_20260618_155845.py, run=true, timeout=5s, system_prompt_len=0
+[2026-06-18 15:59:26] INFO    audit_workflow - LLM 生成完成: tokens=1610
+[2026-06-18 16:24:01] INFO    audit_workflow - LLM 生成并执行: target=outputs\SYSU\test\llm_code\generated_20260618_162401.py, run=true, timeout=5s, system_prompt_len=0
+[2026-06-18 16:24:30] INFO    audit_workflow - LLM 生成完成: tokens=1258 (attempt 1/4)
+[2026-06-18 16:24:30] WARNING audit_workflow - LLM 生成代码语法错误 (attempt 1/4): invalid syntax (<unknown>, line 1)
+[2026-06-18 16:24:30] INFO    audit_workflow - 正在自动重试修复语法错误 (attempt 1 → 2)
+[2026-06-18 16:24:45] INFO    audit_workflow - LLM 生成完成: tokens=795 (attempt 2/4)
+[2026-06-18 16:24:45] WARNING audit_workflow - LLM 生成代码语法错误 (attempt 2/4): invalid syntax (<unknown>, line 1)
+[2026-06-18 16:24:45] INFO    audit_workflow - 正在自动重试修复语法错误 (attempt 2 → 3)
+[2026-06-18 16:24:57] INFO    audit_workflow - LLM 生成完成: tokens=682 (attempt 3/4)
+[2026-06-18 16:24:57] WARNING audit_workflow - LLM 生成代码语法错误 (attempt 3/4): invalid syntax (<unknown>, line 1)
+[2026-06-18 16:24:57] INFO    audit_workflow - 正在自动重试修复语法错误 (attempt 3 → 4)
+[2026-06-18 16:25:29] INFO    audit_workflow - LLM 生成完成: tokens=1823 (attempt 4/4)
+[2026-06-18 16:25:32] INFO    audit_workflow - LLM 代码执行完成: returncode=0
+[2026-06-18 20:22:14] INFO    audit_workflow - LLM 生成并执行: target=outputs\SYSU\test\llm_code\generated_20260618_202214.py, run=true, timeout=5s, system_prompt_len=0
+[2026-06-18 20:22:48] INFO    audit_workflow.llm_agent - [token-debug] result type=AgentRunResult
+[2026-06-18 20:22:48] INFO    audit_workflow.llm_agent - [token-debug] has usage=True, callable=True, has _usage=False
+[2026-06-18 20:22:48] INFO    audit_workflow.llm_agent - [token-debug] usage() returned type=RunUsage, attrs={'total_tokens': 1461, 'request_tokens': 69, 'prompt_tokens': '?', 'response_tokens': 1392, 'completion_tokens': '?'}
+[2026-06-18 20:22:48] INFO    audit_workflow.llm_agent - [token-debug] extracted={'total_tokens': 1461, 'prompt_tokens': 69, 'completion_tokens': 1392}
+[2026-06-18 20:22:48] INFO    audit_workflow - LLM 生成完成: tokens=1461 (attempt 1/4)
+[2026-06-18 20:22:48] WARNING audit_workflow - LLM 代码语法错误 (attempt 1/4): invalid syntax (<unknown>, line 1)
+[2026-06-18 20:22:48] INFO    audit_workflow - 自动重试修复语法错误 (attempt 1 → 2)
+[2026-06-18 20:23:13] INFO    audit_workflow.llm_agent - [token-debug] result type=AgentRunResult
+[2026-06-18 20:23:13] INFO    audit_workflow.llm_agent - [token-debug] has usage=True, callable=True, has _usage=False
+[2026-06-18 20:23:13] INFO    audit_workflow.llm_agent - [token-debug] usage() returned type=RunUsage, attrs={'total_tokens': 2018, 'request_tokens': 682, 'prompt_tokens': '?', 'response_tokens': 1336, 'completion_tokens': '?'}
+[2026-06-18 20:23:13] INFO    audit_workflow.llm_agent - [token-debug] extracted={'total_tokens': 2018, 'prompt_tokens': 682, 'completion_tokens': 1336}
+[2026-06-18 20:23:13] INFO    audit_workflow - LLM 生成完成: tokens=2018 (attempt 2/4)
+[2026-06-18 20:23:13] WARNING audit_workflow - LLM 代码语法错误 (attempt 2/4): invalid syntax (<unknown>, line 1)
+[2026-06-18 20:23:13] INFO    audit_workflow - 自动重试修复语法错误 (attempt 2 → 3)
+[2026-06-18 20:23:50] INFO    audit_workflow.llm_agent - [token-debug] result type=AgentRunResult
+[2026-06-18 20:23:50] INFO    audit_workflow.llm_agent - [token-debug] has usage=True, callable=True, has _usage=False
+[2026-06-18 20:23:50] INFO    audit_workflow.llm_agent - [token-debug] usage() returned type=RunUsage, attrs={'total_tokens': 2318, 'request_tokens': 682, 'prompt_tokens': '?', 'response_tokens': 1636, 'completion_tokens': '?'}
+[2026-06-18 20:23:50] INFO    audit_workflow.llm_agent - [token-debug] extracted={'total_tokens': 2318, 'prompt_tokens': 682, 'completion_tokens': 1636}
+[2026-06-18 20:23:50] INFO    audit_workflow - LLM 生成完成: tokens=2318 (attempt 3/4)
+[2026-06-18 20:23:50] WARNING audit_workflow - LLM 代码语法错误 (attempt 3/4): invalid syntax (<unknown>, line 1)
+[2026-06-18 20:23:50] INFO    audit_workflow - 自动重试修复语法错误 (attempt 3 → 4)
+[2026-06-18 20:24:14] INFO    audit_workflow.llm_agent - [token-debug] result type=AgentRunResult
+[2026-06-18 20:24:14] INFO    audit_workflow.llm_agent - [token-debug] has usage=True, callable=True, has _usage=False
+[2026-06-18 20:24:14] INFO    audit_workflow.llm_agent - [token-debug] usage() returned type=RunUsage, attrs={'total_tokens': 1965, 'request_tokens': 682, 'prompt_tokens': '?', 'response_tokens': 1283, 'completion_tokens': '?'}
+[2026-06-18 20:24:14] INFO    audit_workflow.llm_agent - [token-debug] extracted={'total_tokens': 1965, 'prompt_tokens': 682, 'completion_tokens': 1283}
+[2026-06-18 20:24:14] INFO    audit_workflow - LLM 生成完成: tokens=1965 (attempt 4/4)
+[2026-06-18 20:24:14] WARNING audit_workflow - LLM 代码语法错误 (attempt 4/4): invalid syntax (<unknown>, line 1)
+[2026-06-18 20:31:36] INFO    audit_workflow - LLM 生成并执行: target=outputs\SYSU\test\llm_code\generated_20260618_203136.py, run=true, timeout=5s, system_prompt_len=0
+[2026-06-18 20:32:07] INFO    audit_workflow - LLM 生成完成: tokens=1439 (attempt 1/4)
+[2026-06-18 20:32:07] INFO    audit_workflow - LLM 代码执行完成: returncode=1
+[2026-06-18 20:32:07] WARNING audit_workflow - LLM 代码运行错误 (attempt 1/4): returncode=1
+stderr:
+Fatal Python error: init_import_site: Failed to import the site module
+Python runtime state: initialized
+Traceback (most recent call last):
+  File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+  File "<frozen importlib._bootstrap>", line 1176, in exec_module
+  File "<frozen site>", line 635, in <module>
+  File "<frozen site>", line 618, in main
+  File "<frozen site>", line 536, in venv
+  File "<frozen codecs>", line 309, in __init__
+KeyboardInterrupt
+[2026-06-18 20:32:07] INFO    audit_workflow - 自动重试修复运行错误 (attempt 1 → 2)
+[2026-06-18 20:32:43] INFO    audit_workflow - LLM 生成完成: tokens=2762 (attempt 2/4)
+[2026-06-18 20:32:44] INFO    audit_workflow - LLM 代码执行完成: returncode=0

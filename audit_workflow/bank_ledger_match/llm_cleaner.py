@@ -7,7 +7,7 @@ from typing import Any
 
 from .config import resolve_path
 from .llm_agent import run_bank_parser_agent
-from .utils import read_excel_headerless
+from .utils import read_excel_headerless, strip_code_fence
 
 
 SYSTEM_PROMPT = """你是审计数据清洗助手。你的任务是为银行流水 Excel 生成一个 Python 解析脚本。
@@ -62,13 +62,10 @@ def ensure_llm_bank_parser(config: dict[str, Any], item: dict[str, Any]) -> Path
 
     result = run_bank_parser_agent(config, user_prompt, SYSTEM_PROMPT)
     code = result.code
-    code = _strip_code_fence(code)
+    code = strip_code_fence(code)
     if "def parse(" not in code:
         raise RuntimeError("LLM 返回内容中没有 parse 函数，请检查模型输出。")
     parser_path.write_text(code, encoding="utf-8")
     return parser_path
 
 
-def _strip_code_fence(value: str) -> str:
-    match = re.search(r"```(?:python)?\s*(.*?)```", value, flags=re.S)
-    return match.group(1).strip() if match else value.strip()

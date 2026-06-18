@@ -101,10 +101,10 @@ function updateEvidencePanelVisibility() {
   layout.classList.toggle('evidence-hidden', !visible)
 }
 
-export function setAgentStatus(status, progress = 0) {
+export function setAgentStatus(status, progress = 0, label = null) {
   state.status = status
   const normalized = status.toLowerCase()
-  $('#agent-status').textContent = `Agent ${status}`
+  $('#agent-status').textContent = `Agent ${label || status}`
   $('#agent-dot').className = `status-dot ${normalized}`
   $('#agent-progress').style.width = `${progress}%`
   const running = ['Running', 'Validating', 'Retrying'].includes(status) ? '1' : '0'

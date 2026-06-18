@@ -163,7 +163,7 @@ export const llmCodePath = 'outputs/llm_code/generated_from_llm.py'
 export const evidencePanelSections = [
   ['timeline',      '执行时间线',    true,  false, false],
   ['review-editor', '人工复核',      true,  false, false],
-  ['step-files',    '本任务生成文件', true,  false, false],
-  ['all-files',     '所有输出文件',   false, false, false],
+  ['step-files',    '本任务生成文件', true,  true, false],
+  ['all-files',     '所有输出文件',   true, true, true],
   ['git-log',       'Git 历史',      true,  true,  true],
 ]
