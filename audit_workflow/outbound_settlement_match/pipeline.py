@@ -94,10 +94,42 @@ def run_detect(config: dict[str, Any]) -> dict[str, Any]:
 def run_clean_settlement(config: dict[str, Any]) -> tuple[Path, Path]:
     """Clean and aggregate platform settlement CSV files.
 
+    When ``config["llm"]["enabled"]`` is true, uses LLM-generated
+    cleaning scripts that handle arbitrary column layouts.  Falls back
+    to the hardcoded column-mapping logic otherwise (or on failure).
+
+    Cleansing mode and any fallback reasons are recorded in
+    ``config["_cleaning"]["settlement"]`` so that API layers can
+    surface the information to users.
+
     Returns:
         (settlement_all_csv_path, monthly_summary_csv_path)
     """
     ensure_dirs(config)
+    info = _cleaning_info(config, "settlement")
+
+    llm_cfg = config.get("llm", {})
+    if llm_cfg.get("enabled", False):
+        reason = _check_llm_ready(llm_cfg)
+        if reason:
+            info["mode"] = "hardcoded"
+            info["fallback_reason"] = reason
+            logger.warning("LLM not available for settlement cleaning: %s", reason)
+            return _clean_settlement(config)
+        try:
+            from .settlement_cleaner import clean_settlement_llm
+            result = clean_settlement_llm(config)
+            info["mode"] = "llm"
+            return result
+        except Exception as e:
+            reason = str(e)
+            info["mode"] = "hardcoded"
+            info["fallback_reason"] = f"LLM 清洗失败，已回退到硬编码：{reason}"
+            logger.warning(
+                "LLM settlement cleaning failed entirely, falling back: %s", e
+            )
+    else:
+        info["mode"] = "hardcoded"
     return _clean_settlement(config)
 
 
@@ -106,11 +138,43 @@ def run_clean_settlement(config: dict[str, Any]) -> tuple[Path, Path]:
 def run_clean_outbound(config: dict[str, Any]) -> dict[str, Path | None]:
     """Clean outbound Excel files.
 
+    When ``config["llm"]["enabled"]`` is true, uses LLM-generated
+    cleaning scripts that handle arbitrary column layouts.  Falls back
+    to the hardcoded column-mapping logic otherwise (or on failure).
+
+    Cleansing mode and any fallback reasons are recorded in
+    ``config["_cleaning"]["outbound"]`` so that API layers can
+    surface the information to users.
+
     Returns:
         dict with keys 'sellout', 'refund', 'return', 'transfer',
         values are paths to cleaned CSVs (or None if no data found).
     """
     ensure_dirs(config)
+    info = _cleaning_info(config, "outbound")
+
+    llm_cfg = config.get("llm", {})
+    if llm_cfg.get("enabled", False):
+        reason = _check_llm_ready(llm_cfg)
+        if reason:
+            info["mode"] = "hardcoded"
+            info["fallback_reason"] = reason
+            logger.warning("LLM not available for outbound cleaning: %s", reason)
+            return _clean_outbound(config)
+        try:
+            from .outbound_cleaner import clean_outbound_llm
+            result = clean_outbound_llm(config)
+            info["mode"] = "llm"
+            return result
+        except Exception as e:
+            reason = str(e)
+            info["mode"] = "hardcoded"
+            info["fallback_reason"] = f"LLM 清洗失败，已回退到硬编码：{reason}"
+            logger.warning(
+                "LLM outbound cleaning failed entirely, falling back: %s", e
+            )
+    else:
+        info["mode"] = "hardcoded"
     return _clean_outbound(config)
 
 
@@ -182,3 +246,55 @@ def run_all(config: dict[str, Any]) -> dict[str, Any]:
     result["match"] = match_result
 
     return result
+
+
+# ── Internal helpers ────────────────────────────────────────────
+
+def _cleaning_info(config: dict[str, Any], step: str) -> dict[str, Any]:
+    """Get or create the cleaning-mode tracking dict for *step*.
+
+    Writes into ``config["_cleaning"][step]`` so that callers (API
+    layer) can read the mode and fallback reason after the pipeline
+    returns.
+    """
+    cleaning = config.setdefault("_cleaning", {})
+    info: dict[str, Any] = {"mode": "hardcoded"}
+    cleaning[step] = info
+    return info
+
+
+def _check_llm_ready(llm_cfg: dict[str, Any]) -> str | None:
+    """Return a human-readable reason if LLM is *not* ready, else None.
+
+    Checks that the config has providers (or flat api_key) so that
+    code generation will not fail with a cryptic error.
+    """
+    import os
+
+    providers = llm_cfg.get("providers")
+    if providers and isinstance(providers, dict):
+        # Providers format — check that at least one provider has a usable api_key
+        default_name = llm_cfg.get("default") or next(iter(providers))
+        pcfg = providers.get(default_name, {})
+        api_key_env = pcfg.get("api_key_env", "")
+        api_key = pcfg.get("api_key", "")
+        if api_key:
+            return None
+        if api_key_env and os.getenv(api_key_env):
+            return None
+        return (
+            f"LLM provider '{default_name}' 未配置 API Key"
+            f"（环境变量 {api_key_env} 未设置）"
+        )
+
+    # Flat format
+    api_key = llm_cfg.get("api_key", "")
+    api_key_env = llm_cfg.get("api_key_env", "")
+    if api_key:
+        return None
+    if api_key_env and os.getenv(api_key_env):
+        return None
+    return (
+        "LLM 未配置 API Key"
+        f"（{api_key_env or 'api_key'} 未设置）"
+    )

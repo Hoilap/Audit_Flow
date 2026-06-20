@@ -313,3 +313,155 @@ def _generate_monthly_summary(all_txn: pd.DataFrame) -> pd.DataFrame:
     summary = pd.concat([summary, pd.DataFrame([totals])], ignore_index=True)
 
     return summary
+
+
+# ── LLM-based cleaning path ────────────────────────────────────
+
+def clean_settlement_llm(config: dict[str, Any]) -> tuple[Path, Path]:
+    """LLM-driven settlement cleaning.
+
+    For each transaction-level CSV, asks the LLM to generate a cleaning
+    script that maps the file's columns to SETTLEMENT_COLUMNS.  Batch
+    files still use the hardcoded ``_standardize_batch()`` (simple
+    structure).  Falls back to ``_standardize_transaction()`` if the LLM
+    path fails for an individual file.
+
+    Returns:
+        (settlement_all_csv_path, monthly_summary_csv_path)
+    """
+    from .llm_cleaner import (
+        ensure_llm_settlement_cleaner,
+        load_and_run_cleaner,
+        compute_column_signature,
+    )
+
+    inp = inputs_dir(config)
+    settle_dir = inp / "settlement"
+    if not settle_dir.exists():
+        raise FileNotFoundError(f"Settlement directory not found: {settle_dir}")
+
+    out = output_dir(config)
+    clean_dir = out / "clean"
+    clean_dir.mkdir(parents=True, exist_ok=True)
+
+    csv_files = sorted(settle_dir.rglob("*.csv"))
+    if not csv_files:
+        raise FileNotFoundError(f"No CSV files found in {settle_dir}")
+
+    logger.info("[LLM] Found %d settlement CSV files", len(csv_files))
+
+    txn_frames: list[pd.DataFrame] = []
+    batch_frames: list[pd.DataFrame] = []
+    file_index: list[dict] = []
+    file_fallbacks: list[dict] = []  # Track per-file fallbacks
+    total_usage: dict[str, int] = {"total_tokens": 0, "prompt_tokens": 0, "completion_tokens": 0}
+    script_dir_path: str | None = None
+
+    for csv_path in csv_files:
+        month_key = extract_month_key(str(csv_path))
+        try:
+            df = _read_settlement_csv(csv_path)
+            if df.empty:
+                continue
+
+            file_type = _classify_settlement_file(df)
+
+            if file_type == "transaction":
+                try:
+                    col_sig = compute_column_signature(list(df.columns))
+                    script_path, usage = ensure_llm_settlement_cleaner(
+                        config, csv_path, col_sig
+                    )
+                    for k in total_usage:
+                        total_usage[k] += usage.get(k, 0)
+                    if script_dir_path is None:
+                        script_dir_path = str(script_path.parent)
+                    records = load_and_run_cleaner(
+                        script_path, str(csv_path), month_key, csv_path.name
+                    )
+                    df_clean = pd.DataFrame(records)
+
+                    # Ensure all standard columns exist
+                    for col in SETTLEMENT_COLUMNS:
+                        if col not in df_clean.columns:
+                            df_clean[col] = ""
+                    df_clean = df_clean[SETTLEMENT_COLUMNS]
+                    logger.info(
+                        "  [LLM] %s → %d records (script: %s)",
+                        csv_path.name, len(df_clean), script_path.name,
+                    )
+                except Exception as e:
+                    logger.warning(
+                        "  [LLM] Failed for %s, falling back to hardcoded: %s",
+                        csv_path.name, e,
+                    )
+                    file_fallbacks.append({
+                        "file": csv_path.name,
+                        "reason": str(e),
+                    })
+                    df["month"] = month_key
+                    df["source_file"] = csv_path.name
+                    df_clean = _standardize_transaction(df)
+                txn_frames.append(df_clean)
+
+            elif file_type == "batch":
+                # Batch files: always use hardcoded (simple, well-known structure)
+                df["month"] = month_key
+                df["source_file"] = csv_path.name
+                df_clean = _standardize_batch(df)
+                batch_frames.append(df_clean)
+
+            file_index.append({
+                "file": str(csv_path.relative_to(settle_dir)),
+                "month": month_key,
+                "type": file_type,
+                "rows": len(df),
+            })
+        except Exception as e:
+            logger.warning("Failed to process %s: %s", csv_path, e)
+            file_index.append({
+                "file": str(csv_path.relative_to(settle_dir)),
+                "month": month_key,
+                "type": "error",
+                "rows": 0,
+                "error": str(e),
+            })
+
+    if not txn_frames:
+        raise ValueError("No transaction-level settlement records found")
+
+    # Aggregate all transactions
+    all_txn = pd.concat(txn_frames, ignore_index=True)
+    settlement_path = clean_dir / "settlement_all.csv"
+    safe_write_csv(all_txn, str(settlement_path))
+    logger.info(
+        "[LLM] Settlement cleaned: %d records from %d files",
+        len(all_txn), len(txn_frames),
+    )
+
+    # Generate monthly summary
+    summary = _generate_monthly_summary(all_txn)
+    summary_path = clean_dir / "settlement_monthly_summary.csv"
+    safe_write_csv(summary, str(summary_path))
+    logger.info("[LLM] Monthly summary: %d months", len(summary))
+
+    # Save batch data separately if present
+    if batch_frames:
+        all_batch = pd.concat(batch_frames, ignore_index=True)
+        batch_path = clean_dir / "settlement_batch.csv"
+        safe_write_csv(all_batch, str(batch_path))
+        logger.info("[LLM] Batch settlement: %d records", len(all_batch))
+
+    # Save file index
+    index_df = pd.DataFrame(file_index)
+    safe_write_csv(index_df, str(clean_dir / "settlement_file_index.csv"))
+
+    # Record per-file fallback info for API layer
+    cleaning_info = config.get("_cleaning", {}).get("settlement", {})
+    if file_fallbacks:
+        cleaning_info["file_fallbacks"] = file_fallbacks
+    cleaning_info["usage"] = total_usage
+    if script_dir_path:
+        cleaning_info["script_dir"] = script_dir_path
+
+    return settlement_path, summary_path

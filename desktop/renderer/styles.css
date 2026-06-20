@@ -83,8 +83,11 @@ input:focus, textarea:focus, select:focus { border-color: var(--primary); }
 .status-dot.validating, .status-dot.retrying { background: var(--warning); }
 .status-dot.completed { background: var(--success); }
 .status-dot.failed { background: var(--danger); }
+.status-dot.cancelled { background: var(--warning); }
 .progress-track { width: 180px; height: 6px; border-radius: 999px; background: var(--surface-muted); overflow: hidden; }
 .progress-fill { height: 100%; width: 0%; background: var(--primary); transition: width 200ms ease; }
+.stop-btn { background: var(--danger, #e53e3e); color: #fff; border: none; border-radius: 4px; padding: 2px 10px; font-size: 12px; cursor: pointer; margin-left: 8px; }
+.stop-btn:hover { opacity: 0.85; }
 .metric-inline { color: var(--text-muted); font-size: 12px; white-space: nowrap; }
 .layout { display: grid; grid-template-columns: 260px minmax(320px, 1fr) 380px; min-height: 0; transition: grid-template-columns 250ms ease; }
 .layout.sidebar-hidden { grid-template-columns: 0px minmax(320px, 1fr) 380px; }

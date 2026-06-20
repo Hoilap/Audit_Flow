@@ -1,8 +1,8 @@
-import { api } from './api.js'
+import { api, cancelRequest } from './api.js'
 import { llmCodePath } from './config.js'
 import { activeTask, findWorkflowTaskByName, getProjectBasePath, resolveProjectPath, markStep, state, stepStatus } from './state.js'
 import { $ } from './dom.js'
-import { addMessage, renderFileError, renderFileTree, renderFiles, renderLlmCode, renderStepFiles, renderTimeline, renderWorkflowWorkspace, setAgentStatus, startTimer, stopTimer, renderDetectResult, renderConfigConfirm, renderCheckResult, renderProgramsList } from './ui.js'
+import { addMessage, renderFileError, renderFileTree, renderFiles, renderLlmCode, renderStepFiles, renderTimeline, renderWorkflowWorkspace, setAgentStatus, startTimer, stopTimer, renderDetectResult, renderConfigConfirm, renderCheckResult, renderProgramsList, renderSheetTasks } from './ui.js'
 import { openCsvPreview } from './previewModal.js'
 import { openReviewEditor } from './reviewEditor.js'
 import { logger } from './logger.js'
@@ -43,6 +43,14 @@ export async function refreshApprove() {
   } else {
     alert('当前工作流没有配置复核文件。')
   }
+}
+
+export function cancelRunningStep() {
+  logger.info('cancelRunningStep', '用户请求停止当前任务')
+  cancelRequest()
+  stopTimer()
+  setAgentStatus('Cancelled', 0)
+  addMessage({ title: '任务已停止', body: '用户手动停止了当前任务。' })
 }
 
 export async function runStep(stepIndex = state.activeStepIndex) {
@@ -165,9 +173,24 @@ export async function runStep(stepIndex = state.activeStepIndex) {
       form.append('task_name', taskDirName)
       result = await api.workflow(step.endpoint, form)
       markStep(task.id, step.id, 'completed', result)
+      const mode = result.cleaning_mode === 'llm' ? 'LLM 生成脚本' : '硬编码规则'
+      let body = `结算流水清洗完成（${mode}），已生成合并结算 CSV 和月度汇总。`
+      if (result.usage && result.usage.total_tokens > 0) {
+        body += `\nToken 用量：${result.usage.total_tokens}（输入 ${result.usage.prompt_tokens || 0}，输出 ${result.usage.completion_tokens || 0}）`
+      }
+      if (result.script_dir) {
+        body += `\n脚本目录：${result.script_dir}`
+      }
+      if (result.fallback_reason) {
+        body += `\n⚠ 回退原因：${result.fallback_reason}`
+      }
+      if (result.file_fallbacks && result.file_fallbacks.length > 0) {
+        const files = result.file_fallbacks.map(f => `${f.file}: ${f.reason}`).join('\n')
+        body += `\n以下文件回退到硬编码：\n${files}`
+      }
       addMessage({
         title: step.title,
-        body: `结算流水清洗完成，已生成合并结算 CSV 和月度汇总。`,
+        body,
         result,
       })
     }
@@ -180,11 +203,51 @@ export async function runStep(stepIndex = state.activeStepIndex) {
       markStep(task.id, step.id, 'completed', result)
       const paths = result.paths || {}
       const pathCount = Object.values(paths).filter(Boolean).length
+      const mode = result.cleaning_mode === 'llm' ? 'LLM 生成脚本' : '硬编码规则'
+      let body = `出库表清洗完成（${mode}），生成 ${pathCount} 个标准化 CSV 文件。`
+      if (result.usage && result.usage.total_tokens > 0) {
+        body += `\nToken 用量：${result.usage.total_tokens}（输入 ${result.usage.prompt_tokens || 0}，输出 ${result.usage.completion_tokens || 0}）`
+      }
+      if (result.script_dir) {
+        body += `\n脚本目录：${result.script_dir}`
+      }
+      if (result.fallback_reason) {
+        body += `\n⚠ 回退原因：${result.fallback_reason}`
+      }
+      if (result.file_fallbacks && result.file_fallbacks.length > 0) {
+        const sheets = result.file_fallbacks.map(f => `${f.file}/${f.sheet}: ${f.reason}`).join('\n')
+        body += `\n以下工作表回退到硬编码：\n${sheets}`
+      }
       addMessage({
         title: step.title,
-        body: `出库表清洗完成，生成 ${pathCount} 个标准化 CSV 文件。`,
+        body,
         result,
       })
+      // 渲染每个工作表的任务状态表（含重试按钮）
+      if (result.sheet_tasks && result.sheet_tasks.length > 0) {
+        renderSheetTasks(result, async (file, sheet, sheetType, colSig) => {
+          const retryForm = new FormData()
+          retryForm.append('customer_name', customerName)
+          retryForm.append('task_name', taskDirName)
+          retryForm.append('file', file)
+          retryForm.append('sheet', sheet)
+          retryForm.append('sheet_type', sheetType)
+          retryForm.append('column_signature', colSig)
+          retryForm.append('force_regenerate', 'true')
+          const retryResult = await api.workflow(
+            '/workflow/outbound_settlement_match/clean_outbound_sheet',
+            retryForm,
+          )
+          // 显示重试 token 用量
+          if (retryResult.usage && retryResult.usage.total_tokens > 0) {
+            addMessage({
+              title: `重试: ${sheet}`,
+              body: `Token 用量：${retryResult.usage.total_tokens}（输入 ${retryResult.usage.prompt_tokens || 0}，输出 ${retryResult.usage.completion_tokens || 0}）`,
+            })
+          }
+          return retryResult
+        })
+      }
     }
     // ── 其他步骤（clean, match, verify）── 使用通用 workflow + customer 参数
     else {
@@ -220,6 +283,12 @@ export async function runStep(stepIndex = state.activeStepIndex) {
     }
     return result
   } catch (error) {
+    if (error.name === 'AbortError') {
+      logger.info('runStep', `${step.title} 已被用户停止`)
+      markStep(task.id, step.id, 'idle')
+      renderTimeline(step.id)
+      return
+    }
     logger.error('runStep', `${step.title} 失败: ${error.message}`)
     markStep(task.id, step.id, 'failed', { error: error.message })
     renderTimeline(step.id, true)

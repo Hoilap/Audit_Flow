@@ -2,7 +2,7 @@ import { workflowTasks } from './config.js'
 import { findWorkflowTaskByName, state } from './state.js'
 import { $, $$ } from './dom.js'
 import { renderEvidencePanel, renderShell, renderWorkflowWorkspace, setAgentStatus, showPage } from './ui.js'
-import { commitAll, createProject, deleteProject, loadProjects, loadProgramReadmes, previewFile, refreshFiles, refreshLog, refreshTokens, runAllSteps, runNextStep, runStep, selectProject, sendPrompt, toggleCustomMode, updateCustomCustomerName, updateCustomTaskName, updateDetectMethod, updateProject, uploadFile, syncLlmConfig, updateLlmModel } from './actions.js'
+import { cancelRunningStep, commitAll, createProject, deleteProject, loadProjects, loadProgramReadmes, previewFile, refreshFiles, refreshLog, refreshTokens, runAllSteps, runNextStep, runStep, selectProject, sendPrompt, toggleCustomMode, updateCustomCustomerName, updateCustomTaskName, updateDetectMethod, updateProject, uploadFile, syncLlmConfig, updateLlmModel } from './actions.js'
 import { openReviewEditor } from './reviewEditor.js'
 import { renderProjectsTable, showProjectFormModal } from './ui.js'
 
@@ -135,6 +135,7 @@ function bindEvents() {
   })
   $('#run-next-step').addEventListener('click', () => withDisabled('#run-next-step', runNextStep))
   $('#run-all-steps').addEventListener('click', () => withDisabled('#run-all-steps', runAllSteps))
+  $('#stop-task').addEventListener('click', cancelRunningStep)
   $('#send').addEventListener('click', () => withDisabled('#send', sendPrompt))
   $('#upload-btn').addEventListener('click', () => withDisabled('#upload-btn', uploadFile))
   $('#commit-all').addEventListener('click', () => withDisabled('#commit-all', commitAll))

@@ -543,3 +543,297 @@ def _extract_month_from_filename(filename: str) -> str:
         if 2000 <= y <= 2099 and 1 <= mo <= 12:
             return f"{y:04d}-{mo:02d}"
     return "unknown"
+
+
+# ── LLM-based cleaning path ────────────────────────────────────
+
+def clean_outbound_llm(config: dict[str, Any]) -> dict[str, Path]:
+    """LLM-driven outbound cleaning.
+
+    For each non-skip Excel sheet, asks the LLM to generate a cleaning
+    script that maps the sheet's columns to the appropriate standard
+    schema (sellout/refund/transfer).  Falls back to the hardcoded
+    ``_clean_sellout_sheet`` / ``_clean_refund_sheet`` /
+    ``_clean_transfer_sheet`` if LLM fails for an individual sheet.
+
+    Returns:
+        dict with keys: 'sellout', 'refund', 'return', 'transfer'
+        Values are paths to the cleaned CSV files (or None).
+    """
+    from .llm_cleaner import (
+        ensure_llm_outbound_cleaner,
+        safe_run_cleaner,
+        compute_column_signature,
+        patch_rename_dedup,
+    )
+
+    inp = inputs_dir(config)
+    outbound_dir = inp / "outbound"
+    if not outbound_dir.exists():
+        raise FileNotFoundError(f"Outbound directory not found: {outbound_dir}")
+
+    out = output_dir(config)
+    clean_dir = out / "clean"
+    clean_dir.mkdir(parents=True, exist_ok=True)
+
+    # Find all Excel files
+    xlsx_files = sorted(
+        f for f in outbound_dir.iterdir()
+        if f.suffix.lower() in (".xlsx", ".xls") and not f.name.startswith("~")
+    )
+    if not xlsx_files:
+        raise FileNotFoundError(f"No Excel files found in {outbound_dir}")
+
+    logger.info("[LLM] Found %d outbound Excel files", len(xlsx_files))
+
+    sellout_frames: list[pd.DataFrame] = []
+    refund_frames: list[pd.DataFrame] = []
+    return_frames: list[pd.DataFrame] = []
+    transfer_frames: list[pd.DataFrame] = []
+    sheet_index: list[dict] = []
+    file_fallbacks: list[dict] = []  # Track per-sheet fallbacks (backward compat)
+    sheet_tasks: list[dict] = []     # Per-sheet task list with status/script/rows
+    total_usage: dict[str, int] = {"total_tokens": 0, "prompt_tokens": 0, "completion_tokens": 0}
+    script_dir_path: str | None = None
+
+    # Column schemas per sheet type
+    type_columns = {
+        "sellout": SELLOUT_COLUMNS,
+        "refund": REFUND_COLUMNS,
+        "return": REFUND_COLUMNS,
+        "transfer": TRANSFER_COLUMNS,
+    }
+
+    for xlsx_path in xlsx_files:
+        month = _extract_month_from_filename(xlsx_path.name)
+        logger.info("[LLM] Processing: %s (month=%s)", xlsx_path.name, month)
+
+        try:
+            xl = pd.ExcelFile(str(xlsx_path), engine="openpyxl")
+        except Exception as e:
+            logger.warning("Failed to open %s: %s", xlsx_path.name, e)
+            continue
+
+        for sheet_name in xl.sheet_names:
+            stype = classify_sheet(sheet_name)
+            sheet_index.append({
+                "file": xlsx_path.name,
+                "sheet": sheet_name,
+                "type": stype,
+                "month": month,
+            })
+
+            if stype == "skip":
+                continue
+
+            try:
+                df = _read_sheet_auto_header(xl, sheet_name)
+            except Exception as e:
+                logger.warning("  Failed to read sheet '%s': %s", sheet_name, e)
+                continue
+
+            if df.empty:
+                continue
+
+            # Clean column names
+            df.columns = [str(c).strip() for c in df.columns]
+
+            # Try LLM path first
+            col_sig = None
+            script_name = None
+            try:
+                col_sig = compute_column_signature(list(df.columns))
+                script_path, usage = ensure_llm_outbound_cleaner(
+                    config, xlsx_path, sheet_name, stype, col_sig
+                )
+                for k in total_usage:
+                    total_usage[k] += usage.get(k, 0)
+                if script_dir_path is None:
+                    script_dir_path = str(script_path.parent)
+                script_name = script_path.name
+                try:
+                    records = safe_run_cleaner(
+                        script_path,
+                        str(xlsx_path), sheet_name, xlsx_path.name, month, stype,
+                    )
+                except Exception as run_err:
+                    err_str = str(run_err)
+                    if "truth value" in err_str.lower() or "series" in err_str.lower():
+                        logger.warning(
+                            "  [LLM] Script %s has post-rename duplicate columns, auto-patching...",
+                            script_path.name,
+                        )
+                        original_code = script_path.read_text(encoding="utf-8")
+                        patched_code = patch_rename_dedup(original_code)
+                        if patched_code != original_code:
+                            script_path.write_text(patched_code, encoding="utf-8")
+                            records = safe_run_cleaner(
+                                script_path,
+                                str(xlsx_path), sheet_name, xlsx_path.name, month, stype,
+                            )
+                        else:
+                            raise
+                    else:
+                        raise
+                df_clean = pd.DataFrame(records)
+
+                # Ensure standard columns exist
+                std_cols = type_columns.get(stype, SELLOUT_COLUMNS)
+                for col in std_cols:
+                    if col not in df_clean.columns:
+                        df_clean[col] = ""
+
+                sheet_tasks.append({
+                    "file": xlsx_path.name,
+                    "sheet": sheet_name,
+                    "type": stype,
+                    "month": month,
+                    "status": "llm_success",
+                    "script_name": script_name,
+                    "column_signature": col_sig,
+                    "rows": len(df_clean),
+                    "error": None,
+                })
+
+                logger.info(
+                    "  [LLM] %s/%s → %d records (script: %s)",
+                    xlsx_path.name, sheet_name, len(df_clean), script_path.name,
+                )
+            except Exception as e:
+                logger.warning(
+                    "  [LLM] Failed for %s/%s, falling back: %s",
+                    xlsx_path.name, sheet_name, e,
+                )
+                error_msg = str(e)
+                file_fallbacks.append({
+                    "file": xlsx_path.name,
+                    "sheet": sheet_name,
+                    "reason": error_msg,
+                })
+
+                # Fall back to hardcoded cleaning
+                try:
+                    df["source_file"] = xlsx_path.name
+                    df["source_sheet"] = sheet_name
+                    df["month"] = month
+                    if stype == "sellout":
+                        df_clean = _clean_sellout_sheet(df)
+                    elif stype in ("refund", "return"):
+                        df_clean = _clean_refund_sheet(df)
+                    elif stype == "transfer":
+                        df_clean = _clean_transfer_sheet(df)
+                    else:
+                        sheet_tasks.append({
+                            "file": xlsx_path.name,
+                            "sheet": sheet_name,
+                            "type": stype,
+                            "month": month,
+                            "status": "failed",
+                            "script_name": script_name,
+                            "column_signature": col_sig,
+                            "rows": 0,
+                            "error": error_msg,
+                        })
+                        continue
+
+                    sheet_tasks.append({
+                        "file": xlsx_path.name,
+                        "sheet": sheet_name,
+                        "type": stype,
+                        "month": month,
+                        "status": "llm_fallback",
+                        "script_name": None,
+                        "column_signature": col_sig,
+                        "rows": len(df_clean),
+                        "error": error_msg,
+                    })
+                except Exception as e2:
+                    logger.warning(
+                        "  [Hardcoded] Also failed for %s/%s: %s",
+                        xlsx_path.name, sheet_name, e2,
+                    )
+                    sheet_tasks.append({
+                        "file": xlsx_path.name,
+                        "sheet": sheet_name,
+                        "type": stype,
+                        "month": month,
+                        "status": "failed",
+                        "script_name": None,
+                        "column_signature": col_sig,
+                        "rows": 0,
+                        "error": f"LLM: {error_msg}; Hardcoded: {e2}",
+                    })
+                    continue
+
+            if df_clean.empty:
+                continue
+
+            sheet_index[-1]["rows"] = len(df_clean)
+
+            if stype == "sellout":
+                sellout_frames.append(df_clean)
+            elif stype == "refund":
+                refund_frames.append(df_clean)
+            elif stype == "return":
+                return_frames.append(df_clean)
+            elif stype == "transfer":
+                transfer_frames.append(df_clean)
+
+        xl.close()
+
+    # Write outputs (same logic as clean_outbound)
+    result: dict[str, Path | None] = {}
+    for name, frames, columns in [
+        ("sellout", sellout_frames, SELLOUT_COLUMNS),
+        ("refund", refund_frames, REFUND_COLUMNS),
+        ("return", return_frames, REFUND_COLUMNS),
+        ("transfer", transfer_frames, TRANSFER_COLUMNS),
+    ]:
+        if frames:
+            combined = pd.concat(frames, ignore_index=True)
+            for col in columns:
+                if col not in combined.columns:
+                    combined[col] = ""
+            combined = combined[
+                columns + [c for c in combined.columns if c not in columns and not c.startswith("_")]
+            ]
+            path = clean_dir / f"{name}.csv"
+            safe_write_csv(combined, str(path))
+            result[name] = path
+            logger.info("  [LLM] %s: %d records", name, len(combined))
+        else:
+            result[name] = None
+            logger.info("  [LLM] %s: no records found", name)
+
+    # Save sheet classification index
+    idx_df = pd.DataFrame(sheet_index)
+    safe_write_csv(idx_df, str(clean_dir / "outbound_sheet_index.csv"))
+
+    # Record per-sheet fallback info for API layer
+    cleaning = config.setdefault("_cleaning", {})
+    cleaning_info = cleaning.setdefault("outbound", {})
+    if file_fallbacks:
+        cleaning_info["file_fallbacks"] = file_fallbacks
+    cleaning_info["sheet_tasks"] = sheet_tasks
+    cleaning_info["usage"] = total_usage
+    if script_dir_path:
+        cleaning_info["script_dir"] = script_dir_path
+
+    # Persist sheet tasks to local JSON for frontend reload
+    import json as _json
+    sheet_tasks_path = clean_dir / "sheet_tasks.json"
+    _persist = {
+        "sheet_tasks": sheet_tasks,
+        "usage": total_usage,
+        "script_dir": script_dir_path,
+        "mode": "llm",
+    }
+    try:
+        sheet_tasks_path.write_text(
+            _json.dumps(_persist, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+        logger.info("  [LLM] Sheet tasks persisted to %s", sheet_tasks_path)
+    except Exception as e:
+        logger.warning("  [LLM] Failed to persist sheet tasks: %s", e)
+
+    return result

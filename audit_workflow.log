@@ -76,3 +76,780 @@ KeyboardInterrupt
 [2026-06-18 20:32:43] INFO    audit_workflow - LLM 生成完成: tokens=2762 (attempt 2/4)
 [2026-06-18 20:32:44] INFO    audit_workflow - LLM 代码执行完成: returncode=0
 [2026-06-20 14:07:35] INFO    audit_workflow - 删除项目: id=2
+[2026-06-20 14:15:32] INFO    audit_workflow - 创建项目: customer=ABC, task=出库结算匹配
+[2026-06-20 14:33:43] INFO    audit_workflow - OSM Detect: customer=ABC, task=outbound_settlement_match
+[2026-06-20 14:33:43] INFO    audit_workflow.outbound_settlement_match.pipeline - Detected 287 settlement CSV files
+[2026-06-20 14:34:03] INFO    audit_workflow.outbound_settlement_match.pipeline - Detected 9 outbound Excel files
+[2026-06-20 14:41:49] INFO    audit_workflow - OSM Detect: customer=ABC, task=outbound_settlement_match
+[2026-06-20 14:41:49] INFO    audit_workflow.outbound_settlement_match.pipeline - Detected 67 settlement CSV files
+[2026-06-20 14:42:05] INFO    audit_workflow.outbound_settlement_match.pipeline - Detected 9 outbound Excel files
+[2026-06-20 14:44:01] INFO    audit_workflow - OSM Clean Settlement: customer=ABC, task=outbound_settlement_match
+[2026-06-20 14:44:01] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner - Found 67 settlement CSV files in C:\Users\DengKaina\Desktop\Audit_workflow\inputs\ABC\outbound_settlement_match\settlement
+[2026-06-20 14:44:08] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner - Settlement cleaned: 53942 records from 66 files
+[2026-06-20 14:44:09] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner - Monthly summary: 13 months
+[2026-06-20 14:44:09] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner - Batch settlement: 3 records
+[2026-06-20 15:11:38] INFO    audit_workflow - OSM Detect: customer=ABC, task=outbound_settlement_match
+[2026-06-20 15:11:38] INFO    audit_workflow.outbound_settlement_match.pipeline - Detected 67 settlement CSV files
+[2026-06-20 15:11:56] INFO    audit_workflow.outbound_settlement_match.pipeline - Detected 9 outbound Excel files
+[2026-06-20 15:11:58] INFO    audit_workflow - OSM Clean Settlement: customer=ABC, task=outbound_settlement_match
+[2026-06-20 15:11:58] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner - [LLM] Found 67 settlement CSV files
+[2026-06-20 15:11:58] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner settlement_ccb7d598.py (attempt 1/3)
+[2026-06-20 15:12:21] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\settlement_ccb7d598.py
+[2026-06-20 15:12:21] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202201_50002021123000032007000095374669.csv → 868 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:21] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:21] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202201_50002022010500032007000096209833.csv → 177 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:21] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:21] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202201_50002022010700032007000096514050.csv → 224 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:22] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:22] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202201_50002022011100032007000097078551.csv → 229 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:22] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:22] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202201_50002022011300032007000097314469.csv → 238 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:22] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:22] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202201_50002022011700032007000097614668.csv → 295 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:22] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:22] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202201_50002022011800032007000098008960.csv → 237 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:22] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:22] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202201_50002022012000032007000098295039.csv → 225 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:22] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:22] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202201_50002022012400032007000098564420.csv → 295 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:22] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:22] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202201_50002022012500032007000098948259.csv → 159 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:22] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:22] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202202_50002022012700032007000099185488.csv → 1222 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:22] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:22] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202202_50002022020800032007000000154438.csv → 139 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:22] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:22] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202202_50002022021000032007000000365321.csv → 155 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:22] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:22] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202202_50002022021400032007000000650875.csv → 176 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:22] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:22] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202202_50002022021600032007000001119800.csv → 263 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:22] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:22] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202202_50002022022200032007000001936297.csv → 152 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:22] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:22] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202202_50002022022500032007000002318031.csv → 217 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:22] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:22] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022030100032007000002858977.csv → 168 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:22] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:22] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022030300032007000003138820.csv → 253 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:22] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:22] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022030700032007000003462642.csv → 308 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:22] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:22] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022030800032007000003859238.csv → 182 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:22] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:23] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022030900032007000004025809.csv → 169 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:23] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:23] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022031000032007000004146324.csv → 247 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:23] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:23] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022031100032007000004316942.csv → 196 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:23] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:23] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022031400032007000004455697.csv → 390 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:23] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:23] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022031500032007000004890858.csv → 171 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:23] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:23] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022031600032007000005025259.csv → 303 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:23] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:23] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022031800032007000005317517.csv → 573 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:23] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:23] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022032200032007000005838052.csv → 151 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:23] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:23] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022032300032007000005969794.csv → 199 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:23] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:23] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022032500032007000006242401.csv → 146 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:23] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:23] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022032800032007000006368799.csv → 570 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:23] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:23] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022032900032007000006775315.csv → 245 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:23] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:23] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022033000032007000006889578.csv → 211 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:23] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:23] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202204_50002022033100032007000007039580.csv → 249 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:23] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:23] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202204_50002022040200032007000007300469.csv → 665 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:23] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:23] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202204_50002022040700032007000007951948.csv → 261 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:24] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:24] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202204_50002022041100032007000008231855.csv → 401 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:24] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:24] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202204_50002022041200032007000008660595.csv → 290 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:24] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:24] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202204_50002022041400032007000008911989.csv → 1789 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:24] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:24] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202205_50002022042600032007000010560023.csv → 1616 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:24] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:24] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202205_50002022051000032007000012617198.csv → 1691 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:24] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:24] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202206_50002022052400032007000014723671.csv → 1992 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:25] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:25] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202206_50002022060700032007000016886324.csv → 1465 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:25] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:25] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202206_50002022061600032007000018310190.csv → 1735 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:25] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:25] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202206_50002022062300032007000019432310.csv → 1344 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:25] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:25] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202207_50002022063000032007000020569495.csv → 1329 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:25] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:25] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202207_50002022070800032007000021851925.csv → 1308 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:25] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:26] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202207_50002022071500032007000022966034.csv → 1455 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:26] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:26] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202208_50002022072800032007000025057701.csv → 1337 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:26] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:26] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202208_50002022080800032007000026558167.csv → 1818 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:26] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:26] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202208_50002022081600032007000028186749.csv → 1324 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:26] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:26] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202208_50002022082400032007000029360536.csv → 1392 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:26] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:26] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202209_50002022090100032007000030359532.csv → 1623 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:26] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:27] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202209_50002022091400032007000031962231.csv → 1348 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:27] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:27] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202210_50002022092300032007000033142080.csv → 2540 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:27] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:27] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202210_50002022101100032007000035491979.csv → 1449 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:27] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:27] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202210_50002022102100032007000036784553.csv → 1364 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:27] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:27] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202211_50002022110100032007000038204460.csv → 2024 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:27] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:27] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202211_50002022110800032007000039101043.csv → 1556 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:27] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:27] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202211_50002022111500032007000040042731.csv → 1384 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:28] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:28] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202211_50002022112200032007000040975543.csv → 1617 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:28] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:28] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202211_50002022112400032007000041235621.csv → 1300 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:28] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:28] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202212_50002022120100032007000042104417.csv → 1388 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:28] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:28] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202212_50002022120600032007000042754842.csv → 1640 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:28] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:28] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202212_50002022121600032007000044111880.csv → 1495 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:29] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner - [LLM] Settlement cleaned: 53942 records from 66 files
+[2026-06-20 15:12:29] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner - [LLM] Monthly summary: 13 months
+[2026-06-20 15:12:29] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner - [LLM] Batch settlement: 3 records
+[2026-06-20 15:12:39] INFO    audit_workflow - OSM Detect: customer=ABC, task=outbound_settlement_match
+[2026-06-20 15:12:39] INFO    audit_workflow.outbound_settlement_match.pipeline - Detected 67 settlement CSV files
+[2026-06-20 15:12:48] INFO    audit_workflow.outbound_settlement_match.pipeline - Detected 9 outbound Excel files
+[2026-06-20 15:12:53] INFO    audit_workflow - OSM Clean Settlement: customer=ABC, task=outbound_settlement_match
+[2026-06-20 15:12:53] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner - [LLM] Found 67 settlement CSV files
+[2026-06-20 15:12:53] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:53] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202201_50002021123000032007000095374669.csv → 868 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:53] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:53] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202201_50002022010500032007000096209833.csv → 177 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:53] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:53] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202201_50002022010700032007000096514050.csv → 224 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:53] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:53] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202201_50002022011100032007000097078551.csv → 229 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:53] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:53] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202201_50002022011300032007000097314469.csv → 238 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:53] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:53] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202201_50002022011700032007000097614668.csv → 295 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:53] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:53] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202201_50002022011800032007000098008960.csv → 237 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:53] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:53] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202201_50002022012000032007000098295039.csv → 225 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:53] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:53] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202201_50002022012400032007000098564420.csv → 295 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:53] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:53] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202201_50002022012500032007000098948259.csv → 159 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:53] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:53] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202202_50002022012700032007000099185488.csv → 1222 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202202_50002022020800032007000000154438.csv → 139 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202202_50002022021000032007000000365321.csv → 155 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202202_50002022021400032007000000650875.csv → 176 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202202_50002022021600032007000001119800.csv → 263 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202202_50002022022200032007000001936297.csv → 152 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202202_50002022022500032007000002318031.csv → 217 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022030100032007000002858977.csv → 168 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022030300032007000003138820.csv → 253 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022030700032007000003462642.csv → 308 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022030800032007000003859238.csv → 182 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022030900032007000004025809.csv → 169 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022031000032007000004146324.csv → 247 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022031100032007000004316942.csv → 196 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022031400032007000004455697.csv → 390 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022031500032007000004890858.csv → 171 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022031600032007000005025259.csv → 303 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022031800032007000005317517.csv → 573 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022032200032007000005838052.csv → 151 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022032300032007000005969794.csv → 199 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022032500032007000006242401.csv → 146 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022032800032007000006368799.csv → 570 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022032900032007000006775315.csv → 245 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022033000032007000006889578.csv → 211 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:54] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:55] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202204_50002022033100032007000007039580.csv → 249 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:55] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:55] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202204_50002022040200032007000007300469.csv → 665 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:55] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:55] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202204_50002022040700032007000007951948.csv → 261 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:55] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:55] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202204_50002022041100032007000008231855.csv → 401 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:55] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:55] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202204_50002022041200032007000008660595.csv → 290 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:55] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:55] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202204_50002022041400032007000008911989.csv → 1789 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:55] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:55] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202205_50002022042600032007000010560023.csv → 1616 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:55] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:55] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202205_50002022051000032007000012617198.csv → 1691 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:55] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:55] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202206_50002022052400032007000014723671.csv → 1992 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:56] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:56] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202206_50002022060700032007000016886324.csv → 1465 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:56] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:56] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202206_50002022061600032007000018310190.csv → 1735 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:56] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:56] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202206_50002022062300032007000019432310.csv → 1344 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:56] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:56] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202207_50002022063000032007000020569495.csv → 1329 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:56] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:56] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202207_50002022070800032007000021851925.csv → 1308 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:56] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:56] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202207_50002022071500032007000022966034.csv → 1455 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:56] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:56] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202208_50002022072800032007000025057701.csv → 1337 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:57] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:57] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202208_50002022080800032007000026558167.csv → 1818 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:57] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:57] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202208_50002022081600032007000028186749.csv → 1324 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:57] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:57] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202208_50002022082400032007000029360536.csv → 1392 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:57] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:57] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202209_50002022090100032007000030359532.csv → 1623 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:57] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:57] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202209_50002022091400032007000031962231.csv → 1348 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:57] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:58] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202210_50002022092300032007000033142080.csv → 2540 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:58] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:58] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202210_50002022101100032007000035491979.csv → 1449 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:58] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:58] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202210_50002022102100032007000036784553.csv → 1364 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:58] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:58] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202211_50002022110100032007000038204460.csv → 2024 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:58] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:58] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202211_50002022110800032007000039101043.csv → 1556 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:58] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:58] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202211_50002022111500032007000040042731.csv → 1384 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:58] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:59] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202211_50002022112200032007000040975543.csv → 1617 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:59] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:59] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202211_50002022112400032007000041235621.csv → 1300 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:59] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:59] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202212_50002022120100032007000042104417.csv → 1388 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:59] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:59] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202212_50002022120600032007000042754842.csv → 1640 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:12:59] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:12:59] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202212_50002022121600032007000044111880.csv → 1495 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:13:00] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner - [LLM] Settlement cleaned: 53942 records from 66 files
+[2026-06-20 15:13:00] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner - [LLM] Monthly summary: 13 months
+[2026-06-20 15:13:00] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner - [LLM] Batch settlement: 3 records
+[2026-06-20 15:25:19] INFO    audit_workflow - OSM Clean Settlement: customer=ABC, task=outbound_settlement_match
+[2026-06-20 15:25:19] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner - [LLM] Found 67 settlement CSV files
+[2026-06-20 15:25:19] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:19] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202201_50002021123000032007000095374669.csv → 868 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:19] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:19] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202201_50002022010500032007000096209833.csv → 177 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:19] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:19] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202201_50002022010700032007000096514050.csv → 224 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:19] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:20] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202201_50002022011100032007000097078551.csv → 229 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:20] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:20] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202201_50002022011300032007000097314469.csv → 238 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:20] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:20] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202201_50002022011700032007000097614668.csv → 295 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:20] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:20] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202201_50002022011800032007000098008960.csv → 237 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:20] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:20] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202201_50002022012000032007000098295039.csv → 225 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:20] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:20] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202201_50002022012400032007000098564420.csv → 295 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:20] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:20] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202201_50002022012500032007000098948259.csv → 159 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:20] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:20] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202202_50002022012700032007000099185488.csv → 1222 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:20] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:21] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202202_50002022020800032007000000154438.csv → 139 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:21] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:21] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202202_50002022021000032007000000365321.csv → 155 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:21] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:21] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202202_50002022021400032007000000650875.csv → 176 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:21] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:21] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202202_50002022021600032007000001119800.csv → 263 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:21] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:21] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202202_50002022022200032007000001936297.csv → 152 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:21] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:21] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202202_50002022022500032007000002318031.csv → 217 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:21] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:21] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022030100032007000002858977.csv → 168 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:21] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:21] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022030300032007000003138820.csv → 253 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:21] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:21] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022030700032007000003462642.csv → 308 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:21] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:21] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022030800032007000003859238.csv → 182 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:21] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:21] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022030900032007000004025809.csv → 169 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:21] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:21] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022031000032007000004146324.csv → 247 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:21] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:21] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022031100032007000004316942.csv → 196 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:21] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:21] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022031400032007000004455697.csv → 390 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:22] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:22] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022031500032007000004890858.csv → 171 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:22] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:22] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022031600032007000005025259.csv → 303 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:22] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:22] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022031800032007000005317517.csv → 573 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:22] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:22] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022032200032007000005838052.csv → 151 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:22] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:22] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022032300032007000005969794.csv → 199 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:22] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:22] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022032500032007000006242401.csv → 146 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:22] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:22] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022032800032007000006368799.csv → 570 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:22] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:22] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022032900032007000006775315.csv → 245 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:22] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:23] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202203_50002022033000032007000006889578.csv → 211 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:23] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:23] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202204_50002022033100032007000007039580.csv → 249 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:23] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:23] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202204_50002022040200032007000007300469.csv → 665 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:23] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:23] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202204_50002022040700032007000007951948.csv → 261 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:23] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:23] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202204_50002022041100032007000008231855.csv → 401 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:23] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:23] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202204_50002022041200032007000008660595.csv → 290 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:23] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:24] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202204_50002022041400032007000008911989.csv → 1789 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:24] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:24] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202205_50002022042600032007000010560023.csv → 1616 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:24] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:24] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202205_50002022051000032007000012617198.csv → 1691 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:24] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:25] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202206_50002022052400032007000014723671.csv → 1992 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:25] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:25] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202206_50002022060700032007000016886324.csv → 1465 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:25] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:26] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202206_50002022061600032007000018310190.csv → 1735 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:26] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:26] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202206_50002022062300032007000019432310.csv → 1344 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:26] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:26] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202207_50002022063000032007000020569495.csv → 1329 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:26] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:27] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202207_50002022070800032007000021851925.csv → 1308 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:27] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:27] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202207_50002022071500032007000022966034.csv → 1455 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:27] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:27] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202208_50002022072800032007000025057701.csv → 1337 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:27] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:28] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202208_50002022080800032007000026558167.csv → 1818 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:28] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:28] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202208_50002022081600032007000028186749.csv → 1324 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:28] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:28] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202208_50002022082400032007000029360536.csv → 1392 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:29] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:29] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202209_50002022090100032007000030359532.csv → 1623 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:29] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:29] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202209_50002022091400032007000031962231.csv → 1348 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:29] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:30] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202210_50002022092300032007000033142080.csv → 2540 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:30] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:30] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202210_50002022101100032007000035491979.csv → 1449 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:30] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:30] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202210_50002022102100032007000036784553.csv → 1364 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:30] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:31] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202211_50002022110100032007000038204460.csv → 2024 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:31] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:31] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202211_50002022110800032007000039101043.csv → 1556 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:31] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:31] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202211_50002022111500032007000040042731.csv → 1384 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:32] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:32] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202211_50002022112200032007000040975543.csv → 1617 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:32] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:32] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202211_50002022112400032007000041235621.csv → 1300 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:32] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:32] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202212_50002022120100032007000042104417.csv → 1388 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:32] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:33] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202212_50002022120600032007000042754842.csv → 1640 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:33] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached settlement cleaner: settlement_ccb7d598.py
+[2026-06-20 15:25:33] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner -   [LLM] 2088141280799902_settle_202212_50002022121600032007000044111880.csv → 1495 records (script: settlement_ccb7d598.py)
+[2026-06-20 15:25:35] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner - [LLM] Settlement cleaned: 53942 records from 66 files
+[2026-06-20 15:25:35] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner - [LLM] Monthly summary: 13 months
+[2026-06-20 15:25:35] INFO    audit_workflow.outbound_settlement_match.settlement_cleaner - [LLM] Batch settlement: 3 records
+[2026-06-20 15:40:43] INFO    audit_workflow - OSM Clean Outbound: customer=ABC, task=outbound_settlement_match
+[2026-06-20 15:40:44] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner - [LLM] Found 9 outbound Excel files
+[2026-06-20 15:40:44] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner - [LLM] Processing: 【05 TMF2 Flagship-Maklong】Health FSS 10月收入报告.xlsx (month=2022-10)
+[2026-06-20 15:40:52] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_sellout_45dcfd83.py (attempt 1/3)
+[2026-06-20 15:41:20] WARNING audit_workflow.llm_agent - _extract_token_usage: result(OsmCleanerScript) 无 usage 属性，token 计数为 0
+[2026-06-20 15:41:20] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_sellout_45dcfd83.py
+[2026-06-20 15:41:25] WARNING audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] Failed for 【05 TMF2 Flagship-Maklong】Health FSS 10月收入报告.xlsx/Sellout-出库, falling back: The truth value of a Series is ambiguous. Use a.empty, a.bool(), a.item(), a.any() or a.all().
+[2026-06-20 15:41:28] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_refund_75404e1b.py (attempt 1/3)
+[2026-06-20 15:41:48] WARNING audit_workflow.llm_agent - _extract_token_usage: result(OsmCleanerScript) 无 usage 属性，token 计数为 0
+[2026-06-20 15:41:48] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_refund_75404e1b.py
+[2026-06-20 15:41:51] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 10月收入报告.xlsx/refund only系统仅退款（资损） → 125 records (script: outbound_refund_75404e1b.py)
+[2026-06-20 15:41:54] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_return_e28012ed.py (attempt 1/3)
+[2026-06-20 15:42:31] WARNING audit_workflow.llm_agent - _extract_token_usage: result(OsmCleanerScript) 无 usage 属性，token 计数为 0
+[2026-06-20 15:42:31] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_return_e28012ed.py
+[2026-06-20 15:42:34] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 10月收入报告.xlsx/Rongqing Return WH（货损） → 2 records (script: outbound_return_e28012ed.py)
+[2026-06-20 15:42:37] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_transfer_55ee732f.py (attempt 1/3)
+[2026-06-20 15:42:52] WARNING audit_workflow.llm_agent - _extract_token_usage: result(OsmCleanerScript) 无 usage 属性，token 计数为 0
+[2026-06-20 15:42:52] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_transfer_55ee732f.py
+[2026-06-20 15:42:54] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 10月收入报告.xlsx/return to bonded(退回保税仓上架 → 44 records (script: outbound_transfer_55ee732f.py)
+[2026-06-20 15:42:54] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner - [LLM] Processing: 【05 TMF2 Flagship-Maklong】Health FSS 11月收入报告.xlsx (month=2022-11)
+[2026-06-20 15:43:12] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_sellout_da5c4980.py (attempt 1/3)
+[2026-06-20 15:43:39] WARNING audit_workflow.llm_agent - _extract_token_usage: result(OsmCleanerScript) 无 usage 属性，token 计数为 0
+[2026-06-20 15:43:39] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_sellout_da5c4980.py
+[2026-06-20 15:43:50] WARNING audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] Failed for 【05 TMF2 Flagship-Maklong】Health FSS 11月收入报告.xlsx/Sellout-出库, falling back: 'DataFrame' object has no attribute 'dtype'
+[2026-06-20 15:43:55] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_refund_55de8287.py (attempt 1/3)
+[2026-06-20 15:44:15] WARNING audit_workflow.llm_agent - _extract_token_usage: result(OsmCleanerScript) 无 usage 属性，token 计数为 0
+[2026-06-20 15:44:15] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_refund_55de8287.py
+[2026-06-20 15:44:17] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 11月收入报告.xlsx/refund only系统仅退款（资损） → 131 records (script: outbound_refund_55de8287.py)
+[2026-06-20 15:44:19] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_return_5d872140.py (attempt 1/3)
+[2026-06-20 15:44:39] WARNING audit_workflow.llm_agent - _extract_token_usage: result(OsmCleanerScript) 无 usage 属性，token 计数为 0
+[2026-06-20 15:44:39] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_return_5d872140.py
+[2026-06-20 15:44:41] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 11月收入报告.xlsx/Rongqing Return WH（货损 → 11 records (script: outbound_return_5d872140.py)
+[2026-06-20 15:44:43] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_transfer_dedfe569.py (attempt 1/3)
+[2026-06-20 15:45:01] WARNING audit_workflow.llm_agent - _extract_token_usage: result(OsmCleanerScript) 无 usage 属性，token 计数为 0
+[2026-06-20 15:45:01] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_transfer_dedfe569.py
+[2026-06-20 15:45:04] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 11月收入报告.xlsx/return to bonded(退回保税仓上架 → 50 records (script: outbound_transfer_dedfe569.py)
+[2026-06-20 15:45:04] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner - [LLM] Processing: 【05 TMF2 Flagship-Maklong】Health FSS 12月收入报告.xlsx (month=2022-12)
+[2026-06-20 15:45:07] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_sellout_0837cb60.py (attempt 1/3)
+[2026-06-20 15:45:30] WARNING audit_workflow.llm_agent - _extract_token_usage: result(OsmCleanerScript) 无 usage 属性，token 计数为 0
+[2026-06-20 15:45:30] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_sellout_0837cb60.py
+[2026-06-20 15:45:33] WARNING audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] Failed for 【05 TMF2 Flagship-Maklong】Health FSS 12月收入报告.xlsx/Sellout-出库, falling back: The truth value of a Series is ambiguous. Use a.empty, a.bool(), a.item(), a.any() or a.all().
+[2026-06-20 15:45:34] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_refund_e4383ee8.py (attempt 1/3)
+[2026-06-20 15:45:54] WARNING audit_workflow.llm_agent - _extract_token_usage: result(OsmCleanerScript) 无 usage 属性，token 计数为 0
+[2026-06-20 15:45:54] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_refund_e4383ee8.py
+[2026-06-20 15:45:55] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 12月收入报告.xlsx/refund only系统仅退款（资损） → 99 records (script: outbound_refund_e4383ee8.py)
+[2026-06-20 15:45:55] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached outbound cleaner: outbound_return_e28012ed.py
+[2026-06-20 15:45:56] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 12月收入报告.xlsx/Rongqing Return WH（货损） → 16 records (script: outbound_return_e28012ed.py)
+[2026-06-20 15:45:57] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_transfer_03e21036.py (attempt 1/3)
+[2026-06-20 15:46:15] WARNING audit_workflow.llm_agent - _extract_token_usage: result(OsmCleanerScript) 无 usage 属性，token 计数为 0
+[2026-06-20 15:46:15] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_transfer_03e21036.py
+[2026-06-20 15:46:16] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 12月收入报告.xlsx/return to bonded(退回保税仓上架） → 77 records (script: outbound_transfer_03e21036.py)
+[2026-06-20 15:46:16] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner - [LLM] Processing: 【05 TMF2 Flagship-Maklong】Health FSS 4月收入报告.xlsx (month=2022-04)
+[2026-06-20 15:46:18] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_sellout_b559925e.py (attempt 1/3)
+[2026-06-20 15:46:42] WARNING audit_workflow.llm_agent - _extract_token_usage: result(OsmCleanerScript) 无 usage 属性，token 计数为 0
+[2026-06-20 15:46:42] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_sellout_b559925e.py
+[2026-06-20 15:46:44] WARNING audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] Failed for 【05 TMF2 Flagship-Maklong】Health FSS 4月收入报告.xlsx/Sellout-出库, falling back: The truth value of a Series is ambiguous. Use a.empty, a.bool(), a.item(), a.any() or a.all().
+[2026-06-20 15:46:45] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_refund_874e90bb.py (attempt 1/3)
+[2026-06-20 15:46:59] WARNING audit_workflow.llm_agent - _extract_token_usage: result(OsmCleanerScript) 无 usage 属性，token 计数为 0
+[2026-06-20 15:46:59] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_refund_874e90bb.py
+[2026-06-20 15:46:59] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 4月收入报告.xlsx/refund only系统仅退款（资损） → 76 records (script: outbound_refund_874e90bb.py)
+[2026-06-20 15:47:00] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_return_dc0580e0.py (attempt 1/3)
+[2026-06-20 15:47:14] WARNING audit_workflow.llm_agent - _extract_token_usage: result(OsmCleanerScript) 无 usage 属性，token 计数为 0
+[2026-06-20 15:47:14] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_return_dc0580e0.py
+[2026-06-20 15:47:15] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 4月收入报告.xlsx/Rongqing Return WH（货损） → 20 records (script: outbound_return_dc0580e0.py)
+[2026-06-20 15:47:16] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_transfer_ad061b68.py (attempt 1/3)
+[2026-06-20 15:47:39] WARNING audit_workflow.llm_agent - _extract_token_usage: result(OsmCleanerScript) 无 usage 属性，token 计数为 0
+[2026-06-20 15:47:39] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_transfer_ad061b68.py
+[2026-06-20 15:47:40] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 4月收入报告.xlsx/interim退回保税仓中转状态（Credit) → 89 records (script: outbound_transfer_ad061b68.py)
+[2026-06-20 15:49:33] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_transfer_552d1fdd.py (attempt 1/3)
+[2026-06-20 15:49:50] WARNING audit_workflow.llm_agent - _extract_token_usage: result(OsmCleanerScript) 无 usage 属性，token 计数为 0
+[2026-06-20 15:49:50] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_transfer_552d1fdd.py
+[2026-06-20 15:52:14] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 4月收入报告.xlsx/return to bonded(退回保税仓上架 → 15 records (script: outbound_transfer_552d1fdd.py)
+[2026-06-20 15:52:14] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner - [LLM] Processing: 【05 TMF2 Flagship-Maklong】Health FSS 5月收入报告.xlsx (month=2022-05)
+[2026-06-20 15:52:22] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_sellout_2b9bbc84.py (attempt 1/3)
+[2026-06-20 15:52:47] WARNING audit_workflow.llm_agent - _extract_token_usage: result(OsmCleanerScript) 无 usage 属性，token 计数为 0
+[2026-06-20 15:52:47] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_sellout_2b9bbc84.py
+[2026-06-20 15:52:54] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 5月收入报告.xlsx/Sellout-出库 → 3765 records (script: outbound_sellout_2b9bbc84.py)
+[2026-06-20 15:52:56] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_refund_b0427a44.py (attempt 1/3)
+[2026-06-20 15:53:11] WARNING audit_workflow.llm_agent - _extract_token_usage: result(OsmCleanerScript) 无 usage 属性，token 计数为 0
+[2026-06-20 15:53:11] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_refund_b0427a44.py
+[2026-06-20 15:53:13] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 5月收入报告.xlsx/refund only系统仅退款（资损） → 113 records (script: outbound_refund_b0427a44.py)
+[2026-06-20 15:53:16] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_transfer_73d1ca65.py (attempt 1/3)
+[2026-06-20 15:53:40] WARNING audit_workflow.llm_agent - _extract_token_usage: result(OsmCleanerScript) 无 usage 属性，token 计数为 0
+[2026-06-20 15:53:40] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_transfer_73d1ca65.py
+[2026-06-20 15:53:44] WARNING audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] Failed for 【05 TMF2 Flagship-Maklong】Health FSS 5月收入报告.xlsx/interim退回保税仓中转状态（Credit), falling back: The truth value of a Series is ambiguous. Use a.empty, a.bool(), a.item(), a.any() or a.all().
+[2026-06-20 15:53:48] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_transfer_9774ce82.py (attempt 1/3)
+[2026-06-20 15:54:09] WARNING audit_workflow.llm_agent - _extract_token_usage: result(OsmCleanerScript) 无 usage 属性，token 计数为 0
+[2026-06-20 15:54:09] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_transfer_9774ce82.py
+[2026-06-20 15:54:13] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 5月收入报告.xlsx/return to bonded(退回保税仓上架 → 76 records (script: outbound_transfer_9774ce82.py)
+[2026-06-20 15:54:13] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner - [LLM] Processing: 【05 TMF2 Flagship-Maklong】Health FSS 6月收入报告.xlsx (month=2022-06)
+[2026-06-20 15:54:23] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_sellout_ec1591f0.py (attempt 1/3)
+[2026-06-20 15:54:45] WARNING audit_workflow.llm_agent - _extract_token_usage: result(OsmCleanerScript) 无 usage 属性，token 计数为 0
+[2026-06-20 15:54:45] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_sellout_ec1591f0.py
+[2026-06-20 15:54:53] WARNING audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] Failed for 【05 TMF2 Flagship-Maklong】Health FSS 6月收入报告.xlsx/Sellout-出库, falling back: 'DataFrame' object has no attribute 'str'
+[2026-06-20 15:54:56] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_refund_8f1869e6.py (attempt 1/3)
+[2026-06-20 15:55:15] WARNING audit_workflow.llm_agent - _extract_token_usage: result(OsmCleanerScript) 无 usage 属性，token 计数为 0
+[2026-06-20 15:55:15] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_refund_8f1869e6.py
+[2026-06-20 15:55:17] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 6月收入报告.xlsx/refund only系统仅退款（资损） → 25 records (script: outbound_refund_8f1869e6.py)
+[2026-06-20 15:55:19] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_return_ba47dd71.py (attempt 1/3)
+[2026-06-20 15:55:36] WARNING audit_workflow.llm_agent - _extract_token_usage: result(OsmCleanerScript) 无 usage 属性，token 计数为 0
+[2026-06-20 15:55:36] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_return_ba47dd71.py
+[2026-06-20 15:55:37] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 6月收入报告.xlsx/Rongqing Return WH（货损） → 9 records (script: outbound_return_ba47dd71.py)
+[2026-06-20 15:55:39] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_transfer_2b456114.py (attempt 1/3)
+[2026-06-20 15:56:03] WARNING audit_workflow.llm_agent - _extract_token_usage: result(OsmCleanerScript) 无 usage 属性，token 计数为 0
+[2026-06-20 15:56:03] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_transfer_2b456114.py
+[2026-06-20 15:56:04] WARNING audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] Failed for 【05 TMF2 Flagship-Maklong】Health FSS 6月收入报告.xlsx/return to bonded(退回保税仓上架, falling back: The truth value of a Series is ambiguous. Use a.empty, a.bool(), a.item(), a.any() or a.all().
+[2026-06-20 15:56:04] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner - [LLM] Processing: 【05 TMF2 Flagship-Maklong】Health FSS 7月收入报告.xlsx (month=2022-07)
+[2026-06-20 15:56:10] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_sellout_bad2ba9f.py (attempt 1/3)
+[2026-06-20 15:56:26] WARNING audit_workflow.llm_agent - _extract_token_usage: result(OsmCleanerScript) 无 usage 属性，token 计数为 0
+[2026-06-20 15:56:26] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_sellout_bad2ba9f.py
+[2026-06-20 15:56:28] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 7月收入报告.xlsx/Sellout-出库 → 4277 records (script: outbound_sellout_bad2ba9f.py)
+[2026-06-20 15:56:29] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_refund_b68a6b27.py (attempt 1/3)
+[2026-06-20 15:56:50] WARNING audit_workflow.llm_agent - _extract_token_usage: result(OsmCleanerScript) 无 usage 属性，token 计数为 0
+[2026-06-20 15:56:50] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_refund_b68a6b27.py
+[2026-06-20 15:56:51] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 7月收入报告.xlsx/refund only系统仅退款（资损） → 97 records (script: outbound_refund_b68a6b27.py)
+[2026-06-20 15:56:52] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_return_f4e2ee6c.py (attempt 1/3)
+[2026-06-20 15:57:11] WARNING audit_workflow.llm_agent - _extract_token_usage: result(OsmCleanerScript) 无 usage 属性，token 计数为 0
+[2026-06-20 15:57:11] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_return_f4e2ee6c.py
+[2026-06-20 15:57:12] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 7月收入报告.xlsx/Rongqing Return WH（货损） → 7 records (script: outbound_return_f4e2ee6c.py)
+[2026-06-20 15:57:12] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_transfer_42d7cda7.py (attempt 1/3)
+[2026-06-20 15:57:30] WARNING audit_workflow.llm_agent - _extract_token_usage: result(OsmCleanerScript) 无 usage 属性，token 计数为 0
+[2026-06-20 15:57:30] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_transfer_42d7cda7.py
+[2026-06-20 15:57:31] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 7月收入报告.xlsx/return to bonded(退回保税仓上架 → 113 records (script: outbound_transfer_42d7cda7.py)
+[2026-06-20 15:57:31] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner - [LLM] Processing: 【05 TMF2 Flagship-Maklong】Health FSS 8月收入报告.xlsx (month=2022-08)
+[2026-06-20 15:57:34] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_sellout_34ca127f.py (attempt 1/3)
+[2026-06-20 15:57:57] WARNING audit_workflow.llm_agent - _extract_token_usage: result(OsmCleanerScript) 无 usage 属性，token 计数为 0
+[2026-06-20 15:57:57] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_sellout_34ca127f.py
+[2026-06-20 15:58:02] WARNING audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] Failed for 【05 TMF2 Flagship-Maklong】Health FSS 8月收入报告.xlsx/Sellout-出库, falling back: The truth value of a Series is ambiguous. Use a.empty, a.bool(), a.item(), a.any() or a.all().
+[2026-06-20 15:58:04] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_refund_c912df27.py (attempt 1/3)
+[2026-06-20 15:58:30] WARNING audit_workflow.llm_agent - _extract_token_usage: result(OsmCleanerScript) 无 usage 属性，token 计数为 0
+[2026-06-20 15:58:30] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_refund_c912df27.py
+[2026-06-20 15:58:32] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 8月收入报告.xlsx/refund only系统仅退款（资损） → 39 records (script: outbound_refund_c912df27.py)
+[2026-06-20 15:58:33] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_return_78650d08.py (attempt 1/3)
+[2026-06-20 15:58:50] WARNING audit_workflow.llm_agent - _extract_token_usage: result(OsmCleanerScript) 无 usage 属性，token 计数为 0
+[2026-06-20 15:58:50] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_return_78650d08.py
+[2026-06-20 15:58:52] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 8月收入报告.xlsx/Rongqing Return WH（货损） → 4 records (script: outbound_return_78650d08.py)
+[2026-06-20 15:58:53] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_transfer_b7264c70.py (attempt 1/3)
+[2026-06-20 15:59:12] WARNING audit_workflow.llm_agent - _extract_token_usage: result(OsmCleanerScript) 无 usage 属性，token 计数为 0
+[2026-06-20 15:59:12] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_transfer_b7264c70.py
+[2026-06-20 15:59:13] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 8月收入报告.xlsx/return to bonded(退回保税仓上架 → 48 records (script: outbound_transfer_b7264c70.py)
+[2026-06-20 15:59:13] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner - [LLM] Processing: 【05 TMF2 Flagship-Maklong】Health FSS 9月收入报告.xlsx (month=2022-09)
+[2026-06-20 15:59:20] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_sellout_b32db4a8.py (attempt 1/3)
+[2026-06-20 15:59:39] WARNING audit_workflow.llm_agent - _extract_token_usage: result(OsmCleanerScript) 无 usage 属性，token 计数为 0
+[2026-06-20 15:59:39] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_sellout_b32db4a8.py
+[2026-06-20 15:59:43] WARNING audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] Failed for 【05 TMF2 Flagship-Maklong】Health FSS 9月收入报告.xlsx/Sellout-出库, falling back: The truth value of a Series is ambiguous. Use a.empty, a.bool(), a.item(), a.any() or a.all().
+[2026-06-20 15:59:45] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_refund_426c1515.py (attempt 1/3)
+[2026-06-20 16:00:15] WARNING audit_workflow.llm_agent - _extract_token_usage: result(OsmCleanerScript) 无 usage 属性，token 计数为 0
+[2026-06-20 16:00:15] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_refund_426c1515.py
+[2026-06-20 16:00:16] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 9月收入报告.xlsx/refund only系统仅退款（资损） → 62 records (script: outbound_refund_426c1515.py)
+[2026-06-20 16:00:17] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_return_56ff08b7.py (attempt 1/3)
+[2026-06-20 16:00:36] WARNING audit_workflow.llm_agent - _extract_token_usage: result(OsmCleanerScript) 无 usage 属性，token 计数为 0
+[2026-06-20 16:00:36] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_return_56ff08b7.py
+[2026-06-20 16:00:36] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 9月收入报告.xlsx/Rongqing Return WH（货损） → 9 records (script: outbound_return_56ff08b7.py)
+[2026-06-20 16:00:37] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_transfer_705947e5.py (attempt 1/3)
+[2026-06-20 16:00:53] WARNING audit_workflow.llm_agent - _extract_token_usage: result(OsmCleanerScript) 无 usage 属性，token 计数为 0
+[2026-06-20 16:00:53] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_transfer_705947e5.py
+[2026-06-20 16:00:54] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 9月收入报告.xlsx/return to bonded(退回保税仓上架 → 44 records (script: outbound_transfer_705947e5.py)
+[2026-06-20 16:00:54] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] sellout: 47661 records
+[2026-06-20 16:00:54] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] refund: 767 records
+[2026-06-20 16:00:54] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] return: 78 records
+[2026-06-20 16:00:54] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] transfer: 658 records
+[2026-06-20 16:51:36] INFO    audit_workflow - OSM Clean Outbound: customer=ABC, task=outbound_settlement_match
+[2026-06-20 16:51:36] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner - [LLM] Found 9 outbound Excel files
+[2026-06-20 16:51:36] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner - [LLM] Processing: 【05 TMF2 Flagship-Maklong】Health FSS 10月收入报告.xlsx (month=2022-10)
+[2026-06-20 16:51:46] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_sellout_45dcfd83.py (attempt 1/3)
+[2026-06-20 16:52:11] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_sellout_45dcfd83.py
+[2026-06-20 16:52:15] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 10月收入报告.xlsx/Sellout-出库 → 4416 records (script: outbound_sellout_45dcfd83.py)
+[2026-06-20 16:52:17] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_refund_75404e1b.py (attempt 1/3)
+[2026-06-20 16:52:35] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_refund_75404e1b.py
+[2026-06-20 16:52:37] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 10月收入报告.xlsx/refund only系统仅退款（资损） → 125 records (script: outbound_refund_75404e1b.py)
+[2026-06-20 16:52:40] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_return_e28012ed.py (attempt 1/3)
+[2026-06-20 16:53:01] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_return_e28012ed.py
+[2026-06-20 16:53:04] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 10月收入报告.xlsx/Rongqing Return WH（货损） → 2 records (script: outbound_return_e28012ed.py)
+[2026-06-20 16:53:06] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_transfer_55ee732f.py (attempt 1/3)
+[2026-06-20 16:53:27] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_transfer_55ee732f.py
+[2026-06-20 16:53:29] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 10月收入报告.xlsx/return to bonded(退回保税仓上架 → 44 records (script: outbound_transfer_55ee732f.py)
+[2026-06-20 16:53:29] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner - [LLM] Processing: 【05 TMF2 Flagship-Maklong】Health FSS 11月收入报告.xlsx (month=2022-11)
+[2026-06-20 16:53:38] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_sellout_da5c4980.py (attempt 1/3)
+[2026-06-20 16:54:02] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_sellout_da5c4980.py
+[2026-06-20 16:54:10] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 11月收入报告.xlsx/Sellout-出库 → 9144 records (script: outbound_sellout_da5c4980.py)
+[2026-06-20 16:54:13] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_refund_55de8287.py (attempt 1/3)
+[2026-06-20 16:54:30] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_refund_55de8287.py
+[2026-06-20 16:54:34] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 11月收入报告.xlsx/refund only系统仅退款（资损） → 131 records (script: outbound_refund_55de8287.py)
+[2026-06-20 16:54:38] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_return_5d872140.py (attempt 1/3)
+[2026-06-20 16:55:09] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_return_5d872140.py
+[2026-06-20 16:55:13] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 11月收入报告.xlsx/Rongqing Return WH（货损 → 11 records (script: outbound_return_5d872140.py)
+[2026-06-20 16:55:17] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_transfer_dedfe569.py (attempt 1/3)
+[2026-06-20 16:55:45] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_transfer_dedfe569.py
+[2026-06-20 16:55:49] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 11月收入报告.xlsx/return to bonded(退回保税仓上架 → 50 records (script: outbound_transfer_dedfe569.py)
+[2026-06-20 16:55:49] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner - [LLM] Processing: 【05 TMF2 Flagship-Maklong】Health FSS 12月收入报告.xlsx (month=2022-12)
+[2026-06-20 16:55:52] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_sellout_0837cb60.py (attempt 1/3)
+[2026-06-20 16:56:14] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_sellout_0837cb60.py
+[2026-06-20 16:56:17] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 12月收入报告.xlsx/Sellout-出库 → 5556 records (script: outbound_sellout_0837cb60.py)
+[2026-06-20 16:56:18] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_refund_e4383ee8.py (attempt 1/3)
+[2026-06-20 16:56:43] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_refund_e4383ee8.py
+[2026-06-20 16:56:44] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 12月收入报告.xlsx/refund only系统仅退款（资损） → 99 records (script: outbound_refund_e4383ee8.py)
+[2026-06-20 16:56:44] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached outbound cleaner: outbound_return_e28012ed.py
+[2026-06-20 16:56:46] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 12月收入报告.xlsx/Rongqing Return WH（货损） → 16 records (script: outbound_return_e28012ed.py)
+[2026-06-20 16:56:47] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_transfer_03e21036.py (attempt 1/3)
+[2026-06-20 16:57:05] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_transfer_03e21036.py
+[2026-06-20 16:57:07] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 12月收入报告.xlsx/return to bonded(退回保税仓上架） → 77 records (script: outbound_transfer_03e21036.py)
+[2026-06-20 16:57:07] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner - [LLM] Processing: 【05 TMF2 Flagship-Maklong】Health FSS 4月收入报告.xlsx (month=2022-04)
+[2026-06-20 16:57:09] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_sellout_b559925e.py (attempt 1/3)
+[2026-06-20 16:57:30] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_sellout_b559925e.py
+[2026-06-20 16:57:32] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 4月收入报告.xlsx/Sellout-出库 → 3303 records (script: outbound_sellout_b559925e.py)
+[2026-06-20 16:57:33] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_refund_874e90bb.py (attempt 1/3)
+[2026-06-20 16:57:53] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_refund_874e90bb.py
+[2026-06-20 16:57:54] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 4月收入报告.xlsx/refund only系统仅退款（资损） → 76 records (script: outbound_refund_874e90bb.py)
+[2026-06-20 16:57:55] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_return_dc0580e0.py (attempt 1/3)
+[2026-06-20 16:58:12] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_return_dc0580e0.py
+[2026-06-20 16:58:13] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 4月收入报告.xlsx/Rongqing Return WH（货损） → 20 records (script: outbound_return_dc0580e0.py)
+[2026-06-20 16:58:14] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_transfer_ad061b68.py (attempt 1/3)
+[2026-06-20 16:58:31] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_transfer_ad061b68.py
+[2026-06-20 16:58:32] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 4月收入报告.xlsx/interim退回保税仓中转状态（Credit) → 89 records (script: outbound_transfer_ad061b68.py)
+[2026-06-20 16:59:48] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_transfer_552d1fdd.py (attempt 1/3)
+[2026-06-20 17:00:06] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_transfer_552d1fdd.py
+[2026-06-20 17:01:26] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 4月收入报告.xlsx/return to bonded(退回保税仓上架 → 15 records (script: outbound_transfer_552d1fdd.py)
+[2026-06-20 17:01:26] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner - [LLM] Processing: 【05 TMF2 Flagship-Maklong】Health FSS 5月收入报告.xlsx (month=2022-05)
+[2026-06-20 17:01:31] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_sellout_2b9bbc84.py (attempt 1/3)
+[2026-06-20 17:01:55] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_sellout_2b9bbc84.py
+[2026-06-20 17:01:59] WARNING audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] Failed for 【05 TMF2 Flagship-Maklong】Health FSS 5月收入报告.xlsx/Sellout-出库, falling back: 0
+[2026-06-20 17:02:01] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_refund_b0427a44.py (attempt 1/3)
+[2026-06-20 17:02:17] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_refund_b0427a44.py
+[2026-06-20 17:02:19] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 5月收入报告.xlsx/refund only系统仅退款（资损） → 113 records (script: outbound_refund_b0427a44.py)
+[2026-06-20 17:02:22] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_transfer_73d1ca65.py (attempt 1/3)
+[2026-06-20 17:02:43] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_transfer_73d1ca65.py
+[2026-06-20 17:02:46] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 5月收入报告.xlsx/interim退回保税仓中转状态（Credit) → 61 records (script: outbound_transfer_73d1ca65.py)
+[2026-06-20 17:02:48] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_transfer_9774ce82.py (attempt 1/3)
+[2026-06-20 17:03:08] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_transfer_9774ce82.py
+[2026-06-20 17:03:11] WARNING audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] Failed for 【05 TMF2 Flagship-Maklong】Health FSS 5月收入报告.xlsx/return to bonded(退回保税仓上架, falling back: The truth value of a Series is ambiguous. Use a.empty, a.bool(), a.item(), a.any() or a.all().
+[2026-06-20 17:03:11] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner - [LLM] Processing: 【05 TMF2 Flagship-Maklong】Health FSS 6月收入报告.xlsx (month=2022-06)
+[2026-06-20 17:03:15] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_sellout_ec1591f0.py (attempt 1/3)
+[2026-06-20 17:03:39] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_sellout_ec1591f0.py
+[2026-06-20 17:03:43] WARNING audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] Failed for 【05 TMF2 Flagship-Maklong】Health FSS 6月收入报告.xlsx/Sellout-出库, falling back: Invalid value '<StringArray>
+[]
+Length: 0, dtype: str' for dtype 'int64'
+[2026-06-20 17:03:44] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_refund_8f1869e6.py (attempt 1/3)
+[2026-06-20 17:04:07] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_refund_8f1869e6.py
+[2026-06-20 17:04:09] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 6月收入报告.xlsx/refund only系统仅退款（资损） → 25 records (script: outbound_refund_8f1869e6.py)
+[2026-06-20 17:04:10] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_return_ba47dd71.py (attempt 1/3)
+[2026-06-20 17:04:26] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_return_ba47dd71.py
+[2026-06-20 17:04:27] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 6月收入报告.xlsx/Rongqing Return WH（货损） → 9 records (script: outbound_return_ba47dd71.py)
+[2026-06-20 17:04:29] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_transfer_2b456114.py (attempt 1/3)
+[2026-06-20 17:05:02] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_transfer_2b456114.py
+[2026-06-20 17:05:04] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 6月收入报告.xlsx/return to bonded(退回保税仓上架 → 41 records (script: outbound_transfer_2b456114.py)
+[2026-06-20 17:05:04] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner - [LLM] Processing: 【05 TMF2 Flagship-Maklong】Health FSS 7月收入报告.xlsx (month=2022-07)
+[2026-06-20 17:05:07] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_sellout_bad2ba9f.py (attempt 1/3)
+[2026-06-20 17:05:33] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_sellout_bad2ba9f.py
+[2026-06-20 17:05:36] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 7月收入报告.xlsx/Sellout-出库 → 4277 records (script: outbound_sellout_bad2ba9f.py)
+[2026-06-20 17:05:37] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_refund_b68a6b27.py (attempt 1/3)
+[2026-06-20 17:06:00] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_refund_b68a6b27.py
+[2026-06-20 17:06:01] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 7月收入报告.xlsx/refund only系统仅退款（资损） → 97 records (script: outbound_refund_b68a6b27.py)
+[2026-06-20 17:06:02] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_return_f4e2ee6c.py (attempt 1/3)
+[2026-06-20 17:06:23] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_return_f4e2ee6c.py
+[2026-06-20 17:06:24] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 7月收入报告.xlsx/Rongqing Return WH（货损） → 7 records (script: outbound_return_f4e2ee6c.py)
+[2026-06-20 17:06:25] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_transfer_42d7cda7.py (attempt 1/3)
+[2026-06-20 17:06:43] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_transfer_42d7cda7.py
+[2026-06-20 17:06:44] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 7月收入报告.xlsx/return to bonded(退回保税仓上架 → 113 records (script: outbound_transfer_42d7cda7.py)
+[2026-06-20 17:06:44] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner - [LLM] Processing: 【05 TMF2 Flagship-Maklong】Health FSS 8月收入报告.xlsx (month=2022-08)
+[2026-06-20 17:06:47] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_sellout_34ca127f.py (attempt 1/3)
+[2026-06-20 17:07:08] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_sellout_34ca127f.py
+[2026-06-20 17:07:11] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 8月收入报告.xlsx/Sellout-出库 → 5287 records (script: outbound_sellout_34ca127f.py)
+[2026-06-20 17:07:12] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_refund_c912df27.py (attempt 1/3)
+[2026-06-20 17:07:33] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_refund_c912df27.py
+[2026-06-20 17:07:35] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 8月收入报告.xlsx/refund only系统仅退款（资损） → 39 records (script: outbound_refund_c912df27.py)
+[2026-06-20 17:07:36] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_return_78650d08.py (attempt 1/3)
+[2026-06-20 17:07:57] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_return_78650d08.py
+[2026-06-20 17:07:58] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 8月收入报告.xlsx/Rongqing Return WH（货损） → 4 records (script: outbound_return_78650d08.py)
+[2026-06-20 17:07:59] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_transfer_b7264c70.py (attempt 1/3)
+[2026-06-20 17:08:17] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_transfer_b7264c70.py
+[2026-06-20 17:08:18] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 8月收入报告.xlsx/return to bonded(退回保税仓上架 → 48 records (script: outbound_transfer_b7264c70.py)
+[2026-06-20 17:08:18] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner - [LLM] Processing: 【05 TMF2 Flagship-Maklong】Health FSS 9月收入报告.xlsx (month=2022-09)
+[2026-06-20 17:08:21] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_sellout_b32db4a8.py (attempt 1/3)
+[2026-06-20 17:08:44] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_sellout_b32db4a8.py
+[2026-06-20 17:08:46] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 9月收入报告.xlsx/Sellout-出库 → 4560 records (script: outbound_sellout_b32db4a8.py)
+[2026-06-20 17:08:47] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_refund_426c1515.py (attempt 1/3)
+[2026-06-20 17:09:17] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_refund_426c1515.py
+[2026-06-20 17:09:18] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 9月收入报告.xlsx/refund only系统仅退款（资损） → 62 records (script: outbound_refund_426c1515.py)
+[2026-06-20 17:09:19] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_return_56ff08b7.py (attempt 1/3)
+[2026-06-20 17:09:38] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_return_56ff08b7.py
+[2026-06-20 17:09:39] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 9月收入报告.xlsx/Rongqing Return WH（货损） → 9 records (script: outbound_return_56ff08b7.py)
+[2026-06-20 17:09:40] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_transfer_705947e5.py (attempt 1/3)
+[2026-06-20 17:10:02] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_transfer_705947e5.py
+[2026-06-20 17:10:03] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 9月收入报告.xlsx/return to bonded(退回保税仓上架 → 44 records (script: outbound_transfer_705947e5.py)
+[2026-06-20 17:10:03] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] sellout: 47661 records
+[2026-06-20 17:10:03] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] refund: 767 records
+[2026-06-20 17:10:04] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] return: 78 records
+[2026-06-20 17:10:04] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] transfer: 658 records
+[2026-06-20 18:07:33] INFO    audit_workflow - OSM Detect: customer=ABC, task=outbound_settlement_match
+[2026-06-20 18:07:34] INFO    audit_workflow.outbound_settlement_match.pipeline - Detected 67 settlement CSV files
+[2026-06-20 18:07:39] INFO    audit_workflow.outbound_settlement_match.pipeline - Detected 3 outbound Excel files
+[2026-06-20 18:07:41] INFO    audit_workflow - OSM Clean Outbound: customer=ABC, task=outbound_settlement_match
+[2026-06-20 18:07:41] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner - [LLM] Found 3 outbound Excel files
+[2026-06-20 18:07:41] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner - [LLM] Processing: 【05 TMF2 Flagship-Maklong】Health FSS 4月收入报告.xlsx (month=2022-04)
+[2026-06-20 18:07:44] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached outbound cleaner: outbound_sellout_b559925e.py
+[2026-06-20 18:07:49] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 4月收入报告.xlsx/Sellout-出库 → 3303 records (script: outbound_sellout_b559925e.py)
+[2026-06-20 18:07:49] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached outbound cleaner: outbound_refund_874e90bb.py
+[2026-06-20 18:07:51] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 4月收入报告.xlsx/refund only系统仅退款（资损） → 76 records (script: outbound_refund_874e90bb.py)
+[2026-06-20 18:07:51] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached outbound cleaner: outbound_return_dc0580e0.py
+[2026-06-20 18:07:54] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 4月收入报告.xlsx/Rongqing Return WH（货损） → 20 records (script: outbound_return_dc0580e0.py)
+[2026-06-20 18:07:54] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached outbound cleaner: outbound_transfer_ad061b68.py
+[2026-06-20 18:07:56] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 4月收入报告.xlsx/interim退回保税仓中转状态（Credit) → 89 records (script: outbound_transfer_ad061b68.py)
+[2026-06-20 18:09:17] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached outbound cleaner: outbound_transfer_552d1fdd.py
+[2026-06-20 18:10:42] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 4月收入报告.xlsx/return to bonded(退回保税仓上架 → 15 records (script: outbound_transfer_552d1fdd.py)
+[2026-06-20 18:10:42] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner - [LLM] Processing: 【05 TMF2 Flagship-Maklong】Health FSS 5月收入报告.xlsx (month=2022-05)
+[2026-06-20 18:10:45] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached outbound cleaner: outbound_sellout_2b9bbc84.py
+[2026-06-20 18:10:49] WARNING audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] Failed for 【05 TMF2 Flagship-Maklong】Health FSS 5月收入报告.xlsx/Sellout-出库, falling back: 0
+[2026-06-20 18:10:49] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached outbound cleaner: outbound_refund_b0427a44.py
+[2026-06-20 18:10:51] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 5月收入报告.xlsx/refund only系统仅退款（资损） → 113 records (script: outbound_refund_b0427a44.py)
+[2026-06-20 18:10:52] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached outbound cleaner: outbound_transfer_73d1ca65.py
+[2026-06-20 18:10:55] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 5月收入报告.xlsx/interim退回保税仓中转状态（Credit) → 61 records (script: outbound_transfer_73d1ca65.py)
+[2026-06-20 18:10:56] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached outbound cleaner: outbound_transfer_9774ce82.py
+[2026-06-20 18:10:58] WARNING audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] Failed for 【05 TMF2 Flagship-Maklong】Health FSS 5月收入报告.xlsx/return to bonded(退回保税仓上架, falling back: The truth value of a Series is ambiguous. Use a.empty, a.bool(), a.item(), a.any() or a.all().
+[2026-06-20 18:10:58] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner - [LLM] Processing: 【05 TMF2 Flagship-Maklong】Health FSS 6月收入报告.xlsx (month=2022-06)
+[2026-06-20 18:11:02] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached outbound cleaner: outbound_sellout_ec1591f0.py
+[2026-06-20 18:11:06] WARNING audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] Failed for 【05 TMF2 Flagship-Maklong】Health FSS 6月收入报告.xlsx/Sellout-出库, falling back: Invalid value '<StringArray>
+[]
+Length: 0, dtype: str' for dtype 'int64'
+[2026-06-20 18:11:06] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached outbound cleaner: outbound_refund_8f1869e6.py
+[2026-06-20 18:11:08] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 6月收入报告.xlsx/refund only系统仅退款（资损） → 25 records (script: outbound_refund_8f1869e6.py)
+[2026-06-20 18:11:08] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached outbound cleaner: outbound_return_ba47dd71.py
+[2026-06-20 18:11:09] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 6月收入报告.xlsx/Rongqing Return WH（货损） → 9 records (script: outbound_return_ba47dd71.py)
+[2026-06-20 18:11:09] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Reusing cached outbound cleaner: outbound_transfer_2b456114.py
+[2026-06-20 18:11:11] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] 【05 TMF2 Flagship-Maklong】Health FSS 6月收入报告.xlsx/return to bonded(退回保税仓上架 → 41 records (script: outbound_transfer_2b456114.py)
+[2026-06-20 18:11:11] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] sellout: 14421 records
+[2026-06-20 18:11:11] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] refund: 214 records
+[2026-06-20 18:11:11] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] return: 29 records
+[2026-06-20 18:11:11] INFO    audit_workflow.outbound_settlement_match.outbound_cleaner -   [LLM] transfer: 282 records
+[2026-06-20 18:12:37] INFO    audit_workflow - OSM Clean Sheet: customer=ABC, file=【05 TMF2 Flagship-Maklong】Health FSS 5月收入报告.xlsx, sheet=return to bonded(退回保税仓上架, type=transfer, force=True
+[2026-06-20 18:12:37] INFO    audit_workflow - Deleted cached script: outbound_transfer_9774ce82.py
+[2026-06-20 18:12:43] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_transfer_9774ce82.py (attempt 1/3)
+[2026-06-20 18:13:06] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_transfer_9774ce82.py
+[2026-06-20 18:13:11] WARNING audit_workflow - Clean sheet failed: The truth value of a Series is ambiguous. Use a.empty, a.bool(), a.item(), a.any() or a.all().
+[2026-06-20 18:21:31] INFO    audit_workflow - OSM Clean Sheet: customer=ABC, file=【05 TMF2 Flagship-Maklong】Health FSS 5月收入报告.xlsx, sheet=return to bonded(退回保税仓上架, type=transfer, force=True
+[2026-06-20 18:21:31] INFO    audit_workflow - Deleted cached script: outbound_transfer_9774ce82.py
+[2026-06-20 18:21:38] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_transfer_9774ce82.py (attempt 1/3)
+[2026-06-20 18:21:58] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_transfer_9774ce82.py
+[2026-06-20 18:48:00] INFO    audit_workflow - OSM Clean Sheet: customer=ABC, file=【05 TMF2 Flagship-Maklong】Health FSS 5月收入报告.xlsx, sheet=Sellout-出库, type=sellout, force=True
+[2026-06-20 18:48:00] INFO    audit_workflow - Deleted cached script: outbound_sellout_2b9bbc84.py
+[2026-06-20 18:48:07] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_sellout_2b9bbc84.py (attempt 1/3)
+[2026-06-20 18:48:33] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_sellout_2b9bbc84.py
+[2026-06-20 18:49:16] INFO    audit_workflow - OSM Clean Sheet: customer=ABC, file=【05 TMF2 Flagship-Maklong】Health FSS 6月收入报告.xlsx, sheet=Sellout-出库, type=sellout, force=True
+[2026-06-20 18:49:16] INFO    audit_workflow - Deleted cached script: outbound_sellout_ec1591f0.py
+[2026-06-20 18:49:25] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - LLM generating cleaner outbound_sellout_ec1591f0.py (attempt 1/3)
+[2026-06-20 18:49:56] INFO    audit_workflow.outbound_settlement_match.llm_cleaner - Generated cleaner saved: C:\Users\DengKaina\Desktop\Audit_workflow\outputs\ABC\outbound_settlement_match\generated_parsers\osm\outbound_sellout_ec1591f0.py
+[2026-06-20 18:50:04] WARNING audit_workflow - Script outbound_sellout_ec1591f0.py has post-rename duplicate columns, auto-patching...
+[2026-06-20 18:50:15] INFO    audit_workflow - Auto-patch succeeded for outbound_sellout_ec1591f0.py

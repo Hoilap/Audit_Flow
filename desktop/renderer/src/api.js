@@ -1,10 +1,28 @@
 export const apiBase = 'http://127.0.0.1:8000'
 
+let currentController = null
+
+export function cancelRequest() {
+  if (currentController) {
+    currentController.abort()
+    currentController = null
+  }
+}
+
 export async function request(path, options = {}) {
-  const res = await fetch(`${apiBase}${path}`, options)
-  const data = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`)
-  return data
+  // If caller didn't provide a signal, create an AbortController
+  if (!options.signal) {
+    currentController = new AbortController()
+    options.signal = currentController.signal
+  }
+  try {
+    const res = await fetch(`${apiBase}${path}`, options)
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`)
+    return data
+  } finally {
+    currentController = null
+  }
 }
 
 export const api = {

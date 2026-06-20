@@ -107,9 +107,12 @@ export function setAgentStatus(status, progress = 0, label = null) {
   $('#agent-status').textContent = `Agent ${label || status}`
   $('#agent-dot').className = `status-dot ${normalized}`
   $('#agent-progress').style.width = `${progress}%`
-  const running = ['Running', 'Validating', 'Retrying'].includes(status) ? '1' : '0'
+  const isRunning = ['Running', 'Validating', 'Retrying'].includes(status)
+  const running = isRunning ? '1' : '0'
   const runningEl = $('#running-agents')
   if (runningEl) runningEl.textContent = running
+  const stopBtn = $('#stop-task')
+  if (stopBtn) stopBtn.style.display = isRunning ? 'inline-block' : 'none'
 }
 
 export function startTimer() {
@@ -1104,6 +1107,106 @@ ${escapeHtml(result.llm_error.traceback || '')}</pre>
   `
   chat.appendChild(block)
   block.scrollIntoView({ behavior: 'smooth', block: 'end' })
+}
+
+/**
+ * 清洗出库表 - 渲染每个工作表的任务状态表
+ * @param {object} result - API 响应，包含 sheet_tasks 数组
+ * @param {function} onRetry - 重试回调：(file, sheet, sheetType, colSig) => result
+ */
+export function renderSheetTasks(result, onRetry) {
+  const tasks = result && result.sheet_tasks
+  if (!tasks || tasks.length === 0) return
+
+  const chat = $('#chat')
+  if (!chat) return
+
+  const taskList = tasks.map(t => ({ ...t }))
+  let accumulatedUsage = result.usage ? { ...result.usage } : { total_tokens: 0, prompt_tokens: 0, completion_tokens: 0 }
+
+  const statusBadge = (status) => {
+    const map = {
+      llm_success: { label: 'LLM 成功', cls: 'badge low' },
+      llm_fallback: { label: '回退硬编码', cls: 'badge medium' },
+      failed: { label: '失败', cls: 'badge high' },
+      skipped: { label: '跳过', cls: 'badge' },
+    }
+    const info = map[status] || { label: status, cls: 'badge' }
+    return `<span class="${info.cls}">${escapeHtml(info.label)}</span>`
+  }
+
+  const typeLabels = { sellout: '出库', refund: '仅退款', return: '货损', transfer: '退回保税仓' }
+
+  const renderRows = () => taskList.map((t, idx) => {
+    const script = t.script_name ? `<code style="font-size:11px;">${escapeHtml(t.script_name)}</code>` : '<span class="subtle">硬编码</span>'
+    const canRetry = t.status === 'llm_fallback' || t.status === 'failed'
+    const retryBtn = canRetry
+      ? `<button class="sheet-retry-btn" data-idx="${idx}" data-file="${escapeHtml(t.file)}" data-sheet="${escapeHtml(t.sheet)}" data-type="${escapeHtml(t.type)}" data-colsig="${escapeHtml(t.column_signature || '')}" style="font-size:11px;padding:2px 8px;border-radius:4px;border:1px solid var(--warning);color:var(--warning);background:transparent;cursor:pointer;">重试</button>`
+      : ''
+    const errorHtml = t.error ? `<details style="font-size:11px;margin-top:2px;"><summary style="cursor:pointer;color:var(--danger);">错误详情</summary><pre style="white-space:pre-wrap;word-break:break-all;font-size:10px;max-height:100px;overflow-y:auto;margin-top:2px;">${escapeHtml(t.error)}</pre></details>` : ''
+    return `<tr><td style="font-size:12px;">${escapeHtml(t.file)}</td><td style="font-size:12px;"><strong>${escapeHtml(t.sheet)}</strong></td><td style="font-size:12px;">${escapeHtml(typeLabels[t.type] || t.type)}</td><td>${statusBadge(t.status)}${errorHtml}</td><td>${script}</td><td style="text-align:right;font-size:12px;">${t.rows > 0 ? t.rows.toLocaleString() : '-'}</td><td>${retryBtn}</td></tr>`
+  }).join('')
+
+  const renderSummary = () => {
+    const s = taskList.filter(t => t.status === 'llm_success').length
+    const f = taskList.filter(t => t.status === 'llm_fallback').length
+    const d = taskList.filter(t => t.status === 'failed').length
+    const totalRows = taskList.reduce((sum, t) => sum + (t.rows || 0), 0)
+    let token = ''
+    if (accumulatedUsage.total_tokens > 0) {
+      token = `<span style="margin-left:8px;color:var(--text-soft);font-size:12px;">| Token 累计：${accumulatedUsage.total_tokens}（输入 ${accumulatedUsage.prompt_tokens || 0}，输出 ${accumulatedUsage.completion_tokens || 0}）</span>`
+    }
+    return `共 <strong>${taskList.length}</strong> 个工作表：LLM 成功 <strong style="color:var(--success);">${s}</strong>${f > 0 ? `，回退 <strong style="color:var(--warning);">${f}</strong>` : ''}${d > 0 ? `，失败 <strong style="color:var(--danger);">${d}</strong>` : ''}，合计 <strong>${totalRows.toLocaleString()}</strong> 条记录。${token}`
+  }
+
+  const block = document.createElement('div')
+  block.className = 'message'
+  block.id = 'sheet-tasks-panel'
+  const time = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+  block.innerHTML = `
+    <div class="message-head"><span>Agent · 工作表清洗详情</span><span>${time} <span class="message-collapse-btn">▼</span></span></div>
+    <div class="message-body">
+      <p id="sheet-tasks-summary" style="margin-bottom:8px;">${renderSummary()}</p>
+      <div style="overflow-x:auto;"><table class="table" style="font-size:12px;"><thead><tr><th>文件</th><th>工作表</th><th>类型</th><th>状态</th><th>脚本</th><th style="text-align:right;">行数</th><th>操作</th></tr></thead><tbody>${renderRows()}</tbody></table></div>
+    </div>`
+  chat.appendChild(block)
+  block.scrollIntoView({ behavior: 'smooth', block: 'end' })
+
+  if (onRetry) {
+    block.querySelectorAll('.sheet-retry-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const idx = parseInt(btn.dataset.idx, 10)
+        btn.disabled = true
+        btn.textContent = '重试中...'
+        btn.style.borderColor = 'var(--text-muted)'
+        btn.style.color = 'var(--text-muted)'
+        try {
+          const res = await onRetry(btn.dataset.file, btn.dataset.sheet, btn.dataset.type, btn.dataset.colsig)
+          if (res && res.status === 'llm_success') {
+            btn.textContent = '成功'
+            btn.style.borderColor = 'var(--success)'
+            btn.style.color = 'var(--success)'
+            taskList[idx].status = 'llm_success'
+            taskList[idx].script_name = res.script_name || null
+            taskList[idx].rows = res.rows || 0
+            taskList[idx].error = null
+            if (res.total_usage) { accumulatedUsage = { ...res.total_usage } }
+            else if (res.usage) { accumulatedUsage.total_tokens += res.usage.total_tokens || 0; accumulatedUsage.prompt_tokens += res.usage.prompt_tokens || 0; accumulatedUsage.completion_tokens += res.usage.completion_tokens || 0 }
+            const tr = btn.closest('tr')
+            if (tr) { const c = tr.querySelectorAll('td'); c[3].innerHTML = statusBadge('llm_success'); c[4].innerHTML = `<code style="font-size:11px;">${escapeHtml(res.script_name || '')}</code>`; c[5].textContent = res.rows > 0 ? res.rows.toLocaleString() : '-'; c[6].innerHTML = '' }
+            const s = block.querySelector('#sheet-tasks-summary')
+            if (s) s.innerHTML = renderSummary()
+          } else {
+            btn.textContent = '重试'; btn.disabled = false; btn.style.borderColor = 'var(--warning)'; btn.style.color = 'var(--warning)'
+            const msg = res && res.error ? res.error : '未知错误'
+            if (res && res.error) taskList[idx].error = res.error
+            const tr = btn.closest('tr')
+            if (tr) { const c = tr.querySelectorAll('td'); if (!c[3].querySelector('details')) c[3].insertAdjacentHTML('beforeend', `<details style="font-size:11px;margin-top:2px;"><summary style="cursor:pointer;color:var(--danger);">错误详情</summary><pre style="white-space:pre-wrap;word-break:break-all;font-size:10px;max-height:100px;overflow-y:auto;margin-top:2px;">${escapeHtml(msg)}</pre></details>`) }
+          }
+        } catch (err) { btn.textContent = '重试'; btn.disabled = false; btn.style.borderColor = 'var(--danger)'; btn.style.color = 'var(--danger)' }
+      })
+    })
+  }
 }
 
 /**

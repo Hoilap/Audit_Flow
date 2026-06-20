@@ -113,3 +113,11 @@ def safe_write_csv(df: pd.DataFrame, path: str):
     import os
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
     df.to_csv(path, index=False, encoding="utf-8-sig")
+
+
+# ── LLM output helpers ───────────────────────────────────────
+
+def strip_code_fence(value: str) -> str:
+    """Strip markdown code fences from LLM output, extracting pure code."""
+    m = re.search(r"```(?:python)?\s*(.*?)```", value, flags=re.S)
+    return m.group(1).strip() if m else value.strip()
