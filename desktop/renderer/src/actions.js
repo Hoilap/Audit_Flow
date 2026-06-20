@@ -140,6 +140,52 @@ export async function runStep(stepIndex = state.activeStepIndex) {
       markStep(task.id, step.id, 'completed', result)
       addMessage({ title: step.title, body: `${methodLabel} 完成，右侧已更新生成文件。`, result })
     }
+    // ── OSM Step 1: Detect (出库结算扫描) ──
+    else if (step.id === 'osm-detect') {
+      if (!customerName) {
+        throw new Error('请先在项目选择器中输入客户名称。')
+      }
+      const form = new FormData()
+      form.append('customer_name', customerName)
+      form.append('task_name', taskDirName)
+      result = await api.workflow(step.endpoint, form)
+      markStep(task.id, step.id, 'completed', result)
+      const sCount = (result.settlement_files || []).length
+      const oCount = (result.outbound_files || []).length
+      addMessage({
+        title: step.title,
+        body: `扫描完成：找到 ${sCount} 个结算流水文件，${oCount} 个出库表文件。`,
+        result,
+      })
+    }
+    // ── OSM Step 2: Clean Settlement ──
+    else if (step.id === 'clean-settlement') {
+      const form = new FormData()
+      form.append('customer_name', customerName)
+      form.append('task_name', taskDirName)
+      result = await api.workflow(step.endpoint, form)
+      markStep(task.id, step.id, 'completed', result)
+      addMessage({
+        title: step.title,
+        body: `结算流水清洗完成，已生成合并结算 CSV 和月度汇总。`,
+        result,
+      })
+    }
+    // ── OSM Step 3: Clean Outbound ──
+    else if (step.id === 'clean-outbound') {
+      const form = new FormData()
+      form.append('customer_name', customerName)
+      form.append('task_name', taskDirName)
+      result = await api.workflow(step.endpoint, form)
+      markStep(task.id, step.id, 'completed', result)
+      const paths = result.paths || {}
+      const pathCount = Object.values(paths).filter(Boolean).length
+      addMessage({
+        title: step.title,
+        body: `出库表清洗完成，生成 ${pathCount} 个标准化 CSV 文件。`,
+        result,
+      })
+    }
     // ── 其他步骤（clean, match, verify）── 使用通用 workflow + customer 参数
     else {
       const form = new FormData()
@@ -147,7 +193,17 @@ export async function runStep(stepIndex = state.activeStepIndex) {
       form.append('task_name', taskDirName)
       result = await api.workflow(step.endpoint, form)
       markStep(task.id, step.id, 'completed', result)
-      addMessage({ title: step.title, body: '步骤执行完成，右侧已更新生成文件。', result })
+      // Match 步骤特殊消息
+      if (step.id === 'match' && result.summary) {
+        const s = result.summary
+        addMessage({
+          title: step.title,
+          body: `匹配完成：匹配 ${s.matched || 0} 条，未匹配出库 ${s.unmatched_outbound || 0} 条，未匹配结算 ${s.unmatched_settlement || 0} 条。`,
+          result,
+        })
+      } else {
+        addMessage({ title: step.title, body: '步骤执行完成，右侧已更新生成文件。', result })
+      }
     }
 
     setAgentStatus('Completed', 100)

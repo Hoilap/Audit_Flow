@@ -75,3 +75,4 @@ KeyboardInterrupt
 [2026-06-18 20:32:07] INFO    audit_workflow - 自动重试修复运行错误 (attempt 1 → 2)
 [2026-06-18 20:32:43] INFO    audit_workflow - LLM 生成完成: tokens=2762 (attempt 2/4)
 [2026-06-18 20:32:44] INFO    audit_workflow - LLM 代码执行完成: returncode=0
+[2026-06-20 14:07:35] INFO    audit_workflow - 删除项目: id=2

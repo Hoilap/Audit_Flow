@@ -21,6 +21,7 @@ import importlib
 import yaml as yaml_lib
 from audit_workflow.bank_ledger_match import pipeline as blm_pipeline
 from audit_workflow.bank_ledger_match import file_detector
+from audit_workflow.outbound_settlement_match import pipeline as osm_pipeline
 from audit_workflow.llm_agent import llm_generate as audit_llm_generate
 from dotenv import load_dotenv
 
@@ -1088,6 +1089,137 @@ def workflow_bank_ledger_match_fill_llm(
     try:
         path = blm_pipeline.run_fill_llm(cfg)
         return {"working_paper": str(path)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================
+# Outbound Settlement Match 工作流 API
+# ============================================================
+
+def _build_osm_config(customer_name: str, task_name: str) -> dict:
+    """Build configuration dict for outbound_settlement_match pipeline.
+
+    Constructs project metadata and paths so the pipeline can locate
+    inputs and outputs without requiring a task.yml file.
+    """
+    root = _project_root()
+    return {
+        "project": {
+            "customer_name": customer_name,
+            "task_name": task_name,
+            "inputs_dir": os.path.join(root, "inputs", customer_name, task_name),
+            "output_dir": os.path.join(root, "outputs", customer_name, task_name),
+        },
+        "matching": {
+            "outbound_order_id_key": "order_id",
+            "settlement_txn_id_key": "partner_txn_id",
+        },
+        "_project_root": root,
+        "_root": root,
+    }
+
+
+@app.post("/workflow/outbound_settlement_match/detect")
+def workflow_osm_detect(
+    customer_name: str = Form(...),
+    task_name: str = Form("outbound_settlement_match"),
+):
+    """OSM Step 1 - Detect: Scan inputs, classify settlement files and outbound sheets."""
+    logger.info("OSM Detect: customer=%s, task=%s", customer_name, task_name)
+    try:
+        cfg = _build_osm_config(customer_name, task_name)
+        result = osm_pipeline.run_detect(cfg)
+        return {"ok": True, **result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/workflow/outbound_settlement_match/clean_settlement")
+def workflow_osm_clean_settlement(
+    customer_name: str = Form(...),
+    task_name: str = Form("outbound_settlement_match"),
+):
+    """OSM Step 2 - Clean Settlement: Aggregate platform settlement CSVs."""
+    logger.info("OSM Clean Settlement: customer=%s, task=%s", customer_name, task_name)
+    try:
+        cfg = _build_osm_config(customer_name, task_name)
+        settlement_path, summary_path = osm_pipeline.run_clean_settlement(cfg)
+        return {
+            "ok": True,
+            "settlement_csv": str(settlement_path),
+            "monthly_summary": str(summary_path),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/workflow/outbound_settlement_match/clean_outbound")
+def workflow_osm_clean_outbound(
+    customer_name: str = Form(...),
+    task_name: str = Form("outbound_settlement_match"),
+):
+    """OSM Step 3 - Clean Outbound: Parse Excel sheets into standardized CSVs."""
+    logger.info("OSM Clean Outbound: customer=%s, task=%s", customer_name, task_name)
+    try:
+        cfg = _build_osm_config(customer_name, task_name)
+        paths = osm_pipeline.run_clean_outbound(cfg)
+        return {
+            "ok": True,
+            "paths": {k: str(v) if v else None for k, v in paths.items()},
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/workflow/outbound_settlement_match/match")
+def workflow_osm_match(
+    customer_name: str = Form(...),
+    task_name: str = Form("outbound_settlement_match"),
+):
+    """OSM Step 4 - Match: Filter net outbound and match against settlement by ID."""
+    logger.info("OSM Match: customer=%s, task=%s", customer_name, task_name)
+    try:
+        cfg = _build_osm_config(customer_name, task_name)
+        result = osm_pipeline.run_match(cfg)
+
+        def _count_rows(p):
+            if not p or not Path(p).exists():
+                return 0
+            with open(p, "r", encoding="utf-8", errors="ignore", newline="") as f:
+                return max(sum(1 for _ in csv.reader(f)) - 1, 0)
+
+        return {
+            "ok": True,
+            "summary": result["summary"],
+            "net_outbound": {"path": str(result["net_outbound"]), "rows": _count_rows(result["net_outbound"])},
+            "matched": {"path": str(result["matched"]), "rows": _count_rows(result["matched"])},
+            "unmatched_outbound": {"path": str(result["unmatched_outbound"]), "rows": _count_rows(result["unmatched_outbound"])},
+            "unmatched_settlement": {"path": str(result["unmatched_settlement"]), "rows": _count_rows(result["unmatched_settlement"])},
+            "monthly_summary": {"path": str(result["monthly_summary"]), "rows": _count_rows(result["monthly_summary"])},
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/workflow/outbound_settlement_match/run_all")
+def workflow_osm_run_all(
+    customer_name: str = Form(...),
+    task_name: str = Form("outbound_settlement_match"),
+):
+    """OSM Full Pipeline: Detect → Clean → Match (one-shot)."""
+    logger.info("OSM Run All: customer=%s, task=%s", customer_name, task_name)
+    try:
+        cfg = _build_osm_config(customer_name, task_name)
+        result = osm_pipeline.run_all(cfg)
+        return {
+            "ok": True,
+            "summary": result.get("match", {}).get("summary", {}),
+            "detect": {
+                "settlement_files": len(result.get("detect", {}).get("settlement_files", [])),
+                "outbound_files": len(result.get("detect", {}).get("outbound_files", [])),
+            },
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

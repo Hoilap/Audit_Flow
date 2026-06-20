@@ -282,6 +282,229 @@ outputs/{客户}/{任务}/task.yml  ← 任务文件相关配置（由 Detect �
 
 ---
 
+### 出库表-平台结算流水匹配 (Outbound Settlement Match)
+
+工作流: **Detect → Clean Settlement → Clean Outbound → Match**
+
+模块代码: `audit_workflow/outbound_settlement_match/`
+测试脚本: `scripts/test_osm_pipeline.py`
+
+输入目录结构:
+```
+inputs/{客户}/outbound_settlement_match/
+  settlement/          ← 平台结算流水 CSV（按月分子目录，如 01-22/, 02-22/）
+  outbound/            ← 月度收入报告 Excel（含 Sellout/Refund/Return/Transfer 工作表）
+```
+
+输出目录结构:
+```
+outputs/{客户}/outbound_settlement_match/
+  clean/
+    settlement_all.csv              ← 统一结算流水（全年度）
+    settlement_monthly_summary.csv  ← 月度结算汇总
+    settlement_file_index.csv       ← 结算文件索引
+    sellout.csv                     ← 清洗后的出库数据
+    refund.csv                      ← 清洗后的仅退款数据
+    return.csv                      ← 清洗后的退货数据
+    transfer.csv                    ← 清洗后的退仓数据
+    outbound_sheet_index.csv        ← 工作表分类索引
+  matches/
+    net_outbound.csv                ← 净出库（过滤退款/退货/退仓后）
+    matched.csv                     ← 匹配成功的记录
+    unmatched_outbound.csv          ← 未匹配的出库记录
+    unmatched_settlement.csv        ← 未匹配的结算记录
+    monthly_match_summary.csv       ← 月度匹配汇总
+```
+
+#### 25. POST /workflow/outbound_settlement_match/detect（OSM Step 1）
+
+扫描 `inputs/{customer}/{task}/` 下的结算 CSV 和出库 Excel 文件，自动分类工作表类型。
+
+工作表分类规则（基于工作表名称关键词）:
+- **sellout** (出库): 名称含 "sellout" / "出库"
+- **refund** (仅退款): 名称含 "refund only" / "仅退款" / "资损"
+- **return** (货损): 名称含 "return wh" / "rongqing return" / "货损"
+- **transfer** (退仓): 名称含 "return to bonded" / "退回保税仓"
+- **skip**: recap 汇总、sellout filter、collect、通用 Sheet 等预处理/辅助工作表
+
+- 表单字段:
+  - `customer_name` (string, 必填) — 客户名称
+  - `task_name` (string, 可选, 默认 `outbound_settlement_match`)
+- 示例:
+  ```bash
+  curl -X POST -F "customer_name=ABC" \
+    http://127.0.0.1:8000/workflow/outbound_settlement_match/detect
+  ```
+- 返回:
+  ```json
+  {
+    "ok": true,
+    "settlement_dir": "inputs/ABC/outbound_settlement_match/settlement",
+    "settlement_files": [
+      {"path": "settlement/01-22/xxx.csv", "name": "xxx.csv", "size": 12345}
+    ],
+    "outbound_dir": "inputs/ABC/outbound_settlement_match/outbound",
+    "outbound_files": [
+      {
+        "path": "outbound/xxx.xlsx",
+        "name": "xxx.xlsx",
+        "size": 67890,
+        "sheets": [
+          {"name": "Recap", "type": "skip"},
+          {"name": "Sellout-出库", "type": "sellout"},
+          {"name": "refund only系统仅退款", "type": "refund"},
+          {"name": "Rongqing Return WH", "type": "return"},
+          {"name": "return to bonded", "type": "transfer"}
+        ]
+      }
+    ]
+  }
+  ```
+
+#### 26. POST /workflow/outbound_settlement_match/clean_settlement（OSM Step 2）
+
+清洗平台结算流水 CSV 文件。自动检测文件类型（逐笔交易 vs 批次汇总），统一字段名为英文，按月汇总。
+
+处理逻辑:
+- 递归扫描 `settlement/` 下所有 CSV 文件
+- 自动检测编码（UTF-8 / GBK / GB18030）
+- 统一 17 个标准字段: `partner_txn_id`, `amount`, `rmb_amount`, `fee`, `settlement`, `rmb_settlement`, `currency`, `rate`, `payment_time`, `settlement_time`, `type`, `status`, `remarks`, `month`, `source_file` 等
+- 按月份分组聚合，生成交易笔数/金额/费用/结算额统计
+
+- 表单字段:
+  - `customer_name` (string, 必填)
+  - `task_name` (string, 可选, 默认 `outbound_settlement_match`)
+- 示例:
+  ```bash
+  curl -X POST -F "customer_name=ABC" \
+    http://127.0.0.1:8000/workflow/outbound_settlement_match/clean_settlement
+  ```
+- 返回:
+  ```json
+  {
+    "ok": true,
+    "settlement_csv": "outputs/ABC/outbound_settlement_match/clean/settlement_all.csv",
+    "monthly_summary": "outputs/ABC/outbound_settlement_match/clean/settlement_monthly_summary.csv"
+  }
+  ```
+- 错误: 500 (结算目录不存在 / 无 CSV 文件)
+
+#### 27. POST /workflow/outbound_settlement_match/clean_outbound（OSM Step 3）
+
+清洗月度收入报告 Excel 文件。自动识别工作表类型，提取 sellout/refund/return/transfer 数据为标准化 CSV。
+
+处理逻辑:
+- 扫描 `outbound/` 下所有 `.xlsx` 文件
+- 自动检测表头行位置（处理有汇总行的工作表）
+- 按工作表名称分类（见 Step 1 分类规则）
+- 跳过预处理工作表（sellout filter / sellout filtered 等）
+- 统一字段名映射（支持 TMF 平台 41 列和 WMS 平台 47 列两种出库表格式）
+- 按类型分别输出 CSV
+
+- 表单字段:
+  - `customer_name` (string, 必填)
+  - `task_name` (string, 可选, 默认 `outbound_settlement_match`)
+- 示例:
+  ```bash
+  curl -X POST -F "customer_name=ABC" \
+    http://127.0.0.1:8000/workflow/outbound_settlement_match/clean_outbound
+  ```
+- 返回:
+  ```json
+  {
+    "ok": true,
+    "paths": {
+      "sellout": "outputs/ABC/.../clean/sellout.csv",
+      "refund": "outputs/ABC/.../clean/refund.csv",
+      "return": "outputs/ABC/.../clean/return.csv",
+      "transfer": "outputs/ABC/.../clean/transfer.csv"
+    }
+  }
+  ```
+  注: 若某类型无数据，对应值为 `null`。
+- 错误: 500 (出库目录不存在 / 无 Excel 文件)
+
+#### 28. POST /workflow/outbound_settlement_match/match（OSM Step 4）
+
+净出库过滤 + 平台结算流水 ID 匹配。
+
+处理逻辑:
+1. **净出库过滤**: 以 `order_id` 为唯一标识，从 sellout 中剔除出现在 refund/return/transfer 中的订单
+2. **ID 匹配**: 净出库 `order_id` ←→ 结算流水 `partner_txn_id`
+3. **金额比对**: 对匹配成功的记录计算出库金额与结算金额的差异
+4. **月度汇总**: 按月统计匹配/未匹配数量和金额
+
+- 表单字段:
+  - `customer_name` (string, 必填)
+  - `task_name` (string, 可选, 默认 `outbound_settlement_match`)
+- 前置条件: 需先执行 Step 2 (clean_settlement) 和 Step 3 (clean_outbound)
+- 示例:
+  ```bash
+  curl -X POST -F "customer_name=ABC" \
+    http://127.0.0.1:8000/workflow/outbound_settlement_match/match
+  ```
+- 返回:
+  ```json
+  {
+    "ok": true,
+    "summary": {
+      "sellout_total": 47661,
+      "refund_count": 767,
+      "return_count": 78,
+      "transfer_count": 658,
+      "filtered_count": 863,
+      "net_outbound_count": 46798,
+      "matched_count": 43456,
+      "matched_outbound_orders": 41031,
+      "unmatched_outbound_count": 3427,
+      "unmatched_settlement_count": 540286,
+      "match_rate": 92.64,
+      "matched_outbound_amount": 10832970.80,
+      "matched_settlement_amount": 8271636.47,
+      "unmatched_outbound_amount": 847055.36,
+      "unmatched_settlement_amount": 105289797.54,
+      "outbound_key": "order_id",
+      "settlement_key": "partner_txn_id"
+    },
+    "net_outbound": {"path": "...", "rows": 46798},
+    "matched": {"path": "...", "rows": 43456},
+    "unmatched_outbound": {"path": "...", "rows": 3427},
+    "unmatched_settlement": {"path": "...", "rows": 540286},
+    "monthly_summary": {"path": "...", "rows": 13}
+  }
+  ```
+- 错误: 500 (缺少清洗产物 / 匹配字段不存在)
+
+#### 29. POST /workflow/outbound_settlement_match/run_all
+
+一键执行完整流水线: Detect → Clean Settlement → Clean Outbound → Match。
+
+- 表单字段:
+  - `customer_name` (string, 必填)
+  - `task_name` (string, 可选, 默认 `outbound_settlement_match`)
+- 示例:
+  ```bash
+  curl -X POST -F "customer_name=ABC" \
+    http://127.0.0.1:8000/workflow/outbound_settlement_match/run_all
+  ```
+- 返回:
+  ```json
+  {
+    "ok": true,
+    "summary": {
+      "matched_count": 43456,
+      "match_rate": 92.64,
+      "...": "..."
+    },
+    "detect": {
+      "settlement_files": 287,
+      "outbound_files": 9
+    }
+  }
+  ```
+
+---
+
 ### LLM 代码生成
 
 #### 23. POST /llm/generate
@@ -343,6 +566,38 @@ curl -X POST -F "customer_name=桂平金山" \
 # 8. Step 6: 填入底稿
 curl -X POST -F "customer_name=桂平金山" \
   http://127.0.0.1:8000/workflow/bank_ledger_match/fill
+```
+
+### 出库表-平台结算匹配 (OSM) 典型流程
+
+```bash
+# 方式一: 一键全流程
+curl -X POST -F "customer_name=ABC" \
+  http://127.0.0.1:8000/workflow/outbound_settlement_match/run_all
+
+# 方式二: 逐步执行（推荐，便于检查结果）
+
+# Step 1: 扫描文件 + 分类工作表
+curl -X POST -F "customer_name=ABC" \
+  http://127.0.0.1:8000/workflow/outbound_settlement_match/detect
+
+# Step 2: 清洗结算流水
+curl -X POST -F "customer_name=ABC" \
+  http://127.0.0.1:8000/workflow/outbound_settlement_match/clean_settlement
+
+# Step 3: 清洗出库报告
+curl -X POST -F "customer_name=ABC" \
+  http://127.0.0.1:8000/workflow/outbound_settlement_match/clean_outbound
+
+# Step 4: 净出库过滤 + ID 匹配
+curl -X POST -F "customer_name=ABC" \
+  http://127.0.0.1:8000/workflow/outbound_settlement_match/match
+```
+
+也可使用测试脚本一键测试:
+```bash
+python scripts/test_osm_pipeline.py --customer ABC
+python scripts/test_osm_pipeline.py --customer ABC match     # 只测匹配步骤
 ```
 
 ## 数据库表结构
