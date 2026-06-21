@@ -516,6 +516,20 @@ def _is_numeric_str(s: str) -> bool:
         return False
 
 
+def _notify_retry(reason: str, attempt: int, max_retries: int, error: str) -> None:
+    """发送重试 SSE 事件到前端。延迟导入以避免循环依赖。"""
+    try:
+        from desktop.api import notify_frontend
+        notify_frontend("retry", {
+            "reason": reason,
+            "attempt": attempt,
+            "max_retries": max_retries,
+            "error": error[:200],
+        })
+    except (ImportError, Exception):
+        pass  # 在 CLI 等非桌面环境运行时忽略
+
+
 def _generate_with_retry(
     config: dict[str, Any],
     system_prompt: str,
@@ -558,6 +572,7 @@ def _generate_with_retry(
         except SyntaxError as e:
             logger.warning("Syntax error in generated code (attempt %d): %s", attempt, e)
             if attempt < max_retries:
+                _notify_retry("syntax", attempt, max_retries, str(e))
                 current_prompt = _build_retry_prompt(
                     user_prompt, code, "语法错误", str(e)
                 )
@@ -571,6 +586,7 @@ def _generate_with_retry(
             error_msg = "生成的代码中没有定义 def clean(...) 函数"
             logger.warning("%s (attempt %d)", error_msg, attempt)
             if attempt < max_retries:
+                _notify_retry("missing_clean", attempt, max_retries, error_msg)
                 current_prompt = _build_retry_prompt(
                     user_prompt, code, "缺少函数定义", error_msg
                 )

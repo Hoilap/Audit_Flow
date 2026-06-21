@@ -16,15 +16,15 @@ from typing import Any
 
 import pandas as pd
 
-from audit_workflow.llm_agent import build_agent, _agent_output
+from audit_workflow.llm_agent import build_agent, _agent_output, _extract_token_usage
 
 from .config import output_dir, resolve_path
 
 
 # ── public entry ──────────────────────────────────────────────────────────
 
-def fill_working_paper_llm(config: dict[str, Any]) -> Path:
-    """使用 LLM 生成填表代码并执行，返回输出文件路径。"""
+def fill_working_paper_llm(config: dict[str, Any]) -> tuple[Path, dict]:
+    """使用 LLM 生成填表代码并执行，返回 (输出文件路径, usage)。"""
     wp_config = config.get("working_paper", {})
     if not wp_config.get("enabled", True):
         raise RuntimeError("working_paper.enabled=false，跳过底稿填报。")
@@ -58,6 +58,7 @@ def fill_working_paper_llm(config: dict[str, Any]) -> Path:
     )
     result = agent.run_sync(prompt)
     output = _agent_output(result)
+    usage = _extract_token_usage(result)
     code = output.code if hasattr(output, "code") else str(output)
 
     # 从 LLM 响应中提取代码
@@ -91,7 +92,7 @@ def fill_working_paper_llm(config: dict[str, Any]) -> Path:
     if not output_file.exists():
         raise RuntimeError(f"LLM 填表代码执行完毕，但输出文件未生成: {output_file}")
 
-    return output_file
+    return output_file, usage
 
 
 # ── prompt 构建 ───────────────────────────────────────────────────────────

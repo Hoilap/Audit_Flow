@@ -1,3 +1,4 @@
+import asyncio
 import os
 import sqlite3
 from datetime import datetime
@@ -15,7 +16,7 @@ import subprocess
 import csv
 from fastapi import BackgroundTasks
 from fastapi import Form
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi import Depends
 import importlib
 import yaml as yaml_lib
@@ -43,6 +44,78 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# ── 全局 token 追踪器 ──
+
+
+class TokenTracker:
+    """会话级 token 用量追踪器。
+
+    所有 LLM 调用完成后都应通过此类记录 usage，确保前端顶部 token 栏
+    能正确反映当前会话的累计消耗。
+    """
+
+    def __init__(self):
+        self._usage: dict[str, int] = {
+            "total_tokens": 0,
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+        }
+
+    # ── 核心记录方法 ──
+
+    def record(self, usage: dict | None) -> None:
+        """记录一次 LLM 调用的 usage dict。None / 空 dict 安全。"""
+        if not usage:
+            return
+        for k in self._usage:
+            self._usage[k] += usage.get(k, 0)
+        # 实时推送最新 token 累计到前端
+        notify_frontend("token_updated", self.snapshot())
+
+    def record_from_config(self, cfg: dict, *step_names: str) -> None:
+        """从 ``cfg["_cleaning"][step]["usage"]`` 提取并记录。
+
+        用于 OSM pipeline 调用后——pipeline 会把 usage 写进
+        ``cfg["_cleaning"]`` 子字典中。
+
+        Args:
+            cfg: pipeline 执行后的 config dict。
+            *step_names: 要提取的 step 名称，如 ``"settlement"``,
+                ``"outbound"``。
+        """
+        cleaning = cfg.get("_cleaning", {})
+        for step in step_names:
+            info = cleaning.get(step, {})
+            self.record(info.get("usage"))
+
+    # ── 查询方法 ──
+
+    def snapshot(self) -> dict:
+        """返回当前累计的副本。"""
+        return dict(self._usage)
+
+    def get(self, key: str, default: int = 0) -> int:
+        """兼容旧 ``_token_usage.get()`` 调用。"""
+        return self._usage.get(key, default)
+
+
+token_tracker = TokenTracker()
+
+
+# ── SSE 事件队列 ──
+
+_event_queue: asyncio.Queue = asyncio.Queue(maxsize=256)
+
+
+def notify_frontend(event: str, data: dict) -> None:
+    """非阻塞地将事件塞入 SSE 队列，供前端 EventSource 消费。"""
+    try:
+        _event_queue.put_nowait({"event": event, "data": data})
+    except asyncio.QueueFull:
+        logger.warning("SSE queue full, dropping event: %s", event)
+
 
 # ---------- SQLite project database ----------
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'projects.db')
@@ -438,7 +511,7 @@ def llm_generate(
             _default_llm_config(), prompt,
             system_prompt=system_prompt or "",
         )
-        _record_token_usage(usage_info)
+        token_tracker.record(usage_info)
         logger.info("LLM 生成完成: tokens=%s", usage_info.get("total_tokens", 0))
     except RuntimeError as e:
         content = f"[LLM not configured] {e}\nPrompt received:\n{prompt}"
@@ -487,7 +560,7 @@ def llm_generate_and_run(
                 _default_llm_config(), current_prompt,
                 system_prompt=system_prompt or "",
             )
-            _record_token_usage(usage_info)
+            token_tracker.record(usage_info)
             for k in total_usage:
                 total_usage[k] += usage_info.get(k, 0)
             logger.info("LLM 生成完成: tokens=%s (attempt %d/%d)",
@@ -522,6 +595,12 @@ def llm_generate_and_run(
                            attempt + 1, max_retries + 1, e)
             if attempt < max_retries:
                 logger.info("自动重试修复语法错误 (attempt %d → %d)", attempt + 1, attempt + 2)
+                notify_frontend("retry", {
+                    "reason": "syntax",
+                    "attempt": attempt + 1,
+                    "max_retries": max_retries,
+                    "error": str(e),
+                })
                 current_prompt = _build_retry_prompt(
                     original=prompt,
                     generated_code=content,
@@ -571,6 +650,12 @@ def llm_generate_and_run(
                            attempt + 1, max_retries + 1, exec_error_msg)
             if attempt < max_retries:
                 logger.info("自动重试修复运行错误 (attempt %d → %d)", attempt + 1, attempt + 2)
+                notify_frontend("retry", {
+                    "reason": "runtime",
+                    "attempt": attempt + 1,
+                    "max_retries": max_retries,
+                    "error": exec_error_msg[:200],
+                })
                 current_prompt = _build_retry_prompt(
                     original=prompt,
                     generated_code=content,
@@ -852,7 +937,7 @@ async def workflow_detect(
                     llm_cfg.get("llm", {}),
                     project_info,
                 )
-                _record_token_usage(detect_usage)
+                token_tracker.record(detect_usage)
             except Exception as llm_exc:
                 # LLM 调用失败：记录错误原因，回退到本地识别
                 import traceback
@@ -1087,8 +1172,9 @@ def workflow_bank_ledger_match_fill_llm(
     else:
         cfg = {}
     try:
-        path = blm_pipeline.run_fill_llm(cfg)
-        return {"working_paper": str(path)}
+        path, usage = blm_pipeline.run_fill_llm(cfg)
+        token_tracker.record(usage)
+        return {"working_paper": str(path), "usage": usage}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -1155,6 +1241,7 @@ def workflow_osm_clean_settlement(
     try:
         cfg = _build_osm_config(customer_name, task_name)
         settlement_path, summary_path = osm_pipeline.run_clean_settlement(cfg)
+        token_tracker.record_from_config(cfg, "settlement")
         cleaning_info = cfg.get("_cleaning", {}).get("settlement", {})
         return {
             "ok": True,
@@ -1180,6 +1267,7 @@ def workflow_osm_clean_outbound(
     try:
         cfg = _build_osm_config(customer_name, task_name)
         paths = osm_pipeline.run_clean_outbound(cfg)
+        token_tracker.record_from_config(cfg, "outbound")
         cleaning_info = cfg.get("_cleaning", {}).get("outbound", {})
         return {
             "ok": True,
@@ -1258,6 +1346,7 @@ def workflow_osm_clean_outbound_sheet(
         script_path, usage = ensure_llm_outbound_cleaner(
             cfg, xlsx_path, sheet, sheet_type, col_sig,
         )
+        token_tracker.record(usage)
 
         # Run the script
         month = ""
@@ -1400,6 +1489,7 @@ def workflow_osm_run_all(
     try:
         cfg = _build_osm_config(customer_name, task_name)
         result = osm_pipeline.run_all(cfg)
+        token_tracker.record_from_config(cfg, "settlement", "outbound")
         cleaning = cfg.get("_cleaning", {})
         return {
             "ok": True,
@@ -1505,25 +1595,31 @@ def update_llm_config(
 @app.get("/llm/tokens")
 def get_llm_tokens():
     """获取当前会话累计 token 消耗。"""
+    snap = token_tracker.snapshot()
     return {
         "ok": True,
-        "total_tokens": _token_usage.get("total_tokens", 0),
-        "prompt_tokens": _token_usage.get("prompt_tokens", 0),
-        "completion_tokens": _token_usage.get("completion_tokens", 0),
+        "total_tokens": snap["total_tokens"],
+        "prompt_tokens": snap["prompt_tokens"],
+        "completion_tokens": snap["completion_tokens"],
     }
 
 
-# ── 全局 token 计数器 ──
-_token_usage = {"total_tokens": 0, "prompt_tokens": 0, "completion_tokens": 0}
+@app.get("/events")
+async def event_stream():
+    """SSE 端点：前端通过 EventSource 连接此接口，实时接收后端事件。"""
+    async def generator():
+        while True:
+            msg = await _event_queue.get()
+            yield f"event: {msg['event']}\ndata: {json.dumps(msg['data'], ensure_ascii=False)}\n\n"
 
-
-def _record_token_usage(usage_info: dict):
-    """记录一次 LLM 调用的 token 消耗。"""
-    if not usage_info:
-        return
-    _token_usage["total_tokens"] += usage_info.get("total_tokens", 0)
-    _token_usage["prompt_tokens"] += usage_info.get("prompt_tokens", 0)
-    _token_usage["completion_tokens"] += usage_info.get("completion_tokens", 0)
+    return StreamingResponse(
+        generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @app.get("/logs")

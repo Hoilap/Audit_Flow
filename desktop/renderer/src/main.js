@@ -2,7 +2,7 @@ import { workflowTasks } from './config.js'
 import { findWorkflowTaskByName, state } from './state.js'
 import { $, $$ } from './dom.js'
 import { renderEvidencePanel, renderShell, renderWorkflowWorkspace, setAgentStatus, showPage } from './ui.js'
-import { cancelRunningStep, commitAll, createProject, deleteProject, loadProjects, loadProgramReadmes, previewFile, refreshFiles, refreshLog, refreshTokens, runAllSteps, runNextStep, runStep, selectProject, sendPrompt, toggleCustomMode, updateCustomCustomerName, updateCustomTaskName, updateDetectMethod, updateProject, uploadFile, syncLlmConfig, updateLlmModel } from './actions.js'
+import { cancelRunningStep, commitAll, createProject, deleteProject, loadProjects, loadProgramReadmes, previewFile, refreshFiles, refreshLog, refreshTokens, runAllSteps, runNextStep, runStep, selectProject, sendPrompt, setupEventSource, toggleCustomMode, updateCustomCustomerName, updateCustomTaskName, updateDetectMethod, updateProject, uploadFile, syncLlmConfig, updateLlmModel } from './actions.js'
 import { openReviewEditor } from './reviewEditor.js'
 import { renderProjectsTable, showProjectFormModal } from './ui.js'
 
@@ -231,6 +231,7 @@ async function openProjectForm(project) {
 async function init() {
   renderShell()
   bindEvents()
+  setupEventSource()   // 建立 SSE 连接，实时接收后端事件
   showPage(state.activePage)
   setAgentStatus('Idle', 0)
   $$('.page').forEach((page) => page.classList.toggle('active', page.id === `page-${state.activePage}`))

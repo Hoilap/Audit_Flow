@@ -30,7 +30,7 @@ def run_fill(config: dict[str, Any]) -> Path:
     return fill_working_paper(config)
 
 
-def run_fill_llm(config: dict[str, Any]) -> Path:
+def run_fill_llm(config: dict[str, Any]) -> tuple[Path, dict]:
     _ensure_can_fill(config)
     return fill_working_paper_llm(config)
 

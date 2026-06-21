@@ -1,4 +1,4 @@
-import { api, cancelRequest } from './api.js'
+import { api, apiBase, cancelRequest } from './api.js'
 import { llmCodePath } from './config.js'
 import { activeTask, findWorkflowTaskByName, getProjectBasePath, resolveProjectPath, markStep, state, stepStatus } from './state.js'
 import { $ } from './dom.js'
@@ -588,6 +588,53 @@ export async function refreshTokens() {
   } catch (error) {
     // 忽略错误
   }
+}
+
+/**
+ * 建立 SSE (Server-Sent Events) 连接，监听后端推送的事件。
+ * 后端每次 LLM 调用完成后会自动推送 token_updated 事件，
+ * 前端实时更新顶部 token 用量显示，无需轮询。
+ * EventSource 断开后会自动重连。
+ */
+export function setupEventSource() {
+  const es = new EventSource(`${apiBase}/events`)
+
+  es.addEventListener('token_updated', (e) => {
+    try {
+      const data = JSON.parse(e.data)
+      const el = $('#tokens')
+      if (el) el.textContent = `${(data.total_tokens || 0).toLocaleString()} tokens`
+    } catch (err) {
+      // 忽略解析错误
+    }
+  })
+
+  es.addEventListener('retry', (e) => {
+    try {
+      const data = JSON.parse(e.data)
+      const reasonMap = {
+        syntax: '语法错误',
+        runtime: '运行错误',
+        missing_clean: '缺少 clean() 函数',
+      }
+      const reasonLabel = reasonMap[data.reason] || data.reason
+      const attempt = data.attempt || 0
+      const maxRetries = data.max_retries || 3
+      setAgentStatus('Running', 60, `重试中 (${attempt}/${maxRetries})…`)
+      addMessage({
+        title: '自动重试',
+        body: `代码存在${reasonLabel}，正在重试 (${attempt}/${maxRetries})…\n${data.error || ''}`,
+      })
+    } catch (err) {
+      // 忽略解析错误
+    }
+  })
+
+  es.onerror = () => {
+    // EventSource 内置自动重连（默认 3 秒间隔），无需手动处理
+  }
+
+  return es
 }
 
 /**
