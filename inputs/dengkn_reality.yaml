@@ -1,0 +1,23 @@
+proxies:
+- client-fingerprint: chrome
+  name: Reality-dengkn
+  network: tcp
+  packet-encoding: none
+  port: 443
+  reality-opts:
+    public-key: nn0UwMSEhxLkpxHRMZq5AoXBql4_pD5BVXndXTERXB0
+    short-id: dbf6a158892a82
+  server: 159.89.246.23
+  servername: www.oracle.com
+  tls: true
+  type: vless
+  udp: true
+  uuid: cbce141e-7ecd-47d1-ba47-3c58f1620d91
+proxy-groups:
+- name: PROXY
+  proxies:
+  - Reality-dengkn
+  - DIRECT
+  type: select
+rules:
+- MATCH,PROXY
