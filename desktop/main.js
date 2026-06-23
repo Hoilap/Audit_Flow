@@ -17,10 +17,15 @@ function createWindow () {
     height: 800,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
+      nodeIntegration: true,
+      contextIsolation: false,
     }
   })
 
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'))
+
+  // Prevent accidental navigation from file drops or link clicks
+  win.webContents.on('will-navigate', (e) => e.preventDefault())
 }
 
 app.whenReady().then(() => {

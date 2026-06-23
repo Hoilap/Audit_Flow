@@ -1,5 +1,6 @@
 import asyncio
 import os
+import shutil
 import sqlite3
 from datetime import datetime
 from pathlib import Path
@@ -24,6 +25,7 @@ from audit_workflow.bank_ledger_match import pipeline as blm_pipeline
 from audit_workflow.bank_ledger_match import file_detector
 from audit_workflow.outbound_settlement_match import pipeline as osm_pipeline
 from audit_workflow.llm_agent import llm_generate as audit_llm_generate
+from audit_workflow.agent_loop import run_agent_chat, conversation_store
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -149,6 +151,27 @@ def init_db():
             created_at TEXT NOT NULL DEFAULT '',
             updated_at TEXT NOT NULL DEFAULT '',
             UNIQUE(customer_name, task_name)
+        )
+    """)
+    conn.execute("PRAGMA foreign_keys=ON")
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS agent_conversations (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL DEFAULT '',
+            created_at TEXT NOT NULL DEFAULT '',
+            pydantic_blob BLOB
+        )
+    """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS agent_messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            conversation_id TEXT NOT NULL,
+            role TEXT NOT NULL,
+            type TEXT NOT NULL,
+            content TEXT NOT NULL DEFAULT '',
+            timestamp TEXT NOT NULL DEFAULT '',
+            metadata_json TEXT NOT NULL DEFAULT '{}',
+            FOREIGN KEY (conversation_id) REFERENCES agent_conversations(id) ON DELETE CASCADE
         )
     """)
     # seed default projects if empty
@@ -307,7 +330,7 @@ def list_files(root: str = "outputs"):
     for dirpath, dirs, files in os.walk(base):
         for f in files:
             rel = os.path.relpath(os.path.join(dirpath, f), start=os.getcwd())
-            result.append(rel.replace('\\\\', '/'))
+            result.append(rel.replace('\\', '/'))
     return {"files": result}
 
 
@@ -395,6 +418,46 @@ async def upload_file(file: UploadFile = File(...), dest: str = Form("outputs/")
     except Exception:
         pass
     return {"ok": True, "path": os.path.relpath(full_path)}
+
+
+@app.post("/files/copy-from-path")
+async def copy_from_path(source: str = Form(...), dest: str = Form("inputs/")):
+    """从系统路径复制文件或目录到项目目录中。"""
+    project_root = _project_root()
+    source_path = os.path.abspath(source)
+
+    if not os.path.exists(source_path):
+        raise HTTPException(status_code=404, detail=f"源路径不存在: {source}")
+
+    # 目标路径
+    dest_path = os.path.join(project_root, dest)
+    os.makedirs(dest_path, exist_ok=True)
+
+    basename = os.path.basename(source_path)
+    target = os.path.join(dest_path, basename)
+
+    try:
+        if os.path.isdir(source_path):
+            if os.path.exists(target):
+                shutil.rmtree(target)
+            shutil.copytree(source_path, target)
+        else:
+            shutil.copy2(source_path, target)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"复制失败: {e}")
+
+    rel = os.path.relpath(target, project_root)
+    logger.info("复制文件: %s -> %s", source_path, rel)
+
+    # 尝试 git commit
+    repo = find_repo(target)
+    try:
+        repo.index.add([os.path.relpath(target, repo.working_tree_dir)])
+        repo.index.commit(f"add {basename} (drag-drop)")
+    except Exception:
+        pass
+
+    return {"ok": True, "path": rel}
 
 
 @app.post("/workflow/bank_ledger_match/match")
@@ -1631,6 +1694,76 @@ def get_logs(lines: int = 100):
         all_lines = f.readlines()
     limit = min(max(lines, 1), 500)
     return {"ok": True, "lines": [l.rstrip("\n") for l in all_lines[-limit:]], "total": len(all_lines)}
+
+
+# ============================================================
+# Agent Loop API
+# ============================================================
+
+class AgentChatPayload(BaseModel):
+    message: str
+    conversation_id: str = ""
+
+
+@app.post("/agent/chat")
+async def agent_chat(payload: AgentChatPayload):
+    """向 Agent 发送消息，运行 pydantic-ai agent loop（带工具），
+    流式推送中间事件到 SSE，返回最终响应。"""
+    if not payload.message.strip():
+        raise HTTPException(status_code=400, detail="消息不能为空")
+
+    conv_id = payload.conversation_id or conversation_store.create()
+
+    try:
+        result = await run_agent_chat(
+            message=payload.message,
+            conversation_id=conv_id,
+            llm_config=_default_llm_config(),
+            project_root=_project_root(),
+            token_tracker=token_tracker,
+        )
+        return result
+    except Exception as e:
+        logger.error("Agent chat error: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/agent/conversations")
+def agent_list_conversations():
+    """列出所有 Agent 对话。"""
+    return {"conversations": conversation_store.list_all()}
+
+
+@app.get("/agent/conversations/{conversation_id}")
+def agent_get_conversation(conversation_id: str):
+    """获取对话的完整消息历史。"""
+    conv = conversation_store.get(conversation_id)
+    if not conv:
+        raise HTTPException(status_code=404, detail="会话不存在")
+    return {
+        "conversation_id": conversation_id,
+        "messages": [
+            {
+                "role": m.role, "type": m.type, "content": m.content,
+                "timestamp": m.timestamp, "metadata": m.metadata,
+            }
+            for m in conv["messages"]
+        ],
+    }
+
+
+@app.post("/agent/conversations/new")
+def agent_new_conversation():
+    """创建新的 Agent 对话。"""
+    conv_id = conversation_store.create()
+    return {"conversation_id": conv_id}
+
+
+@app.delete("/agent/conversations/{conversation_id}")
+def agent_delete_conversation(conversation_id: str):
+    """删除一个 Agent 对话。"""
+    conversation_store.delete(conversation_id)
+    return {"ok": True}
 
 
 if __name__ == "__main__":

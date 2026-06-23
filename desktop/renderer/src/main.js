@@ -25,6 +25,12 @@ function bindEvents() {
       if (navButton.dataset.page === 'programs') {
         await loadProgramReadmes()
       }
+      // 切换到 Agent 对话页面时加载会话列表和文件树
+      if (navButton.dataset.page === 'agent-loop') {
+        const { loadAgentConversations, renderAgentFileTree } = await import('./agentActions.js')
+        await loadAgentConversations()
+        await renderAgentFileTree()
+      }
     }
 
     const stepCard = event.target.closest('[data-step-index]')
@@ -139,6 +145,39 @@ function bindEvents() {
   $('#send').addEventListener('click', () => withDisabled('#send', sendPrompt))
   $('#upload-btn').addEventListener('click', () => withDisabled('#upload-btn', uploadFile))
   $('#commit-all').addEventListener('click', () => withDisabled('#commit-all', commitAll))
+
+  // ────────── Agent 对话面板事件 ──────────
+  document.addEventListener('click', async (e) => {
+    if (e.target.id === 'agent-send') {
+      const { sendAgentMessage } = await import('./agentActions.js')
+      await sendAgentMessage()
+    }
+    if (e.target.id === 'agent-new-conv') {
+      const { newAgentConversation } = await import('./agentActions.js')
+      await newAgentConversation()
+    }
+    if (e.target.id === 'agent-delete-conv') {
+      const { deleteAgentConversation } = await import('./agentActions.js')
+      await deleteAgentConversation()
+    }
+    if (e.target.id === 'agent-refresh-filetree' || e.target.closest('#agent-refresh-filetree')) {
+      const { renderAgentFileTree } = await import('./agentActions.js')
+      await renderAgentFileTree()
+    }
+  })
+  document.addEventListener('keydown', async (e) => {
+    if (e.target.id === 'agent-prompt' && e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      const { sendAgentMessage } = await import('./agentActions.js')
+      await sendAgentMessage()
+    }
+  })
+  document.addEventListener('change', async (e) => {
+    if (e.target.id === 'agent-conv-select' && e.target.value) {
+      const { loadAgentConversation } = await import('./agentActions.js')
+      await loadAgentConversation(e.target.value)
+    }
+  })
 
   $('#model-select').addEventListener('change', (event) => {
     updateLlmModel(event.target.value)

@@ -630,6 +630,18 @@ export function setupEventSource() {
     }
   })
 
+  // Agent 对话面板事件
+  es.addEventListener('agent_step', (e) => {
+    try {
+      const data = JSON.parse(e.data)
+      import('./agentActions.js').then(({ handleAgentStepEvent }) => {
+        handleAgentStepEvent(data)
+      })
+    } catch (err) {
+      // 忽略解析错误
+    }
+  })
+
   es.onerror = () => {
     // EventSource 内置自动重连（默认 3 秒间隔），无需手动处理
   }

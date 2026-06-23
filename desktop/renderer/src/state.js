@@ -22,6 +22,13 @@ export const state = {
   detectMethod: 'llm',
   /** 右栏区块折叠状态，key 为 section id，value 为 true 表示已折叠 */
   collapsedSections: { 'git-log': true },
+  // ── Agent 对话面板状态 ──
+  agentConversations: [],       // [{id, title, created_at, message_count}]
+  activeAgentConvId: null,      // 当前对话 ID
+  agentMessages: [],            // 当前对话的消息列表
+  agentIsRunning: false,        // Agent 是否正在执行
+  agentStreamingText: '',       // 流式输出累积的文本
+  agentHasStreamed: false,      // 本轮是否已通过 SSE 收到文本（防止 HTTP 兜底重复）
 }
 
 export function activeTask() {

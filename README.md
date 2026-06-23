@@ -1,39 +1,39 @@
 # Audit Workflow
 ## 痛点
+当前审计流程会出现众多的重复性劳动，比如序时账-银行流水匹配，出库表-平台结算匹配，工商信息查询，批量的文件处理等等。这些重复运行劳动虽然有一些免费的开源工具可以使用（效率视界/审计工具箱），但是这些开源工具ai智能程度低，不能与模板要求直接适配，依然需要大量人力解决。
+
+当前互联网大厂推出自家的AI桌面智能体（比如Qwork），但是这些智能体并没有办法直接约束输出格式，通常需要多轮对话才能完成；规则无法复用，每一次任务都需要重新编写prompt，多轮对话导致token调用量暴增，严重增加成本。
+![1782105555469](image/README/1782105555469.png)
+
+
+同样是对银行流水生成月度总结（自动处理格式并给出结果），以下是使用agent_loop调用和使用工作流调用的token数比较：
+所有价格计算使用输入未命中的价格计算，使用deepseekv4pro。输入未命中 3 元/百万 Token，输出 6 元/百万 Token。
+| 执行方式 | token总数 | 价格（RMB）|
+|---------| ----------|-----|
+| agent_loop | 'request_tokens': 639413, 'response_tokens': 9546 | 1.97 |
+| audit_flow| 仅代码生成，'prompt_tokens': 682, 'completion_tokens': 1636 |0.011862 |
+
+```mermaid
+
+timeline
+    title 审计工具智能化程度对比
+    低智能化 : 免费开源工具<br>（效率视界/审计工具箱）<br> : 规则固定，需大量人力
+    中智能化 : Audit Workflow(Ours)<br> : 可复用规则，约束输出<br>在合适的时间引入人工核查<br>人工核查可视化程度更高<br>可根据企业定制
+    高智能化 : 大厂AI桌面智能体<br> : 多轮对话，无法约束输出<br>规则不可复用，Token 成本高
+```
+因此我们推出audit_workflow智能体：结合通用的审计工具和审计团队特殊的定制化需求，该智能体能够
+- 完成数据处理及其他任务
+- 在合适的时机引入人工核查，可交互的人工核查界面
+- 降低token调用量：代码重用机制，工作流设计
+
+该套设计理念可以拓展到任何需要大量数据处理的场景，比如税务等。
+
+## 竞品调研
+1. 尊创AI智能体应用：与本应用生态位相似。To B 交付，10-100w. 当前依然正在开发。
 https://agentic.zunchuang.tech/cases
-## 如何启动
+2. 效率视界作者制作的ai智能体。目前的功能设计有限
+https://mp.weixin.qq.com/s/0O-acMOPa1bAe6QnQhOEhQ
 
-### 后端
-
-```
-python -m uvicorn desktop.api:app --host 127.0.0.1 --port 8000 --reload
-```
-
-### 启动桌面应用
-
-如果你要打开桌面端界面，进入 `desktop` 目录后执行：
-
-```powershell
-cd desktop
-npm install
-npm run start
-```
-
-这会启动 Electron 前端，并自动连接本地 FastAPI 后端。
-
-## 接口文档
-
-更多后端端点说明请见： [docs/backend_endpoints.md](docs/backend_endpoints.md)
-
-## LLM / PydanticAI 配置
-
-LLM 交互统一通过 PydanticAI agent 发起，支持 OpenAI 兼容接口。不要把 API key 写进聊天记录或提交到代码库。复制 `.env.example` 为 `.env`，按实际服务填入：
-
-```text
-OPENAI_API_KEY=你的key
-OPENAI_MODEL=你要使用的模型名
-OPENAI_BASE_URL=兼容接口地址
-```
-
-也可以在 `config.example.yml` 的 `matching.llm` 中使用 `api_key_env`、`base_url_env`、`model_env` 指向服务商环境变量。然后把需要的 `llm.enabled` 或 `matching.llm.enabled` 改为 `true` 即可。
-
+## 定价策略
+按月订阅制，可只在年审季订阅。
+月订阅费用初定为月实习生工资。token费用另计？

@@ -14,6 +14,7 @@ export function renderShell() {
     dataPage(),
     agentPage(),
     programsPage(),
+    agentLoopPage(),
     workpapersPage(),
     reportsPage(),
     settingsPage(),
@@ -828,6 +829,50 @@ export async function renderDataProfile(filePath) {
 
 function agentPage() {
   return `<section class="page" id="page-agent"><div class="page-header"><div><h1>Agent 工作流</h1><p id="active-task-desc" class="subtle"></p></div><div class="toolbar"><button id="run-next-step">执行下一步</button><button id="run-all-steps" class="primary">执行全部</button></div></div><div id="workflow-task-list" class="project-bar"></div><div id="detect-method-bar" class="project-bar"></div><div class="agent-grid" style="margin-top:12px;"><div><div class="card"><div class="page-header" style="margin-bottom:12px;"><div><h2 id="active-task-title"></h2><p class="subtle">每个步骤可独立执行，也可按顺序全部执行。</p></div></div><div id="workflow-step-list" class="step-list"></div></div><div id="llm-code-panel" class="card llm-code-panel"><div class="llm-code-head"><strong>LLM 生成代码区</strong><span class="llm-code-path">${llmCodePath}</span></div><pre class="code-block">等待生成代码。</pre></div><div class="conversation" id="chat"><div class="message"><div class="message-head"><span>Agent</span><span>Ready</span></div><p>请先选择项目，每个步骤可点击 ▶ 独立运行。</p></div></div></div></div></section>`
+}
+
+function agentLoopPage() {
+  return `<section class="page" id="page-agent-loop">
+    <div class="page-header">
+      <div>
+        <h1>Agent 对话</h1>
+        <p class="subtle">与审计 Agent 多轮对话，自动扫描文件、读取数据、执行代码</p>
+      </div>
+      <div class="toolbar">
+        <button id="agent-new-conv" class="ghost">新建对话</button>
+        <select id="agent-conv-select" class="search" style="min-width:200px;">
+          <option value="">-- 选择历史对话 --</option>
+        </select>
+        <button id="agent-delete-conv" class="ghost" title="删除当前对话" style="display:none;">&#128465;</button>
+      </div>
+    </div>
+    <div class="agent-loop-container">
+      <div class="agent-loop-chat">
+        <div class="agent-loop-messages" id="agent-messages">
+          <div class="agent-welcome">
+            <h2>审计 Agent 助手</h2>
+            <p class="subtle">我可以帮您扫描项目文件、分析数据、编写和执行处理代码。试试输入："帮我看看 inputs 目录下有哪些文件"</p>
+          </div>
+        </div>
+        <div class="agent-loop-input">
+          <textarea id="agent-prompt" placeholder="输入您的指令，例如：分析 inputs/ 下的银行流水文件，统计大额交易..." rows="3"></textarea>
+          <div class="agent-loop-actions">
+            <span id="agent-loop-status" class="subtle"></span>
+            <button id="agent-send" class="primary">发送</button>
+          </div>
+        </div>
+      </div>
+      <div class="agent-loop-filetree" id="agent-filetree-panel">
+        <div class="agent-filetree-header">
+          <strong>项目文件</strong>
+          <button id="agent-refresh-filetree" class="ghost" title="刷新文件树" style="padding:2px 8px;">&#8635;</button>
+        </div>
+        <div class="agent-filetree-body" id="agent-filetree">
+          <div class="subtle" style="padding:16px;text-align:center;">加载中...</div>
+        </div>
+      </div>
+    </div>
+  </section>`
 }
 
 function programsPage() {

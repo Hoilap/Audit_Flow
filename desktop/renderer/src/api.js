@@ -29,6 +29,12 @@ export const api = {
   listFiles: (root = 'outputs') => request(`/files/list?root=${encodeURIComponent(root)}`),
   readFile: (path) => request(`/files/read?path=${encodeURIComponent(path)}`),
   uploadFile: (form) => request('/files/upload', { method: 'POST', body: form }),
+  copyFromPath: (sourcePath, dest) => {
+    const form = new FormData()
+    form.append('source', sourcePath)
+    form.append('dest', dest)
+    return request('/files/copy-from-path', { method: 'POST', body: form })
+  },
   deleteFile: (path) => request(`/files/delete?path=${encodeURIComponent(path)}`, { method: 'DELETE' }),
   gitLog: () => request('/git/log'),
   gitCommit: (message) => request(`/git/commit?message=${encodeURIComponent(message)}`, { method: 'POST' }),
@@ -133,4 +139,15 @@ export const api = {
   // ---------- 日志 ----------
   /** 获取后端日志（最近 lines 行） */
   getLogs: (lines = 100) => request(`/logs?lines=${lines}`),
+
+  // ---------- Agent 对话 ----------
+  agentChat: (message, conversationId = '') => request('/agent/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message, conversation_id: conversationId }),
+  }),
+  agentListConversations: () => request('/agent/conversations'),
+  agentGetConversation: (id) => request(`/agent/conversations/${id}`),
+  agentNewConversation: () => request('/agent/conversations/new', { method: 'POST' }),
+  agentDeleteConversation: (id) => request(`/agent/conversations/${id}`, { method: 'DELETE' }),
 }
