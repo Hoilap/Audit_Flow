@@ -138,6 +138,14 @@ export const api = {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ providers }),
   }),
+  createLlmProvider: (data) => request('/llm/config/providers', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  }),
+  deleteLlmProvider: (name) => request(`/llm/config/providers/${encodeURIComponent(name)}`, {
+    method: 'DELETE',
+  }),
 
   // ---------- Workflow README ----------
   /** 获取所有任务子目录下的 readme.md 内容 */

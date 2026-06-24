@@ -1111,7 +1111,7 @@ function settingsPage() {
     <div class="page-header">
       <div>
         <h1>设置</h1>
-        <p class="subtle">模型、本地后端、导出和界面偏好</p>
+        <p class="subtle">LLM 模型配置与偏好</p>
       </div>
     </div>
 
@@ -1127,11 +1127,6 @@ function settingsPage() {
       <div id="settings-provider-list">
         <p class="subtle">加载中...</p>
       </div>
-    </div>
-
-    <div class="card grid">
-      <label>默认导出目录 <input class="search" value="outputs/bank_ledger_match/"></label>
-      <label>默认超时秒数 <input id="run-timeout" type="number" value="5" style="height:32px;width:80px;padding:0 8px;"></label>
     </div>
   </section>`
 }
@@ -1165,7 +1160,10 @@ export function renderSettingsProviders() {
 
     return `<div class="settings-provider-card" data-provider-name="${escapeHtml(p.name)}">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-        <strong>${escapeHtml(p.name)}${defaultBadge}</strong>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <strong>${escapeHtml(p.name)}${defaultBadge}</strong>
+          <button class="settings-delete-provider" data-provider="${escapeHtml(p.name)}" title="删除此 Provider">删除</button>
+        </div>
         <span class="subtle" style="font-size:11px;">密钥来源: ${escapeHtml(sourceText)}</span>
       </div>
       <div class="grid" style="grid-template-columns:1.2fr 1fr 0.8fr;gap:10px;">
@@ -1198,7 +1196,10 @@ export function renderSettingsProviders() {
         </label>
       </div>
     </div>`
-  }).join('')
+  }).join('') + `
+    <div style="margin-top:12px;text-align:center;">
+      <button id="settings-add-provider" class="ghost" style="padding:8px 24px;border-style:dashed;">+ 添加 Provider</button>
+    </div>`
 }
 
 // ============================================================

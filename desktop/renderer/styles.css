@@ -1233,3 +1233,27 @@ button.danger:hover {
   font-family: monospace;
   letter-spacing: 2px;
 }
+.settings-delete-provider {
+  padding: 2px 8px;
+  font-size: 11px;
+  color: var(--danger, #e74c3c);
+  border: 1px solid var(--danger, #e74c3c);
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.settings-delete-provider:hover {
+  background: var(--danger, #e74c3c);
+  color: white;
+}
+#settings-add-provider {
+  color: var(--text-muted);
+  border-color: var(--border);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+#settings-add-provider:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}

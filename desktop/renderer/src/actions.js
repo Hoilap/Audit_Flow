@@ -5,6 +5,7 @@ import { $ } from './dom.js'
 import { addMessage, renderFileError, renderFileTree, renderFiles, renderLlmCode, renderStepFiles, renderTimeline, renderWorkflowWorkspace, setAgentStatus, startTimer, stopTimer, renderDetectResult, renderConfigConfirm, renderCheckResult, renderProgramsList, renderSheetTasks, renderSettingsProviders } from './ui.js'
 import { openCsvPreview } from './previewModal.js'
 import { openReviewEditor } from './reviewEditor.js'
+import { createModal } from './modal.js'
 import { logger } from './logger.js'
 
 export async function refreshFiles() {
@@ -763,6 +764,103 @@ export async function saveLlmProviders() {
   } catch (error) {
     if (statusEl) {
       statusEl.textContent = `✗ 保存失败: ${error.message}`
+      statusEl.style.color = '#e74c3c'
+    }
+  }
+}
+
+/**
+ * 弹出表单模态框，填写新 provider 信息后保存。
+ */
+export function addLlmProvider() {
+  const modal = createModal({ title: '添加 LLM Provider', width: '480px', height: 'auto' })
+  modal.setBody(`
+    <div style="display:flex;flex-direction:column;gap:12px;padding:8px 0;">
+      <label style="font-size:13px;">名称（唯一标识）
+        <input class="search" id="new-provider-name" placeholder="例如 deepseek" style="width:100%;" />
+      </label>
+      <label style="font-size:13px;">Base URL
+        <input class="search" id="new-provider-url" placeholder="https://api.example.com/v1" style="width:100%;" />
+      </label>
+      <label style="font-size:13px;">Model
+        <input class="search" id="new-provider-model" placeholder="model-name" style="width:100%;" />
+      </label>
+      <label style="font-size:13px;">API Key（可选）
+        <input class="search" id="new-provider-key" type="password" placeholder="留空则稍后配置" style="width:100%;font-family:monospace;" />
+      </label>
+      <label style="font-size:13px;">API Key 环境变量名（可选）
+        <input class="search" id="new-provider-key-env" placeholder="例如 MY_API_KEY" style="width:100%;" />
+      </label>
+      <div id="new-provider-error" style="color:#e74c3c;font-size:12px;"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px;">
+        <button id="new-provider-cancel" class="ghost" style="padding:6px 16px;">取消</button>
+        <button id="new-provider-submit" class="primary" style="padding:6px 16px;">添加</button>
+      </div>
+    </div>
+  `)
+  modal.open()
+
+  const submit = async () => {
+    const name = modal.getBodyEl().querySelector('#new-provider-name').value.trim()
+    const baseUrl = modal.getBodyEl().querySelector('#new-provider-url').value.trim()
+    const model = modal.getBodyEl().querySelector('#new-provider-model').value.trim()
+    const apiKey = modal.getBodyEl().querySelector('#new-provider-key').value.trim()
+    const apiKeyEnv = modal.getBodyEl().querySelector('#new-provider-key-env').value.trim()
+    const errorEl = modal.getBodyEl().querySelector('#new-provider-error')
+
+    if (!name) {
+      errorEl.textContent = '名称不能为空'
+      return
+    }
+
+    try {
+      const result = await api.createLlmProvider({
+        name, base_url: baseUrl, model, api_key: apiKey, api_key_env: apiKeyEnv,
+      })
+      if (result.ok) {
+        modal.close()
+        await loadSettingsProviders()
+        await syncLlmConfig()
+      } else {
+        errorEl.textContent = result.error || '添加失败'
+      }
+    } catch (err) {
+      errorEl.textContent = err.detail || err.message || '添加失败'
+    }
+  }
+
+  modal.getBodyEl().querySelector('#new-provider-submit').addEventListener('click', submit)
+  modal.getBodyEl().querySelector('#new-provider-cancel').addEventListener('click', () => modal.close())
+  modal.getBodyEl().querySelector('#new-provider-name').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') submit()
+  })
+}
+
+/**
+ * 确认并删除指定 provider。
+ */
+export async function deleteLlmProvider(name) {
+  if (!confirm(`确定要删除 Provider "${name}" 吗？`)) return
+
+  const statusEl = $('#settings-provider-status')
+  try {
+    const result = await api.deleteLlmProvider(name)
+    if (result.ok) {
+      if (statusEl) {
+        statusEl.textContent = `✓ 已删除 ${name}`
+        statusEl.style.color = '#27ae60'
+      }
+      await loadSettingsProviders()
+      await syncLlmConfig()
+    } else {
+      if (statusEl) {
+        statusEl.textContent = '✗ ' + (result.error || '删除失败')
+        statusEl.style.color = '#e74c3c'
+      }
+    }
+  } catch (err) {
+    if (statusEl) {
+      statusEl.textContent = `✗ 删除失败: ${err.detail || err.message}`
       statusEl.style.color = '#e74c3c'
     }
   }

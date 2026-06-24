@@ -896,13 +896,32 @@ def _project_root() -> str:
 
 
 def _default_llm_yml_path() -> str:
-    """llm.yml 的默认路径（项目根目录下的 config.example.llm.yml）。"""
-    return os.path.join(_project_root(), "config.example.llm.yml")
+    """llm.yml 的默认路径（config/config.llm.yml）。"""
+    return os.path.join(_project_root(), "config", "config.llm.yml")
 
 
 def _default_matching_yml_path() -> str:
-    """matching.yml 的默认路径（项目根目录下的 config.example.matching.yml）。"""
-    return os.path.join(_project_root(), "config.example.matching.yml")
+    """matching.yml 的默认路径（config/config.matching.yml）。"""
+    return os.path.join(_project_root(), "config", "config.matching.yml")
+
+
+def _migrate_config_files():
+    """一次性迁移：将 config.example.*.yml 复制到 config/config.*.yml（幂等）。"""
+    root = _project_root()
+    config_dir = os.path.join(root, "config")
+    migrations = [
+        ("config.example.llm.yml", "config.llm.yml"),
+        ("config.example.matching.yml", "config.matching.yml"),
+    ]
+    for old_name, new_name in migrations:
+        old_path = os.path.join(root, old_name)
+        new_path = os.path.join(config_dir, new_name)
+        if os.path.exists(old_path) and not os.path.exists(new_path):
+            os.makedirs(config_dir, exist_ok=True)
+            shutil.copy2(old_path, new_path)
+            logger.info("Migrated config: %s -> %s", old_name, os.path.join("config", new_name))
+
+_migrate_config_files()
 
 
 def _resolve_masked_key(pcfg: dict) -> tuple[str, bool, str]:
@@ -963,9 +982,13 @@ def _resolve_task_config_paths(customer_name: str, task_name: str) -> dict:
     default_llm = _default_llm_yml_path()
 
     if row and row["task_yml_path"]:
+        llm_path = row["llm_yml_path"] or default_llm
+        # 兼容旧路径：DB 存储的旧文件不存在但新默认路径存在时，使用新路径
+        if llm_path and not os.path.exists(llm_path) and os.path.exists(default_llm):
+            llm_path = default_llm
         return {
             "task_yml_path": row["task_yml_path"],
-            "llm_yml_path": row["llm_yml_path"] or default_llm,
+            "llm_yml_path": llm_path,
         }
 
     # fallback 默认路径
@@ -1829,6 +1852,75 @@ def update_llm_providers(payload: dict):
         yaml_lib.dump(llm_cfg, f, allow_unicode=True, default_flow_style=False)
 
     return {"ok": True, "path": llm_yml_path}
+
+
+@app.post("/llm/config/providers")
+def create_llm_provider(payload: dict):
+    """添加新的 LLM provider。"""
+    name = (payload.get("name") or "").strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Provider 名称不能为空")
+
+    llm_yml_path = _default_llm_yml_path()
+    if os.path.exists(llm_yml_path):
+        with open(llm_yml_path, "r", encoding="utf-8") as f:
+            llm_cfg = yaml_lib.safe_load(f) or {}
+    else:
+        llm_cfg = {"llm": {"providers": {}}}
+
+    if "llm" not in llm_cfg:
+        llm_cfg["llm"] = {}
+    providers = llm_cfg["llm"].setdefault("providers", {})
+
+    if name in providers:
+        raise HTTPException(status_code=409, detail=f"Provider '{name}' 已存在")
+
+    new_pcfg = {}
+    if payload.get("api_key"):
+        new_pcfg["api_key"] = payload["api_key"]
+    elif payload.get("api_key_env"):
+        new_pcfg["api_key_env"] = payload["api_key_env"]
+    if payload.get("base_url"):
+        new_pcfg["base_url"] = payload["base_url"]
+    if payload.get("model"):
+        new_pcfg["model"] = payload["model"]
+
+    providers[name] = new_pcfg
+
+    os.makedirs(os.path.dirname(llm_yml_path), exist_ok=True)
+    with open(llm_yml_path, "w", encoding="utf-8") as f:
+        yaml_lib.dump(llm_cfg, f, allow_unicode=True, default_flow_style=False)
+
+    return {"ok": True, "path": llm_yml_path, "name": name}
+
+
+@app.delete("/llm/config/providers/{provider_name}")
+def delete_llm_provider(provider_name: str):
+    """删除指定的 LLM provider。"""
+    llm_yml_path = _default_llm_yml_path()
+    if not os.path.exists(llm_yml_path):
+        raise HTTPException(status_code=404, detail="llm.yml 不存在")
+    with open(llm_yml_path, "r", encoding="utf-8") as f:
+        llm_cfg = yaml_lib.safe_load(f) or {}
+
+    providers = llm_cfg.get("llm", {}).get("providers", {})
+    if provider_name not in providers:
+        raise HTTPException(status_code=404, detail=f"Provider '{provider_name}' 不存在")
+    if len(providers) <= 1:
+        raise HTTPException(status_code=400, detail="不能删除最后一个 provider")
+
+    del providers[provider_name]
+
+    # 若删除的是当前 default，自动切换到第一个剩余 provider
+    new_default = None
+    if llm_cfg["llm"].get("default") == provider_name:
+        new_default = next(iter(providers))
+        llm_cfg["llm"]["default"] = new_default
+
+    with open(llm_yml_path, "w", encoding="utf-8") as f:
+        yaml_lib.dump(llm_cfg, f, allow_unicode=True, default_flow_style=False)
+
+    return {"ok": True, "new_default": new_default}
 
 
 @app.get("/llm/tokens")
