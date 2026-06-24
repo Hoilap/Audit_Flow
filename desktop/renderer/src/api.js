@@ -110,6 +110,7 @@ export const api = {
   // ---------- Project CRUD ----------
   listProjects: () => request('/projects/list'),
   listProjectDirs: () => request('/projects/dirs'),
+  listTaskDefinitions: () => request('/task-definitions'),
   createProject: (payload) => request('/projects/create', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -131,6 +132,12 @@ export const api = {
     return request('/llm/config', { method: 'POST', body: form })
   },
   getLlmTokens: () => request('/llm/tokens'),
+  getLlmProviderKey: (name) => request(`/llm/config/provider/${encodeURIComponent(name)}/key`),
+  updateLlmProviders: (providers) => request('/llm/config/providers', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ providers }),
+  }),
 
   // ---------- Workflow README ----------
   /** 获取所有任务子目录下的 readme.md 内容 */
@@ -141,10 +148,15 @@ export const api = {
   getLogs: (lines = 100) => request(`/logs?lines=${lines}`),
 
   // ---------- Agent 对话 ----------
-  agentChat: (message, conversationId = '') => request('/agent/chat', {
+  agentChat: (message, conversationId = '', customerName = '', taskName = '') => request('/agent/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message, conversation_id: conversationId }),
+    body: JSON.stringify({
+      message,
+      conversation_id: conversationId,
+      customer_name: customerName,
+      task_name: taskName,
+    }),
   }),
   agentListConversations: () => request('/agent/conversations'),
   agentGetConversation: (id) => request(`/agent/conversations/${id}`),

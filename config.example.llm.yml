@@ -1,9 +1,15 @@
 llm:
-  default: dashscope
+  default: dashscope_3.7
   enabled: true
   generated_parser_dir: generated_parsers
   providers:
-    dashscope:
+    dashscope_3.6:
+      api_key_env: DASHSCOPE_API_KEY
+      base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+      base_url_env: DASHSCOPE_BASE_URL
+      model: qwen3.6-plus
+      model_env: DASHSCOPE_MODEL
+    dashscope_3.7:
       api_key_env: DASHSCOPE_API_KEY
       base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
       base_url_env: DASHSCOPE_BASE_URL

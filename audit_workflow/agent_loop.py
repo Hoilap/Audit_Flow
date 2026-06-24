@@ -418,7 +418,8 @@ _current_project_root: str = ""
 # Agent 构建
 # ================================================================
 
-def build_agent_loop(llm_config: dict, project_root: str):
+def build_agent_loop(llm_config: dict, project_root: str,
+                     customer_name: str = "", task_name: str = ""):
     """构建带工具的 pydantic-ai Agent。"""
     global _current_project_root
     _current_project_root = project_root
@@ -442,9 +443,22 @@ def build_agent_loop(llm_config: dict, project_root: str):
     provider = OpenAIProvider(api_key=api_key, base_url=base_url or None)
     model = OpenAIModel(model_name, provider=provider)
 
+    # 动态拼接系统提示：若指定了客户名和任务名，注入当前项目路径
+    # 注：task_name 已由 api._resolve_task_dir_name() 通过 DB 解析为英文 dir_name
+    system_prompt = AGENT_SYSTEM_PROMPT
+    if customer_name and task_name:
+        system_prompt += (
+            f"\n\n## 当前项目\n"
+            f"- 客户名称: {customer_name}\n"
+            f"- 任务名称: {task_name}\n"
+            f"- 输入目录: inputs/{customer_name}/{task_name}/\n"
+            f"- **输出目录: outputs/{customer_name}/{task_name}/** — 所有生成的文件必须保存到此目录下\n"
+            f"- 请优先扫描 inputs/{customer_name}/{task_name}/ 目录下的输入文件\n"
+        )
+
     agent = Agent(
         model,
-        system_prompt=AGENT_SYSTEM_PROMPT,
+        system_prompt=system_prompt,
         tools=[
             Tool(tool_scan_files),
             Tool(tool_read_file),
@@ -480,6 +494,8 @@ async def run_agent_chat(
     llm_config: dict,
     project_root: str,
     token_tracker,
+    customer_name: str = "",
+    task_name: str = "",
 ) -> dict:
     """运行一轮 Agent 对话。
 
@@ -515,7 +531,7 @@ async def run_agent_chat(
 
     # 构建 Agent
     try:
-        agent = build_agent_loop(llm_config, project_root)
+        agent = build_agent_loop(llm_config, project_root, customer_name, task_name)
     except Exception as e:
         logger.error("Agent 构建失败: %s", e, exc_info=True)
         error_msg = ConversationMessage(

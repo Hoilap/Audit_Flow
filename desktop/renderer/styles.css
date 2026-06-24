@@ -1151,3 +1151,85 @@ button.danger:hover {
   border-radius: 4px;
   outline: 1px solid var(--primary);
 }
+
+/* Agent 输出路径选择器（文件树下方） */
+.agent-filetree-dropdowns {
+  flex-shrink: 0;
+  border-top: 1px solid var(--border);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--surface-muted);
+}
+.agent-dropdown-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.agent-dropdown-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  width: 32px;
+  flex-shrink: 0;
+  text-align: right;
+}
+.agent-dropdown-input {
+  flex: 1;
+  height: 30px;
+  padding: 0 8px;
+  font-size: 13px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  min-width: 0;
+}
+.agent-dropdown-input:focus {
+  border-color: var(--primary);
+  outline: none;
+}
+.agent-dropdown-path {
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: 4px 8px;
+  background: var(--surface);
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  word-break: break-all;
+  line-height: 1.4;
+}
+.agent-dropdown-path.has-path {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+/* ── 设置页 LLM Provider 配置 ── */
+.settings-provider-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 10px;
+  transition: border-color 0.2s;
+}
+.settings-provider-card:hover {
+  border-color: var(--primary);
+}
+.settings-eye-toggle {
+  padding: 0 10px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  transition: background 0.15s;
+}
+.settings-eye-toggle:hover {
+  background: var(--primary);
+  color: white;
+}
+.settings-api-key-input[type="password"] {
+  font-family: monospace;
+  letter-spacing: 2px;
+}

@@ -634,8 +634,8 @@ function renderTreeNodes(files, basePath) {
     const indent = depth * 16
     let html = ''
     if (name) {
-      html += `<div class="tree-folder" style="padding-left:${indent}px;" data-expand="true">
-        <span class="tree-icon">📂</span><span class="tree-name">${escapeHtml(name)}</span></div>`
+      html += `<div class="tree-folder" style="padding-left:${indent}px;" data-expand="false">
+        <span class="tree-icon">📁</span><span class="tree-name">${escapeHtml(name)}</span></div>`
     }
     // subdirs
     for (const key of Object.keys(node).sort()) {
@@ -748,6 +748,20 @@ export async function renderFileTree() {
           next = next.nextElementSibling
         }
       })
+    })
+    // 默认折叠所有文件夹
+    container.querySelectorAll('.tree-folder').forEach((folder) => {
+      let next = folder.nextElementSibling
+      while (next) {
+        const nextIndent = parseInt(next.style.paddingLeft) || 0
+        const folderIndent = parseInt(folder.style.paddingLeft) || 0
+        if (nextIndent > folderIndent) {
+          next.style.display = 'none'
+          next = next.nextElementSibling
+        } else {
+          break
+        }
+      }
     })
   } catch (err) {
     container.innerHTML = `<div class="subtle">加载失败: ${escapeHtml(err.message)}</div>`
@@ -869,6 +883,25 @@ function agentLoopPage() {
         </div>
         <div class="agent-filetree-body" id="agent-filetree">
           <div class="subtle" style="padding:16px;text-align:center;">加载中...</div>
+        </div>
+        <div class="agent-filetree-dropdowns" id="agent-output-selector">
+          <div class="agent-dropdown-row">
+            <label class="agent-dropdown-label">客户</label>
+            <input id="agent-customer-input" class="agent-dropdown-input"
+                   list="agent-customer-list" placeholder="选择或输入客户名称"
+                   autocomplete="off" />
+            <datalist id="agent-customer-list"></datalist>
+          </div>
+          <div class="agent-dropdown-row">
+            <label class="agent-dropdown-label">任务</label>
+            <input id="agent-task-input" class="agent-dropdown-input"
+                   list="agent-task-list" placeholder="选择或输入任务名称"
+                   autocomplete="off" />
+            <datalist id="agent-task-list"></datalist>
+          </div>
+          <div class="agent-dropdown-path" id="agent-output-path">
+            <span class="subtle">outputs/ — 请先选择客户和任务</span>
+          </div>
         </div>
       </div>
     </div>
@@ -1074,7 +1107,98 @@ function reportsPage() {
 }
 
 function settingsPage() {
-  return `<section class="page" id="page-settings"><div class="page-header"><div><h1>设置</h1><p class="subtle">模型、本地后端、导出和界面偏好</p></div></div><div class="card grid"><label>默认导出目录 <input class="search" value="outputs/bank_ledger_match/"></label><label>默认超时秒数 <input id="run-timeout" type="number" value="5" style="height:32px;width:80px;padding:0 8px;"></label></div></section>`
+  return `<section class="page" id="page-settings">
+    <div class="page-header">
+      <div>
+        <h1>设置</h1>
+        <p class="subtle">模型、本地后端、导出和界面偏好</p>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h2>LLM 模型配置</h2>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <span id="settings-config-path" class="subtle" style="font-size:11px;"></span>
+          <button id="settings-save-providers" class="primary" style="padding:4px 16px;">保存配置</button>
+        </div>
+      </div>
+      <div id="settings-provider-status" class="subtle" style="margin-bottom:8px;"></div>
+      <div id="settings-provider-list">
+        <p class="subtle">加载中...</p>
+      </div>
+    </div>
+
+    <div class="card grid">
+      <label>默认导出目录 <input class="search" value="outputs/bank_ledger_match/"></label>
+      <label>默认超时秒数 <input id="run-timeout" type="number" value="5" style="height:32px;width:80px;padding:0 8px;"></label>
+    </div>
+  </section>`
+}
+
+export function renderSettingsProviders() {
+  const container = $('#settings-provider-list')
+  const statusEl = $('#settings-provider-status')
+  const pathEl = $('#settings-config-path')
+  if (!container) return
+
+  if (pathEl) pathEl.textContent = state.llmConfigPath
+
+  if (!state.llmProviders.length) {
+    container.innerHTML = '<p class="subtle">未找到 LLM 配置。</p>'
+    return
+  }
+
+  const sourceLabels = {
+    'direct': '直接配置',
+    'env': '环境变量',
+    'literal': '字面量 (api_key_env)',
+    'fallback': 'OPENAI_API_KEY 回退',
+    'none': '未设置',
+  }
+
+  container.innerHTML = state.llmProviders.map((p) => {
+    const isDefault = p.name === state.llmConfigDefault
+    const defaultBadge = isDefault ? '<span class="badge low" style="margin-left:8px;">默认</span>' : ''
+    const envHint = p.api_key_env ? ` (${escapeHtml(p.api_key_env)})` : ''
+    const sourceText = (sourceLabels[p.api_key_source] || p.api_key_source) + envHint
+
+    return `<div class="settings-provider-card" data-provider-name="${escapeHtml(p.name)}">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <strong>${escapeHtml(p.name)}${defaultBadge}</strong>
+        <span class="subtle" style="font-size:11px;">密钥来源: ${escapeHtml(sourceText)}</span>
+      </div>
+      <div class="grid" style="grid-template-columns:1.2fr 1fr 0.8fr;gap:10px;">
+        <label style="font-size:12px;">API Key
+          <div style="display:flex;gap:4px;">
+            <input class="search settings-api-key-input"
+                   data-provider="${escapeHtml(p.name)}"
+                   data-original-masked="${escapeHtml(p.api_key_masked || '')}"
+                   type="password"
+                   value="${escapeHtml(p.api_key_masked || '')}"
+                   placeholder="输入 API Key"
+                   style="flex:1;font-family:monospace;letter-spacing:1px;" />
+            <button class="settings-eye-toggle"
+                    data-provider="${escapeHtml(p.name)}"
+                    data-revealed="false"
+                    title="显示/隐藏">&#128065;</button>
+          </div>
+        </label>
+        <label style="font-size:12px;">Base URL
+          <input class="search settings-base-url-input"
+                 data-provider="${escapeHtml(p.name)}"
+                 value="${escapeHtml(p.base_url || '')}"
+                 placeholder="https://api.example.com/v1" />
+        </label>
+        <label style="font-size:12px;">Model
+          <input class="search settings-model-input"
+                 data-provider="${escapeHtml(p.name)}"
+                 value="${escapeHtml(p.model || '')}"
+                 placeholder="model-name" />
+        </label>
+      </div>
+    </div>`
+  }).join('')
 }
 
 // ============================================================

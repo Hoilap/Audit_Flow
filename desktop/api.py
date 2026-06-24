@@ -186,6 +186,30 @@ def init_db():
             defaults
         )
         conn.commit()
+
+    # ── task_definitions: 任务类型注册表（中文名 ↔ 英文目录名） ──
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS task_definitions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            dir_name TEXT NOT NULL UNIQUE,
+            description TEXT NOT NULL DEFAULT ''
+        )
+    """)
+    td_count = conn.execute("SELECT COUNT(*) FROM task_definitions").fetchone()[0]
+    if td_count == 0:
+        task_defs = [
+            ('序时账银行流水匹配', 'bank_ledger_match', 'Detect扫描→LLM识别→清洗→核查→匹配→人工复核→填入底稿'),
+            ('出库结算匹配', 'outbound_settlement_match', '出库表与结算单数据匹配核查'),
+            ('出库表核对', 'outbound_check', '多平台出库数据交叉核对'),
+            ('资金流水专项复核', 'cash_flow_review', '资金流水专项审计复核'),
+        ]
+        conn.executemany(
+            "INSERT INTO task_definitions (name, dir_name, description) VALUES (?,?,?)",
+            task_defs
+        )
+        conn.commit()
+
     conn.close()
 
 init_db()
@@ -196,6 +220,32 @@ def _ensure_project_dirs(customer_name: str, task_name: str):
     for base in ('inputs', 'outputs'):
         d = os.path.join(base, customer_name, task_name)
         os.makedirs(d, exist_ok=True)
+
+
+def _resolve_task_dir_name(task_name: str) -> str:
+    """将任务名解析为英文目录名。
+    优先匹配 dir_name，其次匹配中文 name → dir_name，都无匹配则原样返回。
+    """
+    if not task_name:
+        return task_name
+    conn = get_db()
+    try:
+        # 已经是英文 dir_name → 直接返回
+        row = conn.execute(
+            "SELECT dir_name FROM task_definitions WHERE dir_name = ?", (task_name,)
+        ).fetchone()
+        if row:
+            return row["dir_name"]
+        # 中文 name → 翻译为英文 dir_name
+        row = conn.execute(
+            "SELECT dir_name FROM task_definitions WHERE name = ?", (task_name,)
+        ).fetchone()
+        if row:
+            return row["dir_name"]
+    finally:
+        conn.close()
+    # 自定义名称 → 原样返回
+    return task_name
 
 
 def _list_project_dirs() -> list:
@@ -245,6 +295,7 @@ def project_row_to_dict(row) -> dict:
         "created_at": row["created_at"],
         "responsible_person": row["responsible_person"],
         "risk": row["risk"],
+        "dir_name": row["dir_name"] if "dir_name" in row.keys() else None,
     }
 
 # ---------- Project CRUD endpoints ----------
@@ -254,10 +305,23 @@ def list_project_dirs():
     """返回 inputs/ 和 outputs/ 下按项目组织的目录列表"""
     return {"dirs": _list_project_dirs()}
 
+@app.get("/task-definitions")
+def list_task_definitions():
+    """返回所有任务类型定义（中文名 ↔ 英文目录名映射）"""
+    conn = get_db()
+    rows = conn.execute("SELECT id, name, dir_name, description FROM task_definitions ORDER BY id").fetchall()
+    conn.close()
+    return {"definitions": [dict(r) for r in rows]}
+
 @app.get("/projects/list")
 def list_projects():
     conn = get_db()
-    rows = conn.execute("SELECT * FROM projects ORDER BY id DESC").fetchall()
+    rows = conn.execute("""
+        SELECT p.*, td.dir_name
+        FROM projects p
+        LEFT JOIN task_definitions td ON p.task_name = td.name
+        ORDER BY p.id DESC
+    """).fetchall()
     conn.close()
     return {"projects": [project_row_to_dict(r) for r in rows]}
 
@@ -326,8 +390,10 @@ def list_files(root: str = "outputs"):
     base = os.path.abspath(root)
     if not os.path.exists(base):
         return {"files": []}
+    _hidden_dirs = {"agent_code", "__pycache__"}
     result = []
     for dirpath, dirs, files in os.walk(base):
+        dirs[:] = [d for d in dirs if d not in _hidden_dirs]
         for f in files:
             rel = os.path.relpath(os.path.join(dirpath, f), start=os.getcwd())
             result.append(rel.replace('\\', '/'))
@@ -837,6 +903,49 @@ def _default_llm_yml_path() -> str:
 def _default_matching_yml_path() -> str:
     """matching.yml 的默认路径（项目根目录下的 config.example.matching.yml）。"""
     return os.path.join(_project_root(), "config.example.matching.yml")
+
+
+def _resolve_masked_key(pcfg: dict) -> tuple[str, bool, str]:
+    """解析并遮罩 provider 的 API Key。
+    Returns: (masked_key, is_set, source_label)
+    """
+    direct = (pcfg.get("api_key") or "").strip()
+    if direct:
+        masked = "****" + direct[-4:] if len(direct) > 4 else "****"
+        return masked, True, "direct"
+
+    env_name = (pcfg.get("api_key_env") or "").strip()
+    if env_name:
+        val = os.getenv(env_name, "")
+        if val:
+            masked = "****" + val[-4:] if len(val) > 4 else "****"
+            return masked, True, "env"
+        # 向后兼容：api_key_env 字段存储了字面量 key
+        if not env_name.startswith(("$", "ENV_", "env_")) and len(env_name) > 20:
+            masked = "****" + env_name[-4:] if len(env_name) > 4 else "****"
+            return masked, True, "literal"
+
+    fallback = os.getenv("OPENAI_API_KEY", "")
+    if fallback:
+        masked = "****" + fallback[-4:] if len(fallback) > 4 else "****"
+        return masked, True, "fallback"
+
+    return "", False, "none"
+
+
+def _resolve_plain_key(pcfg: dict) -> str:
+    """解析 provider 的明文 API Key（用于眼睛切换显示）。"""
+    direct = (pcfg.get("api_key") or "").strip()
+    if direct:
+        return direct
+    env_name = (pcfg.get("api_key_env") or "").strip()
+    if env_name:
+        val = os.getenv(env_name, "")
+        if val:
+            return val
+        if not env_name.startswith(("$", "ENV_", "env_")) and len(env_name) > 20:
+            return env_name
+    return os.getenv("OPENAI_API_KEY", "")
 
 
 def _resolve_task_config_paths(customer_name: str, task_name: str) -> dict:
@@ -1584,10 +1693,15 @@ def get_llm_config():
         default_name = llm_section.get("default", next(iter(providers)))
         provider_list = []
         for name, pcfg in providers.items():
+            masked, key_set, source = _resolve_masked_key(pcfg)
             provider_list.append({
                 "name": name,
                 "model": pcfg.get("model", name),
                 "base_url": pcfg.get("base_url", ""),
+                "api_key_masked": masked,
+                "api_key_set": key_set,
+                "api_key_env": pcfg.get("api_key_env", ""),
+                "api_key_source": source,
             })
         return {
             "ok": True,
@@ -1601,6 +1715,7 @@ def get_llm_config():
     else:
         # 旧扁平格式：包装成单个 provider
         model = llm_section.get("model", "")
+        masked, key_set, source = _resolve_masked_key(llm_section)
         return {
             "ok": True,
             "config": {
@@ -1610,6 +1725,10 @@ def get_llm_config():
                     "name": "_default",
                     "model": model or "unknown",
                     "base_url": llm_section.get("base_url", ""),
+                    "api_key_masked": masked,
+                    "api_key_set": key_set,
+                    "api_key_env": llm_section.get("api_key_env", ""),
+                    "api_key_source": source,
                 }],
             },
             "path": llm_yml_path,
@@ -1647,6 +1766,63 @@ def update_llm_config(
 
     if enabled in ("true", "false"):
         llm_cfg["llm"]["enabled"] = enabled == "true"
+
+    os.makedirs(os.path.dirname(llm_yml_path), exist_ok=True)
+    with open(llm_yml_path, "w", encoding="utf-8") as f:
+        yaml_lib.dump(llm_cfg, f, allow_unicode=True, default_flow_style=False)
+
+    return {"ok": True, "path": llm_yml_path}
+
+
+@app.get("/llm/config/provider/{provider_name}/key")
+def get_provider_key(provider_name: str):
+    """返回单个 provider 的明文 API Key（用于眼睛切换显示）。"""
+    llm_yml_path = _default_llm_yml_path()
+    if not os.path.exists(llm_yml_path):
+        return {"ok": False, "error": "llm.yml 不存在"}
+    with open(llm_yml_path, "r", encoding="utf-8") as f:
+        llm_cfg = yaml_lib.safe_load(f) or {}
+    providers = llm_cfg.get("llm", {}).get("providers", {})
+    if provider_name not in providers:
+        raise HTTPException(status_code=404, detail=f"Provider '{provider_name}' not found")
+    return {"ok": True, "api_key": _resolve_plain_key(providers[provider_name])}
+
+
+@app.put("/llm/config/providers")
+def update_llm_providers(payload: dict):
+    """批量更新 providers 的 api_key / base_url / model。
+    api_key 为空字符串时表示用户未修改，不覆盖原值。
+    """
+    llm_yml_path = _default_llm_yml_path()
+    if os.path.exists(llm_yml_path):
+        with open(llm_yml_path, "r", encoding="utf-8") as f:
+            llm_cfg = yaml_lib.safe_load(f) or {}
+    else:
+        llm_cfg = {"llm": {"providers": {}}}
+
+    if "llm" not in llm_cfg:
+        llm_cfg["llm"] = {}
+    providers = llm_cfg["llm"].setdefault("providers", {})
+
+    for upd in payload.get("providers", []):
+        name = upd.get("name", "")
+        if name not in providers:
+            continue
+        pcfg = providers[name]
+
+        # API Key: 仅当用户输入了新值时才覆盖
+        new_key = (upd.get("api_key") or "").strip()
+        if new_key:
+            pcfg["api_key"] = new_key
+
+        # Base URL: 始终更新（允许清空）
+        if "base_url" in upd:
+            pcfg["base_url"] = upd["base_url"]
+
+        # Model: 仅当非空时更新
+        new_model = (upd.get("model") or "").strip()
+        if new_model:
+            pcfg["model"] = new_model
 
     os.makedirs(os.path.dirname(llm_yml_path), exist_ok=True)
     with open(llm_yml_path, "w", encoding="utf-8") as f:
@@ -1703,6 +1879,8 @@ def get_logs(lines: int = 100):
 class AgentChatPayload(BaseModel):
     message: str
     conversation_id: str = ""
+    customer_name: str = ""
+    task_name: str = ""
 
 
 @app.post("/agent/chat")
@@ -1714,6 +1892,13 @@ async def agent_chat(payload: AgentChatPayload):
 
     conv_id = payload.conversation_id or conversation_store.create()
 
+    # 将任务名解析为英文目录名（数据库驱动）
+    task_dir = _resolve_task_dir_name(payload.task_name)
+
+    # 若指定了客户名和任务名，确保输出目录存在
+    if payload.customer_name and task_dir:
+        _ensure_project_dirs(payload.customer_name, task_dir)
+
     try:
         result = await run_agent_chat(
             message=payload.message,
@@ -1721,6 +1906,8 @@ async def agent_chat(payload: AgentChatPayload):
             llm_config=_default_llm_config(),
             project_root=_project_root(),
             token_tracker=token_tracker,
+            customer_name=payload.customer_name,
+            task_name=task_dir,
         )
         return result
     except Exception as e:

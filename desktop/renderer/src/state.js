@@ -29,6 +29,15 @@ export const state = {
   agentIsRunning: false,        // Agent 是否正在执行
   agentStreamingText: '',       // 流式输出累积的文本
   agentHasStreamed: false,      // 本轮是否已通过 SSE 收到文本（防止 HTTP 兜底重复）
+  // ── Agent 输出路径选择器 ──
+  agentCustomerName: '',        // Agent 页面当前选中的客户名
+  agentTaskName: '',            // Agent 页面当前选中的任务名
+  agentProjectOptions: [],      // 从 DB 加载的项目列表（供下拉使用）
+  agentTaskDefinitions: [],     // 从 task_definitions 表加载的任务类型（name ↔ dir_name）
+  // ── 设置页 LLM 配置 ──
+  llmProviders: [],             // [{name, model, base_url, api_key_masked, api_key_set, api_key_env, api_key_source}]
+  llmConfigDefault: '',         // 默认 provider 名称
+  llmConfigPath: '',            // YAML 配置文件路径
 }
 
 export function activeTask() {

@@ -31,7 +31,12 @@ export async function sendAgentMessage() {
   setAgentLoopStatus('Agent 思考中...')
 
   try {
-    const result = await api.agentChat(message, state.activeAgentConvId || '')
+    const result = await api.agentChat(
+      message,
+      state.activeAgentConvId || '',
+      state.agentCustomerName || '',
+      state.agentTaskName || ''
+    )
 
     if (result.conversation_id) {
       state.activeAgentConvId = result.conversation_id
@@ -405,8 +410,8 @@ export async function renderAgentFileTree() {
       api.listFiles('inputs').catch(() => ({ files: [] })),
       api.listFiles('outputs').catch(() => ({ files: [] })),
     ])
-    const inputsFiles = (inputsRes.files || []).filter(f => !f.endsWith('/'))
-    const outputsFiles = (outputsRes.files || []).filter(f => !f.endsWith('/'))
+    const inputsFiles = (inputsRes.files || []).filter(f => !f.endsWith('/') && !f.endsWith('.pyc'))
+    const outputsFiles = (outputsRes.files || []).filter(f => !f.endsWith('/') && !f.endsWith('.pyc'))
 
     let html = ''
     if (inputsFiles.length > 0) {
@@ -425,6 +430,21 @@ export async function renderAgentFileTree() {
 
     bindAgentFileTreeEvents(container)
     bindDragAndDrop(container)
+
+    // 默认折叠所有文件夹
+    container.querySelectorAll('.tree-folder').forEach(folder => {
+      let sibling = folder.nextElementSibling
+      while (sibling && !sibling.classList.contains('tree-root')) {
+        const sibIndent = parseInt(sibling.style.paddingLeft) || 0
+        const folderIndent = parseInt(folder.style.paddingLeft) || 0
+        if (sibIndent > folderIndent) {
+          sibling.style.display = 'none'
+          sibling = sibling.nextElementSibling
+        } else {
+          break
+        }
+      }
+    })
   } catch (err) {
     container.innerHTML = `<div class="subtle" style="padding:16px;text-align:center;">加载失败: ${escapeHtml(err.message)}</div>`
   }
@@ -453,8 +473,8 @@ function renderAgentTreeNodes(files, basePath) {
     const indent = depth * 16
     let html = ''
     if (name) {
-      html += `<div class="tree-folder" style="padding-left:${indent}px;" data-expand="true">
-        <span class="tree-icon">📂</span><span class="tree-name">${escapeHtml(name)}</span></div>`
+      html += `<div class="tree-folder" style="padding-left:${indent}px;" data-expand="false">
+        <span class="tree-icon">📁</span><span class="tree-name">${escapeHtml(name)}</span></div>`
     }
     for (const key of Object.keys(node).sort()) {
       if (key === '_files') continue
@@ -599,4 +619,126 @@ function bindDragAndDrop(container) {
 
     await renderAgentFileTree()
   })
+}
+
+// ── 输出路径选择器（文件树下方下拉菜单） ──
+
+/**
+ * 加载项目数据、填充客户 datalist、恢复已有选择。
+ * 在 Agent 页面激活时调用。
+ */
+export async function initAgentOutputSelector() {
+  try {
+    const [projData, tdData] = await Promise.all([
+      api.listProjects(),
+      api.listTaskDefinitions(),
+    ])
+    state.agentProjectOptions = projData.projects || []
+    state.agentTaskDefinitions = tdData.definitions || []
+  } catch {
+    state.agentProjectOptions = []
+    state.agentTaskDefinitions = []
+  }
+  renderAgentCustomerDatalist()
+  const custInput = $('#agent-customer-input')
+  const taskInput = $('#agent-task-input')
+  if (custInput) custInput.value = state.agentCustomerName
+  if (taskInput) taskInput.value = state.agentTaskName
+  renderAgentTaskDatalist(state.agentCustomerName)
+  updateAgentOutputPath()
+}
+
+/** 从 agentProjectOptions 提取去重的客户名，写入 datalist */
+function renderAgentCustomerDatalist() {
+  const datalist = $('#agent-customer-list')
+  if (!datalist) return
+  const customers = [...new Set(
+    state.agentProjectOptions.map(p => p.customer_name).filter(Boolean)
+  )]
+  datalist.innerHTML = customers.map(c => `<option value="${escapeHtml(c)}">`).join('')
+}
+
+/** 按客户名构建任务选项列表：task_definitions 的 dir_name + DB 自定义条目 */
+function renderAgentTaskDatalist(customerName) {
+  const datalist = $('#agent-task-list')
+  if (!datalist) return
+  if (!customerName) {
+    datalist.innerHTML = ''
+    return
+  }
+  // task_definitions 中的预定义任务（英文 dir_name）
+  const defDirNames = new Set(state.agentTaskDefinitions.map(d => d.dir_name))
+  const options = [...defDirNames]
+  // DB 中该客户下不属于预定义任务的自定义条目
+  state.agentProjectOptions
+    .filter(p => p.customer_name === customerName && p.task_name)
+    .forEach(p => {
+      // 优先用 dir_name（来自 LEFT JOIN），其次用 task_name
+      const tn = p.dir_name || p.task_name
+      if (!defDirNames.has(tn) && !options.includes(tn)) {
+        options.push(tn)
+      }
+    })
+  datalist.innerHTML = options.map(t => `<option value="${escapeHtml(t)}">`).join('')
+}
+
+/** 绑定客户/任务 input 的 input 事件，实现联动和路径更新 */
+export function bindAgentOutputSelectorEvents() {
+  const custInput = $('#agent-customer-input')
+  const taskInput = $('#agent-task-input')
+
+  // 幂等性保护：防止多次导航导致重复绑定
+  if (custInput?.dataset.selectorBound) return
+  if (custInput) custInput.dataset.selectorBound = 'true'
+
+  if (custInput) {
+    custInput.addEventListener('input', () => {
+      state.agentCustomerName = custInput.value.trim()
+      // 客户名变化 → 刷新任务 datalist（联动）
+      renderAgentTaskDatalist(state.agentCustomerName)
+      updateAgentOutputPath()
+    })
+  }
+
+  if (taskInput) {
+    taskInput.addEventListener('input', () => {
+      state.agentTaskName = taskInput.value.trim()
+      updateAgentOutputPath()
+    })
+  }
+}
+
+/** 根据当前选中的客户名/任务名更新路径显示（路径用英文 dir_name） */
+function updateAgentOutputPath() {
+  const el = $('#agent-output-path')
+  if (!el) return
+  const c = state.agentCustomerName
+  const t = resolveTaskDirName(state.agentTaskName)
+  if (c && t) {
+    el.textContent = `outputs/${c}/${t}/`
+    el.classList.add('has-path')
+  } else if (c) {
+    el.textContent = `outputs/${c}/ — 请选择任务`
+    el.classList.remove('has-path')
+  } else {
+    el.innerHTML = '<span class="subtle">outputs/ — 请先选择客户和任务</span>'
+    el.classList.remove('has-path')
+  }
+}
+
+/**
+ * 将任务名解析为英文目录名（dir_name）。
+ * 数据来源：state.agentTaskDefinitions（从 task_definitions API 加载）。
+ * 支持：英文 dir_name 直传、中文 name 翻译、自定义名称原样返回。
+ */
+function resolveTaskDirName(name) {
+  if (!name) return ''
+  const defs = state.agentTaskDefinitions
+  // 已经是英文 dir_name → 直接返回
+  if (defs.some(d => d.dir_name === name)) return name
+  // 中文 name → 翻译为英文 dir_name
+  const match = defs.find(d => d.name === name)
+  if (match) return match.dir_name
+  // 自定义名称 → 原样返回
+  return name
 }

@@ -2,7 +2,7 @@ import { api, apiBase, cancelRequest } from './api.js'
 import { llmCodePath } from './config.js'
 import { activeTask, findWorkflowTaskByName, getProjectBasePath, resolveProjectPath, markStep, state, stepStatus } from './state.js'
 import { $ } from './dom.js'
-import { addMessage, renderFileError, renderFileTree, renderFiles, renderLlmCode, renderStepFiles, renderTimeline, renderWorkflowWorkspace, setAgentStatus, startTimer, stopTimer, renderDetectResult, renderConfigConfirm, renderCheckResult, renderProgramsList, renderSheetTasks } from './ui.js'
+import { addMessage, renderFileError, renderFileTree, renderFiles, renderLlmCode, renderStepFiles, renderTimeline, renderWorkflowWorkspace, setAgentStatus, startTimer, stopTimer, renderDetectResult, renderConfigConfirm, renderCheckResult, renderProgramsList, renderSheetTasks, renderSettingsProviders } from './ui.js'
 import { openCsvPreview } from './previewModal.js'
 import { openReviewEditor } from './reviewEditor.js'
 import { logger } from './logger.js'
@@ -676,5 +676,94 @@ export async function loadProgramReadmes() {
   } catch (error) {
     console.error('Failed to load READMEs:', error)
     renderProgramsList([])
+  }
+}
+
+// ────────── 设置页 LLM Provider 配置 ──────────
+
+/**
+ * 从后端加载 LLM provider 配置并渲染设置页面。
+ */
+export async function loadSettingsProviders() {
+  try {
+    const result = await api.getLlmConfig()
+    if (result.ok && result.config) {
+      state.llmProviders = result.config.providers || []
+      state.llmConfigDefault = result.config.default || ''
+      state.llmConfigPath = result.path || ''
+      renderSettingsProviders()
+    }
+  } catch (error) {
+    const container = $('#settings-provider-list')
+    if (container) container.innerHTML = `<p class="subtle">加载失败: ${error.message}</p>`
+  }
+}
+
+/**
+ * 从后端获取指定 provider 的明文 API Key。
+ */
+export async function revealProviderKey(providerName) {
+  try {
+    const result = await api.getLlmProviderKey(providerName)
+    if (result.ok) return result.api_key || ''
+    return ''
+  } catch {
+    return ''
+  }
+}
+
+/**
+ * 收集所有 provider 表单数据并保存到后端。
+ */
+export async function saveLlmProviders() {
+  const statusEl = $('#settings-provider-status')
+  if (statusEl) {
+    statusEl.textContent = '保存中...'
+    statusEl.className = 'subtle'
+  }
+
+  const cards = document.querySelectorAll('.settings-provider-card')
+  const providers = []
+
+  cards.forEach((card) => {
+    const name = card.dataset.providerName
+    const keyInput = card.querySelector('.settings-api-key-input')
+    const urlInput = card.querySelector('.settings-base-url-input')
+    const modelInput = card.querySelector('.settings-model-input')
+
+    const maskedOriginal = keyInput?.dataset.originalMasked || ''
+    const currentKey = keyInput?.value || ''
+
+    providers.push({
+      name,
+      // 仅当用户修改了值时才发送 api_key（与原始遮罩值对比）
+      api_key: currentKey !== maskedOriginal ? currentKey : '',
+      base_url: urlInput?.value || '',
+      model: modelInput?.value || '',
+    })
+  })
+
+  try {
+    const result = await api.updateLlmProviders(providers)
+    if (result.ok) {
+      if (statusEl) {
+        statusEl.textContent = '✓ 配置已保存'
+        statusEl.style.color = '#27ae60'
+      }
+      // 重新加载以获取最新遮罩值
+      await loadSettingsProviders()
+      // 同步侧栏模型下拉菜单
+      await syncLlmConfig()
+    } else {
+      if (statusEl) {
+        statusEl.textContent = '✗ 保存失败: ' + (result.error || '')
+        statusEl.style.color = '#e74c3c'
+      }
+    }
+  } catch (error) {
+    if (statusEl) {
+      statusEl.textContent = `✗ 保存失败: ${error.message}`
+      statusEl.style.color = '#e74c3c'
+    }
   }
 }

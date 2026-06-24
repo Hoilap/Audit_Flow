@@ -2,7 +2,7 @@ import { workflowTasks } from './config.js'
 import { findWorkflowTaskByName, state } from './state.js'
 import { $, $$ } from './dom.js'
 import { renderEvidencePanel, renderShell, renderWorkflowWorkspace, setAgentStatus, showPage } from './ui.js'
-import { cancelRunningStep, commitAll, createProject, deleteProject, loadProjects, loadProgramReadmes, previewFile, refreshFiles, refreshLog, refreshTokens, runAllSteps, runNextStep, runStep, selectProject, sendPrompt, setupEventSource, toggleCustomMode, updateCustomCustomerName, updateCustomTaskName, updateDetectMethod, updateProject, uploadFile, syncLlmConfig, updateLlmModel } from './actions.js'
+import { cancelRunningStep, commitAll, createProject, deleteProject, loadProjects, loadProgramReadmes, previewFile, refreshFiles, refreshLog, refreshTokens, runAllSteps, runNextStep, runStep, selectProject, sendPrompt, setupEventSource, toggleCustomMode, updateCustomCustomerName, updateCustomTaskName, updateDetectMethod, updateProject, uploadFile, syncLlmConfig, updateLlmModel, loadSettingsProviders, saveLlmProviders, revealProviderKey } from './actions.js'
 import { openReviewEditor } from './reviewEditor.js'
 import { renderProjectsTable, showProjectFormModal } from './ui.js'
 
@@ -25,11 +25,17 @@ function bindEvents() {
       if (navButton.dataset.page === 'programs') {
         await loadProgramReadmes()
       }
-      // 切换到 Agent 对话页面时加载会话列表和文件树
+      // 切换到 Agent 对话页面时加载会话列表、文件树和输出路径选择器
       if (navButton.dataset.page === 'agent-loop') {
-        const { loadAgentConversations, renderAgentFileTree } = await import('./agentActions.js')
+        const { loadAgentConversations, renderAgentFileTree, initAgentOutputSelector, bindAgentOutputSelectorEvents } = await import('./agentActions.js')
         await loadAgentConversations()
         await renderAgentFileTree()
+        await initAgentOutputSelector()
+        bindAgentOutputSelectorEvents()
+      }
+      // 切换到设置页面时加载 LLM provider 配置
+      if (navButton.dataset.page === 'settings') {
+        await loadSettingsProviders()
       }
     }
 
@@ -68,6 +74,34 @@ function bindEvents() {
       // 展开 git-log 时自动刷新内容
       if (sectionId === 'git-log' && !state.collapsedSections[sectionId]) {
         refreshLog()
+      }
+    }
+
+    // 设置页：保存 LLM provider 配置
+    if (event.target.id === 'settings-save-providers') {
+      await saveLlmProviders()
+    }
+
+    // 设置页：眼睛切换 API Key 明文/遮罩
+    const eyeToggle = event.target.closest('.settings-eye-toggle')
+    if (eyeToggle) {
+      const providerName = eyeToggle.dataset.provider
+      const revealed = eyeToggle.dataset.revealed === 'true'
+      const card = eyeToggle.closest('.settings-provider-card')
+      const keyInput = card?.querySelector('.settings-api-key-input')
+
+      if (!revealed) {
+        const actualKey = await revealProviderKey(providerName)
+        if (keyInput) {
+          keyInput.value = actualKey
+          keyInput.type = 'text'
+        }
+        eyeToggle.dataset.revealed = 'true'
+        eyeToggle.textContent = '\uD83D\uDD12'
+      } else {
+        if (keyInput) keyInput.type = 'password'
+        eyeToggle.dataset.revealed = 'false'
+        eyeToggle.textContent = '\uD83D\uDC41'
       }
     }
   })
