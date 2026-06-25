@@ -1552,3 +1552,7 @@ Length: 0, dtype: str' for dtype 'int64'
 [2026-06-26 00:58:24] INFO    audit_workflow.bank_ledger_match.llm_cleaner - Ledger parser generated: ledger_88f7d3bd.py (for xinjiyuan_ledger_2022)
 [2026-06-26 01:00:33] INFO    audit_workflow - 开始 Check: customer=佰腾, task=bank_ledger_match
 [2026-06-26 01:02:04] INFO    audit_workflow - 开始 Detect: customer=佰腾, task=bank_ledger_match, use_llm=true
+[2026-06-26 01:05:28] INFO    audit_workflow - Detect 完成: customer=佰腾, task=bank_ledger_match, files=82, llm_used=True
+[2026-06-26 01:15:46] INFO    audit_workflow - 开始 Check: customer=佰腾, task=bank_ledger_match
+[2026-06-26 01:28:27] INFO    audit_workflow - 开始 Check: customer=佰腾, task=bank_ledger_match
+[2026-06-26 01:28:36] INFO    audit_workflow - 开始 Check: customer=佰腾, task=bank_ledger_match

@@ -156,11 +156,8 @@ _FILE_IDENTIFY_SYSTEM_PROMPT = """你是一个审计数据分析助手，专门�
 2. **银行名称**: 如"中国工商银行贵港桂平新区支行"，尽量完整
 3. **银行账号**: 从数据中提取
 4. **时间范围**: 数据覆盖的起止日期（YYYY-MM-DD 格式），从数据预览中提取实际日期
-5. **推荐解析器**: 
-   - 银行流水: "llm_bank"（非标格式需LLM辅助）
-   - 序时账: "xinjiyuan_bank_ledger"（新纪元导出格式）
-6. **置信度**: 0-1 之间
-7. **备注**: 任何需要注意的问题
+5. **置信度**: 0-1 之间
+6. **备注**: 任何需要注意的问题
 
 **文件 ID 命名规则（非常重要）**:
 - 格式: {bank_short}_{year}_{type}，如 icbc_bank_2022
@@ -214,7 +211,7 @@ def identify_files_with_llm(
     """调用 LLM 对扫描到的文件做智能识别。
 
     Returns:
-        [{id, type, path, bank_name, account_no, date_from, date_to, parser, confidence, notes}, ...]
+        [{id, type, path, bank_name, account_no, date_from, date_to, confidence, notes}, ...]
     """
     from audit_workflow.llm_agent import llm_generate_structured
     from pydantic import BaseModel, Field
@@ -227,7 +224,6 @@ def identify_files_with_llm(
         account_no: str = Field(default="", description="银行账号")
         date_from: str = Field(default="", description="数据起始日期 YYYY-MM-DD")
         date_to: str = Field(default="", description="数据结束日期 YYYY-MM-DD")
-        parser: str = Field(default="", description="推荐的解析器名称")
         sheet: str = Field(default="", description="推荐的目标 sheet 名")
         confidence: float = Field(default=0.0, description="置信度 0-1")
         notes: str = Field(default="", description="备注")
@@ -260,7 +256,6 @@ def identify_files_with_llm(
             "account_no": item.account_no,
             "date_from": item.date_from,
             "date_to": item.date_to,
-            "parser": item.parser,
             "sheet": item.sheet,
             "confidence": item.confidence,
             "notes": item.notes,
@@ -287,7 +282,6 @@ async def identify_files_with_llm_async(
         account_no: str = Field(default="", description="银行账号")
         date_from: str = Field(default="", description="数据起始日期 YYYY-MM-DD")
         date_to: str = Field(default="", description="数据结束日期 YYYY-MM-DD")
-        parser: str = Field(default="", description="推荐的解析器名称")
         sheet: str = Field(default="", description="推荐的目标 sheet 名")
         confidence: float = Field(default=0.0, description="置信度 0-1")
         notes: str = Field(default="", description="备注")
@@ -318,7 +312,6 @@ async def identify_files_with_llm_async(
             "account_no": item.account_no,
             "date_from": item.date_from,
             "date_to": item.date_to,
-            "parser": item.parser,
             "sheet": item.sheet,
             "confidence": item.confidence,
             "notes": item.notes,
@@ -339,18 +332,14 @@ def _identify_files_local(
 
         if bank_hits > ledger_hits:
             ftype = "bank_statement"
-            default_parser = "icbc_historydetail"
         elif ledger_hits > bank_hits:
             ftype = "ledger"
-            default_parser = "xinjiyuan_bank_ledger"
         else:
             # 看扩展名和大小猜
             if f["ext"] == ".csv":
                 ftype = "bank_statement"  # CSV 更像银行流水
-                default_parser = "icbc_historydetail"
             else:
                 ftype = "bank_statement"
-                default_parser = "icbc_historydetail"
 
         # 猜测银行
         bank_name = ""
@@ -382,7 +371,6 @@ def _identify_files_local(
             "account_no": "",
             "date_from": f"{year}-01-01",
             "date_to": f"{year}-12-31",
-            "parser": default_parser,
             "sheet": "",
             "confidence": 0.5,
             "notes": "本地关键词识别，建议用 LLM 做更准确的识别",
@@ -413,7 +401,6 @@ def generate_task_config(
         entry = {
             "id": item["id"],
             "enabled": True,
-            "parser": item.get("parser", "icbc_historydetail"),
             "path": item["path"],
             "sheet": item.get("sheet", ""),
             "bank_name": item.get("bank_name", ""),
