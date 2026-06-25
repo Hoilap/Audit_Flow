@@ -187,29 +187,6 @@ def init_db():
         )
         conn.commit()
 
-    # ── task_definitions: 任务类型注册表（中文名 ↔ 英文目录名） ──
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS task_definitions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            dir_name TEXT NOT NULL UNIQUE,
-            description TEXT NOT NULL DEFAULT ''
-        )
-    """)
-    td_count = conn.execute("SELECT COUNT(*) FROM task_definitions").fetchone()[0]
-    if td_count == 0:
-        task_defs = [
-            ('序时账银行流水匹配', 'bank_ledger_match', 'Detect扫描→LLM识别→清洗→核查→匹配→人工复核→填入底稿'),
-            ('出库结算匹配', 'outbound_settlement_match', '出库表与结算单数据匹配核查'),
-            ('出库表核对', 'outbound_check', '多平台出库数据交叉核对'),
-            ('资金流水专项复核', 'cash_flow_review', '资金流水专项审计复核'),
-        ]
-        conn.executemany(
-            "INSERT INTO task_definitions (name, dir_name, description) VALUES (?,?,?)",
-            task_defs
-        )
-        conn.commit()
-
     conn.close()
 
 init_db()
@@ -224,28 +201,10 @@ def _ensure_project_dirs(customer_name: str, task_name: str):
 
 def _resolve_task_dir_name(task_name: str) -> str:
     """将任务名解析为英文目录名。
+    从 config/config.task_definitions.yml 查找：
     优先匹配 dir_name，其次匹配中文 name → dir_name，都无匹配则原样返回。
     """
-    if not task_name:
-        return task_name
-    conn = get_db()
-    try:
-        # 已经是英文 dir_name → 直接返回
-        row = conn.execute(
-            "SELECT dir_name FROM task_definitions WHERE dir_name = ?", (task_name,)
-        ).fetchone()
-        if row:
-            return row["dir_name"]
-        # 中文 name → 翻译为英文 dir_name
-        row = conn.execute(
-            "SELECT dir_name FROM task_definitions WHERE name = ?", (task_name,)
-        ).fetchone()
-        if row:
-            return row["dir_name"]
-    finally:
-        conn.close()
-    # 自定义名称 → 原样返回
-    return task_name
+    return _task_def_dir_name(task_name)
 
 
 def _list_project_dirs() -> list:
@@ -295,7 +254,6 @@ def project_row_to_dict(row) -> dict:
         "created_at": row["created_at"],
         "responsible_person": row["responsible_person"],
         "risk": row["risk"],
-        "dir_name": row["dir_name"] if "dir_name" in row.keys() else None,
     }
 
 # ---------- Project CRUD endpoints ----------
@@ -307,23 +265,22 @@ def list_project_dirs():
 
 @app.get("/task-definitions")
 def list_task_definitions():
-    """返回所有任务类型定义（中文名 ↔ 英文目录名映射）"""
-    conn = get_db()
-    rows = conn.execute("SELECT id, name, dir_name, description FROM task_definitions ORDER BY id").fetchall()
-    conn.close()
-    return {"definitions": [dict(r) for r in rows]}
+    """返回所有任务类型定义（从 config/config.task_definitions.yml 加载）"""
+    return {"definitions": _load_task_definitions()}
 
 @app.get("/projects/list")
 def list_projects():
     conn = get_db()
-    rows = conn.execute("""
-        SELECT p.*, td.dir_name
-        FROM projects p
-        LEFT JOIN task_definitions td ON p.task_name = td.name
-        ORDER BY p.id DESC
-    """).fetchall()
+    rows = conn.execute("SELECT * FROM projects ORDER BY id DESC").fetchall()
     conn.close()
-    return {"projects": [project_row_to_dict(r) for r in rows]}
+    projects = []
+    for r in rows:
+        d = project_row_to_dict(r)
+        # 从 YAML 配置中查找 dir_name（替代原 DB LEFT JOIN）
+        td = _task_def_by_name(d["task_name"])
+        d["dir_name"] = td["dir_name"] if td else None
+        projects.append(d)
+    return {"projects": projects}
 
 @app.post("/projects/create")
 def create_project(payload: ProjectCreate):
@@ -905,6 +862,43 @@ def _default_matching_yml_path() -> str:
     return os.path.join(_project_root(), "config", "config.matching.yml")
 
 
+# ── 任务定义（只读配置，替代原 DB task_definitions 表）──
+
+_TASK_DEFS_CACHE: list[dict] | None = None
+
+def _load_task_definitions() -> list[dict]:
+    """从 config/config.task_definitions.yml 加载任务定义。"""
+    global _TASK_DEFS_CACHE
+    if _TASK_DEFS_CACHE is not None:
+        return _TASK_DEFS_CACHE
+    yml_path = os.path.join(_project_root(), "config", "config.task_definitions.yml")
+    if os.path.exists(yml_path):
+        with open(yml_path, "r", encoding="utf-8") as f:
+            data = yaml_lib.safe_load(f) or {}
+        _TASK_DEFS_CACHE = data.get("tasks", [])
+    else:
+        _TASK_DEFS_CACHE = []
+    return _TASK_DEFS_CACHE
+
+
+def _task_def_by_name(name: str) -> dict | None:
+    """按中文名或 dir_name 查找任务定义。"""
+    for td in _load_task_definitions():
+        if td.get("name") == name or td.get("dir_name") == name:
+            return td
+    return None
+
+
+def _task_def_dir_name(task_name: str) -> str:
+    """将任务名解析为英文目录名（替代原 DB _resolve_task_dir_name）。"""
+    if not task_name:
+        return task_name
+    td = _task_def_by_name(task_name)
+    if td:
+        return td["dir_name"]
+    return task_name
+
+
 def _migrate_config_files():
     """一次性迁移：将 config.example.*.yml 复制到 config/config.*.yml（幂等）。"""
     root = _project_root()
@@ -1281,6 +1275,54 @@ def workflow_bank_ledger_match_clean(
     try:
         bank_csv, ledger_csv = blm_pipeline.run_clean(cfg)
         return {"bank_csv": str(bank_csv), "ledger_csv": str(ledger_csv)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/workflow/bank_ledger_match/clean_bank")
+def workflow_bank_ledger_match_clean_bank(
+    config: str = Form(None),
+    customer_name: str = Form(""),
+    task_name: str = Form("bank_ledger_match"),
+    parser: str = Form(""),
+):
+    """
+    Clean Bank: 仅清洗银行流水，parser 由前端传入。
+    """
+    logger.info("开始 Clean Bank: customer=%s, task=%s, parser=%s", customer_name, task_name, parser)
+    if customer_name:
+        cfg = _build_full_config(customer_name, task_name)
+    elif config:
+        cfg = json.loads(config)
+    else:
+        cfg = {}
+    try:
+        bank_csv = blm_pipeline.run_clean_bank(cfg, parser=parser or None)
+        return {"bank_csv": str(bank_csv)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/workflow/bank_ledger_match/clean_ledger")
+def workflow_bank_ledger_match_clean_ledger(
+    config: str = Form(None),
+    customer_name: str = Form(""),
+    task_name: str = Form("bank_ledger_match"),
+    parser: str = Form(""),
+):
+    """
+    Clean Ledger: 仅清洗序时账，parser 由前端传入。
+    """
+    logger.info("开始 Clean Ledger: customer=%s, task=%s, parser=%s", customer_name, task_name, parser)
+    if customer_name:
+        cfg = _build_full_config(customer_name, task_name)
+    elif config:
+        cfg = json.loads(config)
+    else:
+        cfg = {}
+    try:
+        ledger_csv = blm_pipeline.run_clean_ledger(cfg, parser=parser or None)
+        return {"ledger_csv": str(ledger_csv)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

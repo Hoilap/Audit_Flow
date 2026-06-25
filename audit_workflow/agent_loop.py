@@ -444,7 +444,7 @@ def build_agent_loop(llm_config: dict, project_root: str,
     model = OpenAIModel(model_name, provider=provider)
 
     # 动态拼接系统提示：若指定了客户名和任务名，注入当前项目路径
-    # 注：task_name 已由 api._resolve_task_dir_name() 通过 DB 解析为英文 dir_name
+    # 注：task_name 已由 api._resolve_task_dir_name() 通过 config.task_definitions.yml 解析为英文 dir_name
     system_prompt = AGENT_SYSTEM_PROMPT
     if customer_name and task_name:
         system_prompt += (

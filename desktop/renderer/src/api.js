@@ -71,12 +71,21 @@ export const api = {
     form.append('content', content)
     return request('/workflow/config/save', { method: 'POST', body: form })
   },
-  /** Step 3: 清洗数据 */
-  workflowClean: (customerName, taskName) => {
+  /** Step 3a: 清洗银行流水 */
+  workflowCleanBank: (customerName, taskName, parser) => {
     const form = new FormData()
     form.append('customer_name', customerName)
     form.append('task_name', taskName)
-    return request('/workflow/bank_ledger_match/clean', { method: 'POST', body: form })
+    if (parser) form.append('parser', parser)
+    return request('/workflow/bank_ledger_match/clean_bank', { method: 'POST', body: form })
+  },
+  /** Step 3b: 清洗序时账 */
+  workflowCleanLedger: (customerName, taskName, parser) => {
+    const form = new FormData()
+    form.append('customer_name', customerName)
+    form.append('task_name', taskName)
+    if (parser) form.append('parser', parser)
+    return request('/workflow/bank_ledger_match/clean_ledger', { method: 'POST', body: form })
   },
   /** Step 4: 核查数据完备性 */
   workflowCheck: (customerName, taskName) => {

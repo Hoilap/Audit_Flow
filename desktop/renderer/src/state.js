@@ -33,7 +33,7 @@ export const state = {
   agentCustomerName: '',        // Agent 页面当前选中的客户名
   agentTaskName: '',            // Agent 页面当前选中的任务名
   agentProjectOptions: [],      // 从 DB 加载的项目列表（供下拉使用）
-  agentTaskDefinitions: [],     // 从 task_definitions 表加载的任务类型（name ↔ dir_name）
+  agentTaskDefinitions: [],     // 从 /task-definitions API 加载的任务类型（name ↔ dir_name）
   // ── 设置页 LLM 配置 ──
   llmProviders: [],             // [{name, model, base_url, api_key_masked, api_key_set, api_key_env, api_key_source}]
   llmConfigDefault: '',         // 默认 provider 名称

@@ -58,6 +58,12 @@ function bindEvents() {
     const fileRow = event.target.closest('[data-file]')
     if (fileRow) previewFile(fileRow.dataset.file)
 
+    // 项目文件树中的文件点击预览
+    const projectFile = event.target.closest('#project-filetree .tree-file')
+    if (projectFile && projectFile.dataset.path) {
+      previewFile(projectFile.dataset.path)
+    }
+
     // 消息/配置面板/README卡片折叠切换
     const collapseHead = event.target.closest('.message-head, .llm-code-head, .readme-card-head')
     if (collapseHead) {
@@ -131,7 +137,7 @@ function bindEvents() {
     if (event.target.id === 'project-task-select') {
       updateCustomTaskName(event.target.value)
     }
-    // Detect 识别方式 radio
+    // Detect 识别方式 radio（同时作为解析器选择）
     if (event.target.name === 'detect-method') {
       updateDetectMethod(event.target.value)
     }

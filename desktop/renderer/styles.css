@@ -645,6 +645,34 @@ button.danger:hover {
   white-space: nowrap;
 }
 
+/* ===== 项目文件树（证据面板） ===== */
+.project-filetree {
+  max-height: 400px;
+  overflow-y: auto;
+  font-size: 13px;
+  user-select: none;
+}
+.project-filetree::-webkit-scrollbar { width: 5px; }
+.project-filetree::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 999px;
+}
+.project-filetree::-webkit-scrollbar-track { background: transparent; }
+.project-filetree.drag-over {
+  border: 2px dashed var(--primary);
+  background: rgba(37, 99, 235, 0.05);
+}
+.project-filetree .drop-hint {
+  text-align: center;
+  padding: 12px 8px;
+  color: var(--primary);
+  font-size: 12px;
+  border: 2px dashed var(--primary);
+  border-radius: 6px;
+  margin: 6px;
+  pointer-events: none;
+}
+
 /* ===== 审计程序（README 渲染） ===== */
 .programs-list {
   display: grid;

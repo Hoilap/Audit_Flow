@@ -2,7 +2,7 @@ import { api, apiBase, cancelRequest } from './api.js'
 import { llmCodePath } from './config.js'
 import { activeTask, findWorkflowTaskByName, getProjectBasePath, resolveProjectPath, markStep, state, stepStatus } from './state.js'
 import { $ } from './dom.js'
-import { addMessage, renderFileError, renderFileTree, renderFiles, renderLlmCode, renderStepFiles, renderTimeline, renderWorkflowWorkspace, setAgentStatus, startTimer, stopTimer, renderDetectResult, renderConfigConfirm, renderCheckResult, renderProgramsList, renderSheetTasks, renderSettingsProviders } from './ui.js'
+import { addMessage, renderFileError, renderFileTree, renderFiles, renderLlmCode, renderWorkflowWorkspace, setAgentStatus, startTimer, stopTimer, renderDetectResult, renderConfigConfirm, renderCheckResult, renderProgramsList, renderSheetTasks, renderSettingsProviders } from './ui.js'
 import { openCsvPreview } from './previewModal.js'
 import { openReviewEditor } from './reviewEditor.js'
 import { createModal } from './modal.js'
@@ -13,7 +13,6 @@ export async function refreshFiles() {
     const root = getProjectBasePath() || 'outputs'
     const data = await api.listFiles(root)
     renderFiles(data.files || [], root)
-    renderStepFiles()
   } catch (error) {
     renderFileError(error.message)
   }
@@ -61,7 +60,6 @@ export async function runStep(stepIndex = state.activeStepIndex) {
   logger.info('runStep', `${step.title} (id=${step.id})`)
   markStep(task.id, step.id, 'running')
   renderWorkflowWorkspace()
-  renderTimeline(step.id)
   setAgentStatus('Running', 28)
   startTimer()
 
@@ -120,6 +118,28 @@ export async function runStep(stepIndex = state.activeStepIndex) {
       markStep(task.id, step.id, 'completed', { mode: 'config_confirm', configRes })
       addMessage({ title: step.title, body: '已加载 task.yml 配置，请在右侧面板确认或修改。' })
       result = { ok: true, configShown: true }
+    }
+    // ── Step 3a: Clean Bank ──
+    else if (step.id === 'clean-bank') {
+      const parser = state.detectMethod === 'llm' ? 'llm_bank' : state.detectMethod
+      result = await api.workflowCleanBank(customerName, taskDirName, parser)
+      markStep(task.id, step.id, 'completed', result)
+      addMessage({
+        title: step.title,
+        body: `使用解析器「${parser}」清洗银行流水完成。`,
+        result,
+      })
+    }
+    // ── Step 3b: Clean Ledger ──
+    else if (step.id === 'clean-ledger') {
+      const parser = state.detectMethod === 'llm' ? 'llm_ledger' : state.detectMethod
+      result = await api.workflowCleanLedger(customerName, taskDirName, parser)
+      markStep(task.id, step.id, 'completed', result)
+      addMessage({
+        title: step.title,
+        body: `使用解析器「${parser}」清洗序时账完成。`,
+        result,
+      })
     }
     // ── Step 4: Check ──
     else if (step.id === 'check') {
@@ -250,7 +270,7 @@ export async function runStep(stepIndex = state.activeStepIndex) {
         })
       }
     }
-    // ── 其他步骤（clean, match, verify）── 使用通用 workflow + customer 参数
+    // ── 其他步骤（match, verify）── 使用通用 workflow + customer 参数
     else {
       const form = new FormData()
       form.append('customer_name', customerName)
@@ -287,12 +307,10 @@ export async function runStep(stepIndex = state.activeStepIndex) {
     if (error.name === 'AbortError') {
       logger.info('runStep', `${step.title} 已被用户停止`)
       markStep(task.id, step.id, 'idle')
-      renderTimeline(step.id)
       return
     }
     logger.error('runStep', `${step.title} 失败: ${error.message}`)
     markStep(task.id, step.id, 'failed', { error: error.message })
-    renderTimeline(step.id, true)
     addMessage({ title: step.title, body: error.message, failed: true })
     setAgentStatus('Failed', 100)
     throw error
@@ -626,6 +644,24 @@ export function setupEventSource() {
         title: '自动重试',
         body: `代码存在${reasonLabel}，正在重试 (${attempt}/${maxRetries})…\n${data.error || ''}`,
       })
+    } catch (err) {
+      // 忽略解析错误
+    }
+  })
+
+  // 银行流水/序时账解析器生成进度
+  es.addEventListener('blm_clean', (e) => {
+    try {
+      const data = JSON.parse(e.data)
+      const isLedger = data.type === 'ledger'
+      const parserLabel = isLedger ? '序时账解析器' : '银行解析器'
+      if (data.status === 'generating') {
+        setAgentStatus('Running', 50, `正在生成 ${data.item_id} 解析代码…`)
+      } else if (data.status === 'generated') {
+        addMessage({ title: `${parserLabel}已生成`, body: data.message || data.item_id })
+      } else if (data.status === 'cache_hit') {
+        addMessage({ title: `${parserLabel}（缓存命中）`, body: data.message || data.item_id })
+      }
     } catch (err) {
       // 忽略解析错误
     }

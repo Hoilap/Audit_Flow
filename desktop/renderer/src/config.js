@@ -47,12 +47,34 @@ export const workflowTasks = [
         prompt: '请检查以下自动生成的配置，确认银行流水和序时账的文件路径、解析器、银行名称是否正确。修改后点击「保存配置」继续。',
       },
       {
-        id: 'clean',
-        label: 'Clean',
-        title: '清洗原始数据',
-        description: '按 task.yml 配置解析银行流水和序时账，生成标准化 CSV',
-        endpoint: '/workflow/bank_ledger_match/clean',
-        outputs: ['clean/bank_transactions.csv', 'clean/ledger_entries.csv'],
+        id: 'clean-bank',
+        label: 'Clean Bank',
+        title: '清洗银行流水',
+        description: '按选定的解析器清洗银行流水，生成标准化 CSV',
+        endpoint: '/workflow/bank_ledger_match/clean_bank',
+        outputs: ['clean/bank_transactions.csv'],
+        formFields: [
+          { name: 'parser', type: 'select', label: '解析器', options: [
+            { value: '', label: '自动（使用 task.yml 配置）' },
+            { value: 'llm_bank', label: 'LLM 智能解析' },
+            { value: 'icbc_historydetail', label: 'ICBC historydetail' },
+            { value: 'generated_bank', label: '预生成解析器' },
+          ]},
+        ],
+      },
+      {
+        id: 'clean-ledger',
+        label: 'Clean Ledger',
+        title: '清洗序时账',
+        description: '按选定的解析器清洗序时账，生成标准化 CSV',
+        endpoint: '/workflow/bank_ledger_match/clean_ledger',
+        outputs: ['clean/ledger_entries.csv'],
+        formFields: [
+          { name: 'parser', type: 'select', label: '解析器', options: [
+            { value: '', label: '自动（使用 task.yml 配置）' },
+            { value: 'xinjiyuan_bank_ledger', label: '新纪元银行账' },
+          ]},
+        ],
       },
       {
         id: 'check',
@@ -201,12 +223,10 @@ export const llmCodePath = 'outputs/llm_code/generated_from_llm.py'
  *   - id 对应 HTML 容器 id（如 'timeline'）
  *   - visible 为 false 时整个区块不渲染
  *   - collapsible 为 true 时标题栏显示折叠/展开按钮，默认收起
- *   - 特殊 id: 'step-files' / 'all-files' / 'git-log' / 'review-editor'
+ *   - 特殊 id: 'project-file-tree' / 'git-log' / 'review-editor'
  */
 export const evidencePanelSections = [
-  ['timeline',      '执行时间线',    true,  false, false],
-  ['review-editor', '人工复核',      true,  false, false],
-  ['step-files',    '本任务生成文件', true,  true, false],
-  ['all-files',     '所有输出文件',   true, true, true],
-  ['git-log',       'Git 历史',      true,  true,  true],
+  ['review-editor',     '人工复核',      true,  false, false],
+  ['project-file-tree', '项目文件',      true,  true,  false],
+  ['git-log',           'Git 历史',      true,  true,  true],
 ]

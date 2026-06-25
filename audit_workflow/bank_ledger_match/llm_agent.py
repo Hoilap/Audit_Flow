@@ -5,14 +5,23 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from audit_workflow.llm_agent import build_agent, _agent_output
+from audit_workflow.llm_agent import build_agent, _agent_output, _extract_token_usage
 
 
-def run_bank_parser_agent(config: dict[str, Any], prompt: dict[str, Any], system_prompt: str) -> Any:
+def run_bank_parser_agent(config: dict[str, Any], prompt: dict[str, Any], system_prompt: str) -> tuple[Any, dict]:
     models = _output_models()
     agent = build_agent(config.get("llm", {}), system_prompt, models["BankParserScript"])
     result = agent.run_sync(json.dumps(prompt, ensure_ascii=False))
-    return _agent_output(result)
+    usage = _extract_token_usage(result)
+    return _agent_output(result), usage
+
+
+def run_ledger_parser_agent(config: dict[str, Any], prompt: dict[str, Any], system_prompt: str) -> tuple[Any, dict]:
+    models = _output_models()
+    agent = build_agent(config.get("llm", {}), system_prompt, models["LedgerParserScript"])
+    result = agent.run_sync(json.dumps(prompt, ensure_ascii=False))
+    usage = _extract_token_usage(result)
+    return _agent_output(result), usage
 
 
 def run_match_decision_agent(
@@ -44,7 +53,12 @@ def _output_models() -> dict[str, Any]:
         "BankParserScript",
         code=(str, Field(description="完整 Python 源码，必须包含 parse(path: str, config: dict) -> list[dict]")),
     )
+    ledger_parser_script = create_model(
+        "LedgerParserScript",
+        code=(str, Field(description="完整 Python 源码，必须包含 parse(path: str, config: dict) -> list[dict]")),
+    )
     return {
         "BankParserScript": bank_parser_script,
+        "LedgerParserScript": ledger_parser_script,
         "MatchDecisionBatch": match_decision_batch,
     }

@@ -1,0 +1,101 @@
+# config/task_definitions.yml
+# 审计任务定义（只读配置文件，替代原数据库 task_definitions 表）
+#
+# 任务级字段：
+#   name          — 中文任务名称（显示用）
+#   dir_name      — 英文目录名（文件系统路径用）
+#   description   — 任务描述
+#
+# 步骤级字段：
+#   id                — 步骤 ID（与前端 workflowTasks 步骤对应）
+#   allow_llm         — 该步骤是否允许调用 LLM
+#   allow_script      — 该步骤是否可直接调用预置脚本
+#   allow_scripts_list — 可选预置脚本/解析器列表（前端下拉选择用）
+
+tasks:
+  - name: 序时账银行流水匹配
+    dir_name: bank_ledger_match
+    description: "Detect扫描→LLM识别→确认配置→清洗银行流水→清洗序时账→核查→匹配→人工复核→填入底稿"
+    steps:
+      - id: detect
+        allow_llm: true
+        allow_script: false
+      - id: confirm
+        allow_llm: false
+        allow_script: false
+      - id: clean-bank
+        allow_llm: true
+        allow_script: false
+        allow_scripts_list:
+          - llm_bank
+          - icbc_historydetail
+          - generated_bank
+      - id: clean-ledger
+        allow_llm: true
+        allow_script: true
+        allow_scripts_list:
+          - llm_ledger
+          - xinjiyuan_bank_ledger
+      - id: check
+        allow_llm: false
+        allow_script: false
+      - id: match
+        allow_llm: true
+        allow_script: false
+      - id: verify
+        allow_llm: false
+        allow_script: false
+      - id: fill
+        allow_llm: true
+        allow_script: false
+
+  - name: 出库结算匹配
+    dir_name: outbound_settlement_match
+    description: "Detect扫描→清洗结算流水→清洗出库表→匹配出库与结算"
+    steps:
+      - id: osm-detect
+        allow_llm: true
+        allow_script: false
+      - id: clean-settlement
+        allow_llm: true
+        allow_script: false
+      - id: clean-outbound
+        allow_llm: true
+        allow_script: false
+      - id: match
+        allow_llm: true
+        allow_script: false
+
+  - name: 出库表核对
+    dir_name: outbound_check
+    description: "核对出库明细、销售订单和开票记录的一致性"
+    steps:
+      - id: profile
+        allow_llm: true
+        allow_script: true
+      - id: reconcile
+        allow_llm: true
+        allow_script: true
+      - id: verify
+        allow_llm: false
+        allow_script: false
+      - id: report
+        allow_llm: true
+        allow_script: true
+
+  - name: 资金流水专项复核
+    dir_name: cash_flow_review
+    description: "围绕大额、频繁、异常对手方和摘要进行资金流水风险识别"
+    steps:
+      - id: profile
+        allow_llm: true
+        allow_script: true
+      - id: detect
+        allow_llm: true
+        allow_script: true
+      - id: verify
+        allow_llm: false
+        allow_script: false
+      - id: paper
+        allow_llm: true
+        allow_script: true

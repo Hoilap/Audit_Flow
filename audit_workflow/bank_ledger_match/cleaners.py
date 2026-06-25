@@ -81,10 +81,30 @@ def clean_to_csv(config: dict[str, Any]) -> tuple[Path, Path]:
     return bank_path, ledger_path
 
 
-def parse_bank_statements(config: dict[str, Any]) -> pd.DataFrame:
+def clean_bank_to_csv(config: dict[str, Any], parser: str | None = None) -> Path:
+    """仅清洗银行流水，返回输出 CSV 路径。parser 可覆盖 task.yml 中的解析器。"""
+    out = output_dir(config) / "clean"
+    out.mkdir(parents=True, exist_ok=True)
+    bank_df = parse_bank_statements(config, parser_override=parser)
+    bank_path = out / "bank_transactions.csv"
+    bank_df.to_csv(bank_path, index=False, encoding="utf-8-sig")
+    return bank_path
+
+
+def clean_ledger_to_csv(config: dict[str, Any], parser: str | None = None) -> Path:
+    """仅清洗序时账，返回输出 CSV 路径。parser 可覆盖 task.yml 中的解析器。"""
+    out = output_dir(config) / "clean"
+    out.mkdir(parents=True, exist_ok=True)
+    ledger_df = parse_ledgers(config, parser_override=parser)
+    ledger_path = out / "ledger_entries.csv"
+    ledger_df.to_csv(ledger_path, index=False, encoding="utf-8-sig")
+    return ledger_path
+
+
+def parse_bank_statements(config: dict[str, Any], parser_override: str | None = None) -> pd.DataFrame:
     frames: list[pd.DataFrame] = []
     for item in enabled_items(config.get("inputs", {}).get("bank_statements", [])):
-        parser = item.get("parser")
+        parser = parser_override or item.get("parser")
         if parser == "icbc_historydetail":
             frames.append(parse_icbc_historydetail(config, item))
         elif parser == "llm_bank":
@@ -98,17 +118,30 @@ def parse_bank_statements(config: dict[str, Any]) -> pd.DataFrame:
     return pd.concat(frames, ignore_index=True)[BANK_COLUMNS]
 
 
-def parse_ledgers(config: dict[str, Any]) -> pd.DataFrame:
+def parse_ledgers(config: dict[str, Any], parser_override: str | None = None) -> pd.DataFrame:
+    import logging as _logging
+    _log = _logging.getLogger(__name__)
+
     frames: list[pd.DataFrame] = []
-    for item in enabled_items(config.get("inputs", {}).get("ledgers", [])):
-        parser = item.get("parser")
+    items = enabled_items(config.get("inputs", {}).get("ledgers", []))
+    for item in items:
+        parser = parser_override or item.get("parser")
         if parser == "xinjiyuan_bank_ledger":
             frames.append(parse_xinjiyuan_bank_ledger(config, item))
+        elif parser == "llm_ledger":
+            frames.append(parse_llm_ledger(config, item))
         else:
             raise ValueError(f"未知序时账解析器：{parser}")
     if not frames:
         return pd.DataFrame(columns=LEDGER_COLUMNS)
-    return pd.concat(frames, ignore_index=True)[LEDGER_COLUMNS]
+    result = pd.concat(frames, ignore_index=True)[LEDGER_COLUMNS]
+    if len(result) == 0 and items:
+        _log.warning(
+            "parse_ledgers: 配置了 %d 个序时账源但解析结果为 0 条记录，"
+            "请检查序时账文件格式是否与解析器匹配。",
+            len(items),
+        )
+    return result
 
 
 def parse_icbc_historydetail(config: dict[str, Any], item: dict[str, Any]) -> pd.DataFrame:
@@ -249,3 +282,33 @@ def parse_generated_bank(config: dict[str, Any], item: dict[str, Any]) -> pd.Dat
     df["bank_name"] = item.get("bank_name", df.get("bank_name", ""))
     df["account_no"] = item.get("account_no", df.get("account_no", ""))
     return df[BANK_COLUMNS]
+
+
+def parse_llm_ledger(config: dict[str, Any], item: dict[str, Any]) -> pd.DataFrame:
+    from .llm_cleaner import ensure_llm_ledger_parser
+
+    parser_path = ensure_llm_ledger_parser(config, item)
+    item = {**item, "generated_parser": str(parser_path)}
+    return parse_generated_ledger(config, item)
+
+
+def parse_generated_ledger(config: dict[str, Any], item: dict[str, Any]) -> pd.DataFrame:
+    parser_path = resolve_path(config, item.get("generated_parser"))
+    if parser_path is None:
+        raise ValueError(f"{item['id']} 缺少 generated_parser")
+    module_name = f"generated_ledger_parser_{item['id']}"
+    spec = importlib.util.spec_from_file_location(module_name, parser_path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"无法加载生成解析器：{parser_path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    rows = module.parse(str(resolve_path(config, item["path"])), {"ledger_input": item})
+    df = pd.DataFrame(rows)
+    for col in LEDGER_COLUMNS:
+        if col not in df.columns:
+            df[col] = ""
+    df["source_id"] = item["id"]
+    df["source_file"] = Path(item["path"]).name
+    df["bank_name"] = item.get("bank_name", df.get("bank_name", ""))
+    df["account_no"] = item.get("account_no", df.get("account_no", ""))
+    return df[LEDGER_COLUMNS]

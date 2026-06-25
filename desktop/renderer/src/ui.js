@@ -23,8 +23,6 @@ export function renderShell() {
   updateEvidencePanelVisibility()
   renderEvidencePanel()
   renderWorkflowWorkspace()
-  renderTimeline()
-  renderStepFiles()
 }
 
 /**
@@ -54,6 +52,8 @@ export function renderEvidencePanel() {
       inner = `<div id="step-file-list" class="grid file-scroll-list"></div>`
     } else if (id === 'all-files') {
       inner = `<div id="file-list" class="grid file-scroll-list"></div>`
+    } else if (id === 'project-file-tree') {
+      inner = `<div id="project-filetree" class="project-filetree"><div class="subtle" style="padding:16px;text-align:center;">请先选择项目</div></div>`
     } else if (id === 'git-log') {
       inner = `<div id="git-log" class="timeline"></div>`
     } else if (id === 'review-editor') {
@@ -64,6 +64,9 @@ export function renderEvidencePanel() {
       <div class="panel-section-body">${inner}</div>
     </section>`
   }).join('')
+
+  // 异步填充需要加载数据的区块
+  if ($('#project-filetree')) renderProjectFileTree()
 }
 
 export function showPage(page) {
@@ -208,9 +211,8 @@ export function renderWorkflowWorkspace() {
       desc.textContent = task.description
     }
   }
-  renderTimeline()
-  renderStepFiles()
   renderReviewFiles()
+  renderProjectFileTree()
 }
 
 /**
@@ -254,20 +256,45 @@ function renderProjectSelector() {
 }
 
 /**
- * 渲染 Detect 步骤的识别方式选择器：LLM 识别 / 脚本（本地关键词）识别
+ * 渲染统一的识别方式 / 解析器选择器。
+ * LLM智能解析 始终显示；脚本解析器根据当前激活的 clean 步骤动态展示。
  */
 function renderDetectMethodSelector() {
-  const llmChecked = state.detectMethod === 'llm' ? 'checked' : ''
-  const scriptChecked = state.detectMethod === 'script' ? 'checked' : ''
+  const task = activeTask()
+  const step = task.steps[state.activeStepIndex]
+  const method = state.detectMethod
+
+  let options = [
+    { value: 'llm', label: '🤖 LLM 智能解析' },
+  ]
+
+  // 根据当前 clean 步骤追加脚本解析器选项
+  if (step?.id === 'clean-bank') {
+    options.push(
+      { value: 'icbc_historydetail', label: '📜 ICBC historydetail' },
+      { value: 'generated_bank', label: '📜 预生成解析器' },
+    )
+  } else if (step?.id === 'clean-ledger') {
+    options.push(
+      { value: 'xinjiyuan_bank_ledger', label: '📜 新纪元银行账' },
+    )
+  } else {
+    options.push(
+      { value: 'script', label: '📜 脚本（关键词）' },
+    )
+  }
+
+  const radios = options.map(o => {
+    const checked = method === o.value ? 'checked' : ''
+    return `<label class="project-bar-custom" style="margin-right:12px;">
+      <input type="radio" name="detect-method" value="${o.value}" ${checked} /> ${escapeHtml(o.label)}
+    </label>`
+  }).join('')
+
   return `
     <div class="project-bar-inner" style="margin-top:6px;">
       <span class="project-bar-label">识别方式</span>
-      <label class="project-bar-custom" style="margin-right:12px;">
-        <input type="radio" name="detect-method" value="llm" ${llmChecked} /> 🤖 LLM 识别
-      </label>
-      <label class="project-bar-custom">
-        <input type="radio" name="detect-method" value="script" ${scriptChecked} /> 📜 脚本（关键词）
-      </label>
+      ${radios}
     </div>
   `
 }
@@ -343,6 +370,231 @@ function renderReviewFiles() {
       <button class="open-review-btn" data-file="${escapeHtml(file)}">打开复核</button>
     </div>`
   }).join('')
+}
+
+/**
+ * 渲染项目文件树：展示当前客户名/任务名下的 inputs 和 outputs 目录。
+ * 支持文件夹折叠、文件预览、复制路径、拖拽导入。
+ */
+let _fileTreePending = null
+export async function renderProjectFileTree() {
+  if (_fileTreePending) return _fileTreePending
+  _fileTreePending = _renderProjectFileTreeImpl()
+  try { return await _fileTreePending } finally { _fileTreePending = null }
+}
+async function _renderProjectFileTreeImpl() {
+  const container = $('#project-filetree')
+  if (!container) return
+
+  const customer = state.customCustomerName
+  const wfTask = findWorkflowTaskByName(state.customTaskName)
+  const taskDir = wfTask ? wfTask.dirName : (state.customTaskName || '')
+
+  if (!customer || !taskDir) {
+    container.innerHTML = '<div class="subtle" style="padding:16px;text-align:center;">请先选择项目</div>'
+    return
+  }
+
+  container.innerHTML = '<div class="subtle" style="padding:16px;text-align:center;">加载中...</div>'
+
+  const inputsRoot = `inputs/${customer}/${taskDir}`
+  const outputsRoot = `outputs/${customer}/${taskDir}`
+
+  try {
+    const [inputsRes, outputsRes] = await Promise.all([
+      api.listFiles(inputsRoot).catch(() => ({ files: [] })),
+      api.listFiles(outputsRoot).catch(() => ({ files: [] })),
+    ])
+
+    const inputsFiles = (inputsRes.files || []).filter(f => !f.endsWith('/') && !f.endsWith('.pyc'))
+    const outputsFiles = (outputsRes.files || []).filter(f => !f.endsWith('/') && !f.endsWith('.pyc'))
+
+    let html = ''
+    if (inputsFiles.length > 0) {
+      html += `<div class="tree-root"><span class="tree-icon">📂</span><strong>inputs</strong></div>`
+      html += renderProjectTreeNodes(inputsFiles, inputsRoot)
+    } else {
+      html += `<div class="tree-root"><span class="tree-icon">📂</span><strong>inputs</strong> <span class="subtle">(空)</span></div>`
+    }
+    if (outputsFiles.length > 0) {
+      html += `<div class="tree-root" style="margin-top:8px;"><span class="tree-icon">📂</span><strong>outputs</strong></div>`
+      html += renderProjectTreeNodes(outputsFiles, outputsRoot)
+    } else {
+      html += `<div class="tree-root" style="margin-top:8px;"><span class="tree-icon">📂</span><strong>outputs</strong> <span class="subtle">(空)</span></div>`
+    }
+
+    container.innerHTML = html
+    bindProjectFileTreeEvents(container)
+    bindProjectDragAndDrop(container, inputsRoot)
+
+    // 默认折叠所有文件夹
+    container.querySelectorAll('.tree-folder').forEach(folder => {
+      let sibling = folder.nextElementSibling
+      while (sibling && !sibling.classList.contains('tree-root')) {
+        const sibIndent = parseInt(sibling.style.paddingLeft) || 0
+        const folderIndent = parseInt(folder.style.paddingLeft) || 0
+        if (sibIndent > folderIndent) {
+          sibling.style.display = 'none'
+          sibling = sibling.nextElementSibling
+        } else {
+          break
+        }
+      }
+    })
+  } catch (err) {
+    container.innerHTML = `<div class="subtle" style="padding:16px;text-align:center;">加载失败: ${escapeHtml(err.message)}</div>`
+  }
+}
+
+/**
+ * 递归构建项目文件树的 HTML 节点。
+ */
+function renderProjectTreeNodes(files, basePath) {
+  const tree = {}
+  for (const file of files) {
+    const rel = file.startsWith(basePath + '/') ? file.slice(basePath.length + 1)
+              : file.startsWith(basePath) ? file.slice(basePath.length) : file
+    const parts = rel.replace(/\\/g, '/').split('/').filter(Boolean)
+    let cursor = tree
+    for (let i = 0; i < parts.length; i++) {
+      const seg = parts[i]
+      if (i === parts.length - 1) {
+        if (!cursor._files) cursor._files = []
+        cursor._files.push({ name: seg, relPath: rel })
+      } else {
+        if (!cursor[seg]) cursor[seg] = {}
+        cursor = cursor[seg]
+      }
+    }
+  }
+
+  function renderNode(node, name, depth) {
+    const hasFiles = node._files && node._files.length > 0
+    const indent = depth * 16
+    let html = ''
+    if (name) {
+      html += `<div class="tree-folder" style="padding-left:${indent}px;" data-expand="false">
+        <span class="tree-icon">📁</span><span class="tree-name">${escapeHtml(name)}</span></div>`
+    }
+    for (const key of Object.keys(node).sort()) {
+      if (key === '_files') continue
+      html += renderNode(node[key], key, name ? depth + 1 : depth)
+    }
+    if (hasFiles) {
+      for (const f of node._files) {
+        const fullPath = basePath + '/' + f.relPath
+        html += `<div class="tree-file" style="padding-left:${(name ? depth + 1 : depth) * 16}px;" data-path="${escapeHtml(fullPath)}">
+          <span class="tree-icon">📄</span><span class="tree-name">${escapeHtml(f.name)}</span>
+          <button class="tree-copy-btn" data-copy-path="${escapeHtml(fullPath)}" title="复制路径">&#128203;</button>
+        </div>`
+      }
+    }
+    return html
+  }
+  return renderNode(tree, null, 0)
+}
+
+/**
+ * 绑定项目文件树的事件：文件夹折叠、复制路径。
+ * 文件点击预览由 main.js 事件代理处理。
+ */
+function bindProjectFileTreeEvents(container) {
+  // 文件夹折叠/展开
+  container.querySelectorAll('.tree-folder').forEach(folder => {
+    folder.style.cursor = 'pointer'
+    folder.addEventListener('click', () => {
+      const expanded = folder.dataset.expand === 'true'
+      folder.dataset.expand = expanded ? 'false' : 'true'
+      const icon = folder.querySelector('.tree-icon')
+      if (icon) icon.textContent = expanded ? '📁' : '📂'
+      let sibling = folder.nextElementSibling
+      while (sibling && !sibling.classList.contains('tree-root')) {
+        if (sibling.style.paddingLeft && parseInt(sibling.style.paddingLeft) > parseInt(folder.style.paddingLeft || '0')) {
+          sibling.style.display = expanded ? 'none' : ''
+        } else {
+          break
+        }
+        sibling = sibling.nextElementSibling
+      }
+    })
+  })
+
+  // 复制路径
+  container.querySelectorAll('.tree-copy-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation()
+      const path = btn.dataset.copyPath
+      try {
+        await navigator.clipboard.writeText(path)
+        btn.textContent = '✓'
+        setTimeout(() => { btn.innerHTML = '&#128203;' }, 1500)
+      } catch {
+        btn.textContent = '✗'
+        setTimeout(() => { btn.innerHTML = '&#128203;' }, 1500)
+      }
+    })
+  })
+}
+
+/**
+ * 绑定项目文件树的拖拽导入：从系统文件管理器拖入文件到 inputs/{customer}/{task}/
+ */
+function bindProjectDragAndDrop(container, inputsRoot) {
+  if (container.dataset.dndBound) return
+  container.dataset.dndBound = 'true'
+
+  container.addEventListener('dragover', (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!e.dataTransfer.types.includes('Files')) return
+    container.classList.add('drag-over')
+    if (!container.querySelector('.drop-hint')) {
+      const hint = document.createElement('div')
+      hint.className = 'drop-hint'
+      hint.textContent = `释放文件以导入 ${inputsRoot}/`
+      container.appendChild(hint)
+    }
+  })
+
+  container.addEventListener('dragleave', (e) => {
+    if (container.contains(e.relatedTarget)) return
+    container.classList.remove('drag-over')
+    const hint = container.querySelector('.drop-hint')
+    if (hint) hint.remove()
+  })
+
+  container.addEventListener('drop', async (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    container.classList.remove('drag-over')
+    const hint = container.querySelector('.drop-hint')
+    if (hint) hint.remove()
+
+    if (!e.dataTransfer.types.includes('Files')) return
+    const files = Array.from(e.dataTransfer.files)
+    if (files.length === 0) return
+
+    const filePaths = files.map(f => f.path).filter(Boolean)
+    if (filePaths.length === 0) {
+      // Electron 中 File 对象有 path 属性
+      return
+    }
+
+    const dest = inputsRoot + '/'
+    let uploaded = 0
+    let failed = 0
+    for (const srcPath of filePaths) {
+      try {
+        await api.copyFromPath(srcPath, dest)
+        uploaded++
+      } catch (err) {
+        failed++
+      }
+    }
+
+    // 刷新文件树
+    await renderProjectFileTree()
+  })
 }
 
 /**

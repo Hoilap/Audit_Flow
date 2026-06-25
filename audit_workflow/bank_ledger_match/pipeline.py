@@ -6,7 +6,7 @@ from typing import Any
 import pandas as pd
 
 from .approver import apply_manual_approvals
-from .cleaners import clean_to_csv
+from .cleaners import clean_to_csv, clean_bank_to_csv, clean_ledger_to_csv
 from .config import output_dir
 from .matcher import match_to_csv
 from .working_paper import fill_working_paper
@@ -15,6 +15,16 @@ from .llm_filler import fill_working_paper_llm
 
 def run_clean(config: dict[str, Any]) -> tuple[Path, Path]:
     return clean_to_csv(config)
+
+
+def run_clean_bank(config: dict[str, Any], parser: str | None = None) -> Path:
+    """仅清洗银行流水，parser 可由前端传入覆盖 task.yml 配置。"""
+    return clean_bank_to_csv(config, parser=parser or None)
+
+
+def run_clean_ledger(config: dict[str, Any], parser: str | None = None) -> Path:
+    """仅清洗序时账，parser 可由前端传入覆盖 task.yml 配置。"""
+    return clean_ledger_to_csv(config, parser=parser or None)
 
 
 def run_match(config: dict[str, Any]) -> tuple[Path, Path, Path]:
