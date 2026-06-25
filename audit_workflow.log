@@ -1374,3 +1374,181 @@ Length: 0, dtype: str' for dtype 'int64'
 [2026-06-24 15:00:19] INFO    audit_workflow.agent_loop - agent.run() 完成
 [2026-06-24 15:00:19] INFO    audit_workflow.agent_loop - Agent 循环完成: text_length=380, usage={'total_tokens': 11586, 'request_tokens': 11366, 'response_tokens': 220}, messages=6
 [2026-06-24 15:00:19] INFO    audit_workflow.agent_loop - === Agent 对话完成 === conv=abe3abff
+[2026-06-25 19:39:50] INFO    audit_workflow - 创建项目: customer=佰腾, task=序时账银行流水匹配
+[2026-06-25 20:11:51] INFO    audit_workflow - 开始 Detect: customer=佰腾, task=bank_ledger_match, use_llm=true
+[2026-06-25 20:15:28] INFO    audit_workflow - Detect 完成: customer=佰腾, task=bank_ledger_match, files=82, llm_used=True
+[2026-06-25 20:16:39] INFO    audit_workflow - 保存配置: customer=佰腾, task=bank_ledger_match
+[2026-06-25 20:16:48] INFO    audit_workflow - 开始 Clean: customer=佰腾, task=bank_ledger_match
+[2026-06-25 20:19:29] INFO    audit_workflow - 开始 Clean: customer=佰腾, task=bank_ledger_match
+[2026-06-25 21:28:14] INFO    audit_workflow - 开始 Clean: customer=佰腾, task=bank_ledger_match
+[2026-06-25 23:05:34] INFO    audit_workflow - 开始 Clean: customer=佰腾, task=bank_ledger_match
+[2026-06-25 23:06:15] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser generated: bank_808d3f60.py (for crc_bank_2022_01)
+[2026-06-25 23:06:15] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 808d3f60): bank_808d3f60.py → reusing for crc_bank_2022_02
+[2026-06-25 23:06:15] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 808d3f60): bank_808d3f60.py → reusing for crc_bank_2022_03
+[2026-06-25 23:06:50] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser generated: bank_90fd2994.py (for icbc_bank_2022_01_067)
+[2026-06-25 23:06:50] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_02_067
+[2026-06-25 23:06:50] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_03_067
+[2026-06-25 23:06:50] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_04_067
+[2026-06-25 23:06:50] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_05_067
+[2026-06-25 23:06:50] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_06_067
+[2026-06-25 23:06:50] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_07_067
+[2026-06-25 23:06:50] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_08_067
+[2026-06-25 23:06:51] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_09_067
+[2026-06-25 23:06:51] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_10_067
+[2026-06-25 23:06:51] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_11_067
+[2026-06-25 23:06:51] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_12_067
+[2026-06-25 23:06:51] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_01_755
+[2026-06-25 23:06:51] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_02_755
+[2026-06-25 23:06:51] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_03_755
+[2026-06-25 23:06:51] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_04_755
+[2026-06-25 23:06:51] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_05_755
+[2026-06-25 23:06:51] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_06_755
+[2026-06-25 23:06:51] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_07_755
+[2026-06-25 23:06:51] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_08_755
+[2026-06-25 23:06:51] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_09_755
+[2026-06-25 23:06:52] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_10_755
+[2026-06-25 23:06:52] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_11_755
+[2026-06-25 23:06:52] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_12_755
+[2026-06-25 23:06:52] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_01_359
+[2026-06-25 23:06:52] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_02_359
+[2026-06-25 23:06:52] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_03_359
+[2026-06-25 23:06:52] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_04_359
+[2026-06-25 23:06:53] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_05_359
+[2026-06-25 23:06:53] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_06_359
+[2026-06-25 23:06:53] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_07_359
+[2026-06-25 23:06:53] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_08_359
+[2026-06-25 23:06:54] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_09_359
+[2026-06-25 23:06:54] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_10_359
+[2026-06-25 23:06:54] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_11_359
+[2026-06-25 23:06:54] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_12_359
+[2026-06-25 23:06:55] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_01_841
+[2026-06-25 23:06:55] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_02_841
+[2026-06-25 23:06:56] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_03_841
+[2026-06-25 23:06:56] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_04_841
+[2026-06-25 23:06:56] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_05_841
+[2026-06-25 23:06:57] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_06_841
+[2026-06-25 23:06:57] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_07_841
+[2026-06-25 23:06:58] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_08_841
+[2026-06-25 23:06:58] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_09_841
+[2026-06-25 23:06:58] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_10_841
+[2026-06-25 23:06:59] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_11_841
+[2026-06-25 23:06:59] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_12_841
+[2026-06-25 23:07:00] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_01_432
+[2026-06-25 23:07:00] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_02_432
+[2026-06-25 23:07:00] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_03_432
+[2026-06-25 23:07:00] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_04_432
+[2026-06-25 23:07:00] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_05_432
+[2026-06-25 23:07:00] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_06_432
+[2026-06-25 23:07:00] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_07_432
+[2026-06-25 23:07:00] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_08_432
+[2026-06-25 23:07:01] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_09_432
+[2026-06-25 23:07:01] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_10_432
+[2026-06-25 23:07:01] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_11_432
+[2026-06-25 23:07:01] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_12_432
+[2026-06-25 23:07:35] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser generated: bank_2968a209.py (for icbc_bank_2022_03_244)
+[2026-06-25 23:07:35] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 2968a209): bank_2968a209.py → reusing for icbc_bank_2022_04_244
+[2026-06-25 23:07:35] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 2968a209): bank_2968a209.py → reusing for icbc_bank_2022_05_244
+[2026-06-25 23:07:35] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 2968a209): bank_2968a209.py → reusing for icbc_bank_2022_06_244
+[2026-06-25 23:07:36] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 2968a209): bank_2968a209.py → reusing for icbc_bank_2022_07_244
+[2026-06-25 23:07:36] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 2968a209): bank_2968a209.py → reusing for icbc_bank_2022_08_244
+[2026-06-25 23:07:36] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 2968a209): bank_2968a209.py → reusing for icbc_bank_2022_09_244
+[2026-06-25 23:07:36] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 2968a209): bank_2968a209.py → reusing for icbc_bank_2022_10_244
+[2026-06-25 23:07:36] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 2968a209): bank_2968a209.py → reusing for icbc_bank_2022_11_244
+[2026-06-25 23:07:36] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 2968a209): bank_2968a209.py → reusing for icbc_bank_2022_12_244
+[2026-06-25 23:08:18] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser generated: bank_4aa13dd9.py (for cmbc_bank_2022_05)
+[2026-06-25 23:08:18] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 4aa13dd9): bank_4aa13dd9.py → reusing for cmbc_bank_2022_06
+[2026-06-25 23:08:19] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 4aa13dd9): bank_4aa13dd9.py → reusing for cmbc_bank_2022_07
+[2026-06-25 23:08:19] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 4aa13dd9): bank_4aa13dd9.py → reusing for cmbc_bank_2022_08
+[2026-06-25 23:08:19] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 4aa13dd9): bank_4aa13dd9.py → reusing for cmbc_bank_2022_09
+[2026-06-25 23:08:19] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 4aa13dd9): bank_4aa13dd9.py → reusing for cmbc_bank_2022_10
+[2026-06-25 23:08:19] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 4aa13dd9): bank_4aa13dd9.py → reusing for cmbc_bank_2022_11
+[2026-06-25 23:08:19] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 4aa13dd9): bank_4aa13dd9.py → reusing for cmbc_bank_2022_12
+[2026-06-25 23:14:08] INFO    audit_workflow - 开始 Check: customer=佰腾, task=bank_ledger_match
+[2026-06-25 23:14:23] INFO    audit_workflow - 开始 Match: customer=佰腾, task=bank_ledger_match
+[2026-06-25 23:14:44] INFO    audit_workflow - 开始 Check: customer=佰腾, task=bank_ledger_match
+[2026-06-25 23:16:06] INFO    audit_workflow - 开始 Clean: customer=佰腾, task=bank_ledger_match
+[2026-06-25 23:16:06] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 808d3f60): bank_808d3f60.py → reusing for crc_bank_2022_01
+[2026-06-25 23:16:06] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 808d3f60): bank_808d3f60.py → reusing for crc_bank_2022_02
+[2026-06-25 23:16:06] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 808d3f60): bank_808d3f60.py → reusing for crc_bank_2022_03
+[2026-06-25 23:16:06] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_01_067
+[2026-06-25 23:16:06] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_02_067
+[2026-06-25 23:16:06] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_03_067
+[2026-06-25 23:16:06] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_04_067
+[2026-06-25 23:16:06] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_05_067
+[2026-06-25 23:16:06] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_06_067
+[2026-06-25 23:16:06] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_07_067
+[2026-06-25 23:16:06] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_08_067
+[2026-06-25 23:16:06] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_09_067
+[2026-06-25 23:16:07] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_10_067
+[2026-06-25 23:16:07] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_11_067
+[2026-06-25 23:16:07] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_12_067
+[2026-06-25 23:16:07] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_01_755
+[2026-06-25 23:16:07] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_02_755
+[2026-06-25 23:16:07] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_03_755
+[2026-06-25 23:16:07] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_04_755
+[2026-06-25 23:16:07] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_05_755
+[2026-06-25 23:16:07] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_06_755
+[2026-06-25 23:16:07] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_07_755
+[2026-06-25 23:16:07] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_08_755
+[2026-06-25 23:16:07] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_09_755
+[2026-06-25 23:16:07] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_10_755
+[2026-06-25 23:16:07] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_11_755
+[2026-06-25 23:16:07] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_12_755
+[2026-06-25 23:16:07] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_01_359
+[2026-06-25 23:16:07] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_02_359
+[2026-06-25 23:16:08] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_03_359
+[2026-06-25 23:16:08] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_04_359
+[2026-06-25 23:16:08] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_05_359
+[2026-06-25 23:16:08] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_06_359
+[2026-06-25 23:16:08] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_07_359
+[2026-06-25 23:16:09] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_08_359
+[2026-06-25 23:16:09] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_09_359
+[2026-06-25 23:16:09] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_10_359
+[2026-06-25 23:16:09] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_11_359
+[2026-06-25 23:16:09] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_12_359
+[2026-06-25 23:16:10] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_01_841
+[2026-06-25 23:16:10] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_02_841
+[2026-06-25 23:16:10] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_03_841
+[2026-06-25 23:16:11] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_04_841
+[2026-06-25 23:16:11] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_05_841
+[2026-06-25 23:16:11] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_06_841
+[2026-06-25 23:16:12] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_07_841
+[2026-06-25 23:16:12] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_08_841
+[2026-06-25 23:16:12] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_09_841
+[2026-06-25 23:16:13] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_10_841
+[2026-06-25 23:16:13] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_11_841
+[2026-06-25 23:16:14] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_12_841
+[2026-06-25 23:16:14] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_01_432
+[2026-06-25 23:16:14] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_02_432
+[2026-06-25 23:16:14] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_03_432
+[2026-06-25 23:16:14] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_04_432
+[2026-06-25 23:16:14] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_05_432
+[2026-06-25 23:16:14] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_06_432
+[2026-06-25 23:16:14] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_07_432
+[2026-06-25 23:16:14] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_08_432
+[2026-06-25 23:16:15] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_09_432
+[2026-06-25 23:16:15] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_10_432
+[2026-06-25 23:16:15] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_11_432
+[2026-06-25 23:16:15] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 90fd2994): bank_90fd2994.py → reusing for icbc_bank_2022_12_432
+[2026-06-25 23:16:15] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 2968a209): bank_2968a209.py → reusing for icbc_bank_2022_03_244
+[2026-06-25 23:16:15] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 2968a209): bank_2968a209.py → reusing for icbc_bank_2022_04_244
+[2026-06-25 23:16:15] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 2968a209): bank_2968a209.py → reusing for icbc_bank_2022_05_244
+[2026-06-25 23:16:15] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 2968a209): bank_2968a209.py → reusing for icbc_bank_2022_06_244
+[2026-06-25 23:16:15] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 2968a209): bank_2968a209.py → reusing for icbc_bank_2022_07_244
+[2026-06-25 23:16:15] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 2968a209): bank_2968a209.py → reusing for icbc_bank_2022_08_244
+[2026-06-25 23:16:15] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 2968a209): bank_2968a209.py → reusing for icbc_bank_2022_09_244
+[2026-06-25 23:16:15] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 2968a209): bank_2968a209.py → reusing for icbc_bank_2022_10_244
+[2026-06-25 23:16:15] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 2968a209): bank_2968a209.py → reusing for icbc_bank_2022_11_244
+[2026-06-25 23:16:15] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 2968a209): bank_2968a209.py → reusing for icbc_bank_2022_12_244
+[2026-06-25 23:16:15] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 4aa13dd9): bank_4aa13dd9.py → reusing for cmbc_bank_2022_05
+[2026-06-25 23:16:15] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 4aa13dd9): bank_4aa13dd9.py → reusing for cmbc_bank_2022_06
+[2026-06-25 23:16:15] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 4aa13dd9): bank_4aa13dd9.py → reusing for cmbc_bank_2022_07
+[2026-06-25 23:16:15] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 4aa13dd9): bank_4aa13dd9.py → reusing for cmbc_bank_2022_08
+[2026-06-25 23:16:15] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 4aa13dd9): bank_4aa13dd9.py → reusing for cmbc_bank_2022_09
+[2026-06-25 23:16:16] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 4aa13dd9): bank_4aa13dd9.py → reusing for cmbc_bank_2022_10
+[2026-06-25 23:16:16] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 4aa13dd9): bank_4aa13dd9.py → reusing for cmbc_bank_2022_11
+[2026-06-25 23:16:16] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 4aa13dd9): bank_4aa13dd9.py → reusing for cmbc_bank_2022_12
+[2026-06-26 00:57:13] INFO    audit_workflow - 开始 Clean Ledger: customer=佰腾, task=bank_ledger_match, parser=llm_ledger
+[2026-06-26 00:58:24] INFO    audit_workflow.bank_ledger_match.llm_cleaner - Ledger parser generated: ledger_88f7d3bd.py (for xinjiyuan_ledger_2022)
+[2026-06-26 01:00:33] INFO    audit_workflow - 开始 Check: customer=佰腾, task=bank_ledger_match
+[2026-06-26 01:02:04] INFO    audit_workflow - 开始 Detect: customer=佰腾, task=bank_ledger_match, use_llm=true
