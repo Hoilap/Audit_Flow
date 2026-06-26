@@ -1839,3 +1839,36 @@ Length: 0, dtype: str' for dtype 'int64'
 [2026-06-26 17:08:51] INFO    audit_workflow.bank_ledger_match.llm_cleaner - Ledger parser cache hit (by column signature 93085e95): ledger_93085e95.py → reusing for boc_ledger_2022
 [2026-06-26 17:08:53] INFO    audit_workflow.bank_ledger_match.llm_cleaner - Ledger parser cache hit (by column signature 93085e95): ledger_93085e95.py → reusing for icbc_ledger_2022
 [2026-06-26 17:08:58] INFO    audit_workflow - 开始 Check: customer=桂平金山, task=bank_ledger_match
+[2026-06-26 23:29:44] INFO    audit_workflow - 开始 Detect: customer=桂平金山, task=bank_ledger_match, use_llm=true
+[2026-06-26 23:29:47] INFO    audit_workflow - Detect 完成: customer=桂平金山, task=bank_ledger_match, files=7, llm_used=True
+[2026-06-26 23:38:09] INFO    audit_workflow - 开始 Detect: customer=桂平金山, task=bank_ledger_match, use_llm=true
+[2026-06-26 23:38:12] INFO    audit_workflow - Detect 完成: customer=桂平金山, task=bank_ledger_match, files=7, llm_used=True
+[2026-06-26 23:50:18] INFO    audit_workflow - 开始 Detect: customer=桂平金山, task=bank_ledger_match, use_llm=true
+[2026-06-26 23:50:20] INFO    audit_workflow - Detect 完成: customer=桂平金山, task=bank_ledger_match, files=7, llm_used=True
+[2026-06-27 00:09:23] INFO    audit_workflow - 开始 Detect: customer=桂平金山, task=bank_ledger_match, use_llm=true
+[2026-06-27 00:09:28] INFO    audit_workflow - Detect 完成: customer=桂平金山, task=bank_ledger_match, files=7, llm_used=True
+[2026-06-27 00:10:12] INFO    audit_workflow - OSM Detect: customer=TMF, task=outbound_settlement_match
+[2026-06-27 00:10:12] INFO    audit_workflow.outbound_settlement_match.pipeline - Detected 242 settlement CSV files
+[2026-06-27 00:10:19] INFO    audit_workflow.outbound_settlement_match.pipeline - Detected 3 outbound Excel files
+[2026-06-27 00:10:28] INFO    audit_workflow - 开始 Detect: customer=桂平金山, task=bank_ledger_match, use_llm=true
+[2026-06-27 00:10:31] INFO    audit_workflow - Detect 完成: customer=桂平金山, task=bank_ledger_match, files=7, llm_used=True
+[2026-06-27 00:17:10] INFO    audit_workflow - OSM Detect: customer=TMF, task=outbound_settlement_match
+[2026-06-27 00:17:10] INFO    audit_workflow.outbound_settlement_match.pipeline - Detected 242 settlement CSV files
+[2026-06-27 00:17:17] INFO    audit_workflow.outbound_settlement_match.pipeline - Detected 3 outbound Excel files
+[2026-06-27 00:18:10] INFO    audit_workflow - 开始 Detect: customer=佰腾, task=bank_ledger_match, use_llm=true
+[2026-06-27 00:21:22] INFO    audit_workflow - Detect 完成: customer=佰腾, task=bank_ledger_match, files=82, llm_used=True
+[2026-06-27 00:37:43] INFO    audit_workflow - 开始 Detect: customer=桂平金山, task=bank_ledger_match, use_llm=false
+[2026-06-27 00:37:46] INFO    audit_workflow - Detect 完成: customer=桂平金山, task=bank_ledger_match, files=7, llm_used=False
+[2026-06-27 00:38:28] INFO    audit_workflow - 保存配置: customer=桂平金山, task=bank_ledger_match
+[2026-06-27 00:39:28] INFO    audit_workflow - 保存配置: customer=桂平金山, task=bank_ledger_match
+[2026-06-27 00:40:07] INFO    audit_workflow - 开始 Clean Bank: customer=桂平金山, task=bank_ledger_match, parser=llm_bank
+[2026-06-27 00:40:57] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser generated: bank_6f4630e7.py (for bank_2022_0)
+[2026-06-27 00:41:42] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser generated: bank_9ec6d811.py (for bank_bank_2022)
+[2026-06-27 00:52:31] INFO    audit_workflow - 开始 Match: customer=test, task=bank_ledger_match, parser=llm_bank
+[2026-06-27 01:12:39] INFO    audit_workflow - 开始 Detect: customer=桂平金山, task=bank_ledger_match, use_llm=false
+[2026-06-27 01:12:43] INFO    audit_workflow - Detect 完成: customer=桂平金山, task=bank_ledger_match, files=7, llm_used=False
+[2026-06-27 01:12:58] INFO    audit_workflow - 保存配置: customer=桂平金山, task=bank_ledger_match
+[2026-06-27 01:13:04] INFO    audit_workflow - 开始 Clean Bank: customer=桂平金山, task=bank_ledger_match, parser=script
+[2026-06-27 01:13:13] INFO    audit_workflow - 开始 Clean Bank: customer=桂平金山, task=bank_ledger_match, parser=llm_bank
+[2026-06-27 01:13:14] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 6f4630e7): bank_6f4630e7.py → reusing for bank_2022_0
+[2026-06-27 01:13:15] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 9ec6d811): bank_9ec6d811.py → reusing for bank_bank_2022

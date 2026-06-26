@@ -2,7 +2,7 @@ import { workflowTasks } from './config.js'
 import { findWorkflowTaskByName, state } from './state.js'
 import { $, $$ } from './dom.js'
 import { renderEvidencePanel, renderShell, renderWorkflowWorkspace, setAgentStatus, showPage } from './ui.js'
-import { cancelRunningStep, commitAll, createProject, deleteProject, loadProjects, loadProgramReadmes, previewFile, refreshFiles, refreshLog, refreshTokens, runAllSteps, runNextStep, runStep, selectProject, sendPrompt, setupEventSource, toggleCustomMode, updateCustomCustomerName, updateCustomTaskName, updateDetectMethod, updateProject, uploadFile, syncLlmConfig, updateLlmModel, loadSettingsProviders, saveLlmProviders, revealProviderKey, addLlmProvider, deleteLlmProvider } from './actions.js'
+import { cancelRunningStep, commitAll, createProject, deleteProject, loadProjects, loadProgramReadmes, previewFile, refreshFiles, refreshLog, refreshTokens, runAllSteps, runNextStep, runStep, selectProject, setupEventSource, toggleCustomMode, updateCustomCustomerName, updateCustomTaskName, updateDetectMethod, updateProject, uploadFile, syncLlmConfig, updateLlmModel, loadSettingsProviders, saveLlmProviders, revealProviderKey, addLlmProvider, deleteLlmProvider } from './actions.js'
 import { openReviewEditor } from './reviewEditor.js'
 import { renderProjectsTable, showProjectFormModal } from './ui.js'
 
@@ -64,10 +64,10 @@ function bindEvents() {
       previewFile(projectFile.dataset.path)
     }
 
-    // 消息/配置面板/README卡片折叠切换
-    const collapseHead = event.target.closest('.message-head, .llm-code-head, .readme-card-head')
+    // 消息/README卡片折叠切换
+    const collapseHead = event.target.closest('.message-head, .readme-card-head')
     if (collapseHead) {
-      const container = collapseHead.closest('.message') || collapseHead.closest('.llm-code-panel') || collapseHead.closest('.readme-card')
+      const container = collapseHead.closest('.message') || collapseHead.closest('.readme-card')
       if (container) container.classList.toggle('collapsed')
     }
 
@@ -159,25 +159,6 @@ function bindEvents() {
     $('#toggle-sidebar').textContent = sidebar.classList.contains('collapsed') ? '▶' : '◀'
   })
 
-  // 底部 LLM 输入区折叠
-  $('#toggle-chat').addEventListener('click', () => {
-    const composer = document.querySelector('.composer')
-    if (!composer) return
-    state.chatHidden = !state.chatHidden
-    composer.style.display = state.chatHidden ? 'none' : ''
-    $('#main').style.paddingBottom = state.chatHidden ? '20px' : ''
-    $('#toggle-chat').textContent = state.chatHidden ? '▲' : '▼'
-  })
-
-  // 页面初始化时恢复 composer 状态
-  if (state.chatHidden) {
-    const composer = document.querySelector('.composer')
-    if (composer) composer.style.display = 'none'
-    const main = $('#main')
-    if (main) main.style.paddingBottom = '20px'
-    $('#toggle-chat').textContent = '▲'
-  }
-
   $('#theme-toggle').addEventListener('click', () => document.body.classList.toggle('dark'))
   $('#refresh-all').addEventListener('click', refreshAll)
   $('#refresh-files').addEventListener('click', refreshFiles)
@@ -193,7 +174,6 @@ function bindEvents() {
   $('#run-next-step').addEventListener('click', () => withDisabled('#run-next-step', runNextStep))
   $('#run-all-steps').addEventListener('click', () => withDisabled('#run-all-steps', runAllSteps))
   $('#stop-task').addEventListener('click', cancelRunningStep)
-  $('#send').addEventListener('click', () => withDisabled('#send', sendPrompt))
   $('#upload-btn').addEventListener('click', () => withDisabled('#upload-btn', uploadFile))
   $('#commit-all').addEventListener('click', () => withDisabled('#commit-all', commitAll))
 

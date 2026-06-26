@@ -64,11 +64,15 @@ def _guess_bank_short(bank_name: str) -> str:
         if key in name_lower:
             return key
     # 中文匹配
-    _cn_map = {"工行": "icbc", "农行": "abc", "中行": "boc", "建行": "ccb", "招行": "cmb", "兴业": "cib", "浦发": "spdb", "光大": "ceb", "中信": "citic"}
+    _cn_map = {"工商银行": "icbc", "工行": "icbc", "建设银行": "ccb", "建行": "ccb",
+               "农业银行": "abc", "农行": "abc", "中国银行": "boc", "中行": "boc",
+               "招商银行": "cmb", "招行": "cmb", "兴业银行": "cib", "兴业": "cib",
+               "浦发银行": "spdb", "浦发": "spdb", "光大银行": "ceb", "光大": "ceb",
+               "中信银行": "citic", "中信": "citic"}
     for cn, abbr in _cn_map.items():
         if cn in bank_name:
             return abbr
-    return "bank"
+    return "unknown"
 
 
 def scan_input_files(
@@ -160,10 +164,12 @@ _FILE_IDENTIFY_SYSTEM_PROMPT = """你是一个审计数据分析助手，专门�
 6. **备注**: 任何需要注意的问题
 
 **文件 ID 命名规则（非常重要）**:
-- 格式: {bank_short}_{year}_{type}，如 icbc_bank_2022
+- 格式: {bank_short}_{type}_{year}，如 icbc_bank_2022
+- type 取值: bank（银行流水）、ledger（序时账）
 - 同一银行有多个文件时，加上月份区分: icbc_bank_2022_01_06、icbc_bank_2022_07_12
 - 序时账: xinjiyuan_ledger_2022
 - bank_short 用银行英文缩写: icbc/abc/boc/ccb/cmb 等
+- 如果无法识别银行名称，使用 unknown 作为 bank_short，如 unknown_bank_2022
 
 重要规则：
 - 如果文件名含"流水"、"bank"、"交易明细"等一般是银行流水
@@ -356,11 +362,12 @@ def _identify_files_local(
             year = int(year_matches[0])
 
         # 生成更有意义的 id
+        type_short = "bank" if ftype == "bank_statement" else ftype  # bank_statement→bank, ledger→ledger
         if bank_name:
             bank_short = _guess_bank_short(bank_name)
-            short_id = f"{bank_short}_{ftype[:4]}_{year}"
+            short_id = f"{bank_short}_{type_short}_{year}"
         else:
-            short_id = f"{ftype[:4]}_{year}_{i}"
+            short_id = f"unknown_{type_short}_{year}_{i}"
 
         results.append({
             "id": short_id,

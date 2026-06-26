@@ -1,4 +1,4 @@
-import { llmCodePath, navItems, workflowTasks, evidencePanelSections } from './config.js'
+import { navItems, workflowTasks, evidencePanelSections } from './config.js'
 import { activeTask, getProjectBasePath, resolveProjectPath, state, stepStatus, findWorkflowTaskByName } from './state.js'
 import { $, $$, escapeHtml, formatSeconds, isCsv } from './dom.js'
 import { parseCsv } from './csv.js'
@@ -58,6 +58,8 @@ export function renderEvidencePanel() {
       inner = `<div id="git-log" class="timeline"></div>`
     } else if (id === 'review-editor') {
       inner = `<div id="review-file-list" class="grid file-scroll-list"></div>`
+    } else if (id === 'config-editor') {
+      inner = `<div id="config-editor-content"></div>`
     }
     return `<section class="panel-section${collapseClass}">
       <h3 class="panel-section-header">${escapeHtml(title)}<span class="panel-section-actions">${headerActions}</span></h3>
@@ -782,18 +784,6 @@ export function addMessage({ role = 'Agent', title = '', body = '', result = nul
   block.scrollIntoView({ behavior: 'smooth', block: 'end' })
 }
 
-export function renderLlmCode(path, content, result = null) {
-  const panel = $('#llm-code-panel')
-  if (!panel) return
-  panel.innerHTML = `
-    <div class="llm-code-head">
-      <strong>LLM 生成代码区</strong>
-      <span class="llm-code-path">${escapeHtml(path || llmCodePath)}</span>
-    </div>
-    <pre class="code-block">${escapeHtml(content || '等待生成代码。')}</pre>
-    ${result ? `<pre class="log-block">${escapeHtml(JSON.stringify(result, null, 2))}</pre>` : ''}
-  `
-}
 
 function fileRow(file, source) {
   const preview = isCsv(file) ? 'CSV 预览' : '文本预览'
@@ -1102,7 +1092,7 @@ export async function renderDataProfile(filePath) {
 }
 
 function agentPage() {
-  return `<section class="page" id="page-agent"><div class="page-header"><div><h1>Agent 工作流</h1><p id="active-task-desc" class="subtle"></p></div><div class="toolbar"><button id="run-next-step">执行下一步</button><button id="run-all-steps" class="primary">执行全部</button></div></div><div id="workflow-task-list" class="project-bar"></div><div id="detect-method-bar" class="project-bar"></div><div class="agent-grid" style="margin-top:12px;"><div><div class="card"><div class="page-header" style="margin-bottom:12px;"><div><h2 id="active-task-title"></h2><p class="subtle">每个步骤可独立执行，也可按顺序全部执行。</p></div></div><div id="workflow-step-list" class="step-list"></div></div><div id="llm-code-panel" class="card llm-code-panel"><div class="llm-code-head"><strong>LLM 生成代码区</strong><span class="llm-code-path">${llmCodePath}</span></div><pre class="code-block">等待生成代码。</pre></div><div class="conversation" id="chat"><div class="message"><div class="message-head"><span>Agent</span><span>Ready</span></div><p>请先选择项目，每个步骤可点击 ▶ 独立运行。</p></div></div></div></div></section>`
+  return `<section class="page" id="page-agent"><div class="page-header"><div><h1>Agent 工作流</h1><p id="active-task-desc" class="subtle"></p></div><div class="toolbar"><button id="run-next-step">执行下一步</button><button id="run-all-steps" class="primary">执行全部</button></div></div><div id="workflow-task-list" class="project-bar"></div><div id="detect-method-bar" class="project-bar"></div><div class="agent-grid" style="margin-top:12px;"><div><div class="card"><div class="page-header" style="margin-bottom:12px;"><div><h2 id="active-task-title"></h2><p class="subtle">每个步骤可独立执行，也可按顺序全部执行。</p></div></div><div id="workflow-step-list" class="step-list"></div></div><div class="conversation" id="chat"><div class="message"><div class="message-head"><span>Agent</span><span>Ready</span></div><p>请先选择项目，每个步骤可点击 ▶ 独立运行。</p></div></div></div></div></section>`
 }
 
 function agentLoopPage() {
@@ -1643,27 +1633,28 @@ export function renderSheetTasks(result, onRetry) {
  * Step 2 - Config Confirm: 展示可编辑的 YAML 配置面板
  */
 export function renderConfigConfirm(yamlContent, customerName, taskName) {
-  const llmPanel = $('#llm-code-panel')
-  if (!llmPanel) return
+  const container = $('#config-editor-content')
+  if (!container) return
 
-  llmPanel.innerHTML = `
-    <div class="llm-code-head" style="cursor:pointer;user-select:none;">
-      <strong>📝 Task 配置确认</strong>
-      <span class="llm-code-path">outputs/${escapeHtml(customerName)}/${escapeHtml(taskName)}/task.yml <span class="message-collapse-btn">▼</span></span>
+  // 如果配置区在折叠面板内，自动展开
+  const section = container.closest('.panel-section.collapsed')
+  if (section) section.classList.remove('collapsed')
+
+  container.innerHTML = `
+    <div style="margin-bottom:8px;display:flex;gap:8px;align-items:center;">
+      <strong style="font-size:13px;">📝 outputs/${escapeHtml(customerName)}/${escapeHtml(taskName)}/task.yml</strong>
     </div>
-    <div class="message-body">
     <div style="margin-bottom:8px;display:flex;gap:8px;">
       <button id="save-config-btn" class="primary" style="padding:4px 12px;font-size:13px;">💾 保存配置</button>
       <button id="reload-config-btn" style="padding:4px 12px;font-size:13px;">⟳ 重新加载</button>
       <span id="config-save-status" class="subtle" style="line-height:28px;"></span>
     </div>
     <textarea id="config-yml-editor" style="
-      width:100%;height:480px;font-family:'Consolas','Courier New',monospace;
+      width:100%;height:380px;font-family:'Consolas','Courier New',monospace;
       font-size:13px;line-height:1.5;padding:10px;border:1px solid var(--border);
       border-radius:6px;background:var(--bg);color:var(--text);
       resize:vertical;white-space:pre;tab-size:2;
     " spellcheck="false">${escapeHtml(yamlContent)}</textarea>
-    </div>
   `
 
   // 绑定保存按钮

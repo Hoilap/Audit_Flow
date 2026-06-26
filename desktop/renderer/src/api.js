@@ -95,10 +95,11 @@ export const api = {
     return request('/workflow/bank_ledger_match/check', { method: 'POST', body: form })
   },
   /** Step 5: 执行匹配 */
-  workflowMatch: (customerName, taskName) => {
+  workflowMatch: (customerName, taskName, parser) => {
     const form = new FormData()
     form.append('customer_name', customerName)
     form.append('task_name', taskName)
+    if (parser) form.append('parser', parser)
     return request('/workflow/bank_ledger_match/match', { method: 'POST', body: form })
   },
   /** Step 6: 填入底稿（脚本方式） */

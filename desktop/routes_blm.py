@@ -30,9 +30,7 @@ router = APIRouter()
 def _build_full_config(customer_name: str, task_name: str) -> dict:
     """构建完整的 pipeline 配置：llm.yml + task.yml。
     优先从 task_configs 表查询 yml 路径，找不到则用默认路径。
-
-    LLM 开关由前端 Detect 步骤的 use_llm 决定，而非配置文件中的静态 enabled 字段。
-    优先级：task.yml 中的 use_llm > _workflow_state 中的 llm_used > 配置文件默认值。
+    LLM 开关完全由前端传入的 parser 参数控制，不再从 task.yml 读取。
     """
     paths = _resolve_task_config_paths(customer_name, task_name)
 
@@ -57,18 +55,19 @@ def _build_full_config(customer_name: str, task_name: str) -> dict:
 
     cfg = file_detector.merge_llm_into_full_config(task_cfg, llm_cfg)
 
-    # ── use_llm 覆盖 matching.llm.enabled ──
-    use_llm = task_cfg.get("use_llm")
-    if use_llm is None:
-        state_key = _resolve_workflow_state_key(customer_name, task_name)
-        state = _workflow_state.get(state_key, {})
-        use_llm = state.get("llm_used")
-
-    if use_llm is not None:
-        cfg.setdefault("matching", {}).setdefault("llm", {})
-        cfg["matching"]["llm"]["enabled"] = bool(use_llm)
-
     return cfg
+
+
+def _apply_parser_to_config(cfg: dict, parser: str) -> None:
+    """根据前端传入的 parser 参数调整 config 中的 LLM 开关。
+    parser 以 'llm' 开头 → 启用 LLM；否则关闭 LLM。
+    同时设置 matching.llm.enabled（用于 LLM 补充匹配）。
+    """
+    if parser:
+        llm_on = parser.startswith("llm")
+        cfg.setdefault("llm", {})["enabled"] = llm_on
+        cfg.setdefault("matching", {}).setdefault("llm", {})
+        cfg["matching"]["llm"]["enabled"] = llm_on
 
 
 @router.post("/workflow/bank_ledger_match/match")
@@ -76,14 +75,16 @@ def workflow_match(
     config: str = Form(None),
     customer_name: str = Form(""),
     task_name: str = Form("bank_ledger_match"),
+    parser: str = Form(""),
 ):
-    logger.info("开始 Match: customer=%s, task=%s", customer_name, task_name)
+    logger.info("开始 Match: customer=%s, task=%s, parser=%s", customer_name, task_name, parser)
     if customer_name:
         cfg = _build_full_config(customer_name, task_name)
     elif config:
         cfg = json.loads(config)
     else:
         cfg = {}
+    _apply_parser_to_config(cfg, parser)
     try:
         matches, unmatched_bank, unmatched_ledger = blm_pipeline.run_match(cfg)
         return {"matches": str(matches), "unmatched_bank": str(unmatched_bank), "unmatched_ledger": str(unmatched_ledger)}
@@ -108,6 +109,7 @@ def workflow_verify(
     config: str = Form(None),
     customer_name: str = Form(""),
     task_name: str = Form("bank_ledger_match"),
+    parser: str = Form(""),
 ):
     """Step - Verify: 将人工复核通过的项目加入 matches.csv，从 unmatched 中移除。"""
     if customer_name:
@@ -116,6 +118,7 @@ def workflow_verify(
         cfg = json.loads(config)
     else:
         cfg = {}
+    _apply_parser_to_config(cfg, parser)
     try:
         if not cfg:
             raise HTTPException(status_code=400, detail="缺少配置参数")
@@ -203,9 +206,6 @@ async def workflow_detect(
         task_cfg = file_detector.generate_task_config(
             identifications, project_info
         )
-
-        # 将前端 use_llm 选择持久化到 task.yml，供后续 Match 步骤读取
-        task_cfg["use_llm"] = llm_enabled
 
         # 5. 保存到 outputs/{customer}/{task}/task.yml
         task_yml_path = os.path.join(
@@ -356,6 +356,7 @@ def workflow_bank_ledger_match_clean_bank(
         cfg = json.loads(config)
     else:
         cfg = {}
+    _apply_parser_to_config(cfg, parser)
     try:
         bank_csv = blm_pipeline.run_clean_bank(cfg, parser=parser or None)
         return {"bank_csv": str(bank_csv)}
@@ -380,6 +381,7 @@ def workflow_bank_ledger_match_clean_ledger(
         cfg = json.loads(config)
     else:
         cfg = {}
+    _apply_parser_to_config(cfg, parser)
     try:
         ledger_csv = blm_pipeline.run_clean_ledger(cfg, parser=parser or None)
         return {"ledger_csv": str(ledger_csv)}

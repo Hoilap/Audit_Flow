@@ -86,3 +86,11 @@ setInterval(async () => {
 方案三：WebSocket
 
 双向通信，功能最强但改动最大。需要加 websockets 依赖，改连接管理逻辑，前端用 new WebSocket() 代替部分 fetch()。对于你目前"后端完成后通知前端刷新"这个需求来说，WebSocket 有些大材小用。
+
+
+
+
+
+
+
+blm detect_llm已经实现，但是可能会耗费大量token

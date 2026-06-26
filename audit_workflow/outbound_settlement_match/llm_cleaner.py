@@ -519,7 +519,7 @@ def _is_numeric_str(s: str) -> bool:
 def _notify_retry(reason: str, attempt: int, max_retries: int, error: str) -> None:
     """发送重试 SSE 事件到前端。延迟导入以避免循环依赖。"""
     try:
-        from desktop.api import notify_frontend
+        from desktop.common import notify_frontend
         notify_frontend("retry", {
             "reason": reason,
             "attempt": attempt,

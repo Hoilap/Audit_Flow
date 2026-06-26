@@ -34,10 +34,10 @@ amount 取借方或贷方中非零的那个值。
 只输出 Python 代码，不要输出解释。"""
 
 
-def ensure_llm_bank_parser(config: dict[str, Any], item: dict[str, Any]) -> Path:
+def _parser_dir(config: dict[str, Any]) -> Path:
+    """获取 BLM 生成脚本的存储目录（outputs/generated_parsers/blm/）。"""
+    from .config import output_dir
     llm_config = config.get("llm", {})
-
-    # 确定解析器目录：显式配置优先，否则放 outputs/generated_parsers/blm/
     explicit_dir = llm_config.get("generated_parser_dir")
     if explicit_dir:
         parser_dir = resolve_path(config, explicit_dir)
@@ -45,10 +45,25 @@ def ensure_llm_bank_parser(config: dict[str, Any], item: dict[str, Any]) -> Path
         parser_dir = output_dir(config) / "generated_parsers" / "blm"
     assert parser_dir is not None
     parser_dir.mkdir(parents=True, exist_ok=True)
+    return parser_dir
+
+
+def _legacy_parser_dir(config: dict[str, Any]) -> Path | None:
+    """返回旧缓存目录（项目根 generated_parsers/），向后兼容已有文件。"""
+    legacy_dir = resolve_path(config, "generated_parsers")
+    parser_dir = _parser_dir(config)
+    if legacy_dir and legacy_dir != parser_dir:
+        return legacy_dir
+    return None
+
+
+def ensure_llm_bank_parser(config: dict[str, Any], item: dict[str, Any]) -> Path:
+    llm_config = config.get("llm", {})
+    parser_dir = _parser_dir(config)
 
     # 旧缓存目录（项目根 generated_parsers/），向后兼容已有文件
-    legacy_dir = resolve_path(config, "generated_parsers")
-    if legacy_dir and legacy_dir != parser_dir:
+    legacy_dir = _legacy_parser_dir(config)
+    if legacy_dir:
         legacy_id = legacy_dir / f"{item['id']}.py"
         if legacy_id.exists():
             _log.info("BLM parser cache hit (legacy id): %s", legacy_id)
@@ -139,19 +154,11 @@ def ensure_llm_bank_parser(config: dict[str, Any], item: dict[str, Any]) -> Path
 def ensure_llm_ledger_parser(config: dict[str, Any], item: dict[str, Any]) -> Path:
     """为序时账生成或缓存 LLM 解析器，返回 .py 文件路径。"""
     llm_config = config.get("llm", {})
-
-    # 确定解析器目录：与 bank 共用 outputs/generated_parsers/blm/
-    explicit_dir = llm_config.get("generated_parser_dir")
-    if explicit_dir:
-        parser_dir = resolve_path(config, explicit_dir)
-    else:
-        parser_dir = output_dir(config) / "generated_parsers" / "blm"
-    assert parser_dir is not None
-    parser_dir.mkdir(parents=True, exist_ok=True)
+    parser_dir = _parser_dir(config)
 
     # 旧缓存目录（项目根 generated_parsers/），向后兼容
-    legacy_dir = resolve_path(config, "generated_parsers")
-    if legacy_dir and legacy_dir != parser_dir:
+    legacy_dir = _legacy_parser_dir(config)
+    if legacy_dir:
         legacy_id = legacy_dir / f"{item['id']}.py"
         if legacy_id.exists():
             _log.info("Ledger parser cache hit (legacy id): %s", legacy_id)
@@ -253,7 +260,7 @@ def _compute_column_signature(df) -> str:
 def _notify(event: str, data: dict) -> None:
     """向后端 SSE 队列发送事件（延迟导入避免循环依赖）。"""
     try:
-        from desktop.api import notify_frontend
+        from desktop.common import notify_frontend
         notify_frontend(event, data)
     except (ImportError, RuntimeError):
         pass  # CLI 环境无 desktop 模块，静默忽略
@@ -264,7 +271,7 @@ def _track_usage(usage: dict | None) -> None:
     if not usage:
         return
     try:
-        from desktop.api import token_tracker
+        from desktop.common import token_tracker
         token_tracker.record(usage)
     except (ImportError, RuntimeError):
         pass

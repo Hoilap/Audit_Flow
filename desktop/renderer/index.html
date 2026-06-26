@@ -21,7 +21,6 @@
         </div>
         <div class="status-right">
           <button id="toggle-sidebar" class="ghost" title="隐藏/显示左栏">◀</button>
-          <button id="toggle-chat" class="ghost" title="隐藏/显示底部LLM输入区">▼</button>
           <button id="theme-toggle" class="ghost" title="切换深色模式">深色</button>
           <button id="refresh-all" class="ghost">刷新</button>
         </div>
@@ -60,17 +59,6 @@
           </div>
         </aside>
 
-        <div class="composer">
-          <textarea id="prompt" placeholder="输入审计指令，例如：生成一段 Python 清洗代码，修正 outputs/clean 里的异常金额格式。"></textarea>
-          <div class="composer-actions">
-            <div class="composer-options">
-              <label><input type="checkbox" id="run-after-generate" checked /> 编译后执行代码并修改文件</label>
-              <span>超时 <input id="composer-timeout" type="number" value="5" /> 秒</span>
-              <span id="llm-target-label" class="llm-code-path">outputs/llm_code/generated_from_llm.py</span>
-            </div>
-            <button id="send" class="primary">生成代码</button>
-          </div>
-        </div>
       </div>
     </div>
     <script type="module" src="src/main.js"></script>

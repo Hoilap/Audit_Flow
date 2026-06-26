@@ -39,7 +39,7 @@ _notify_fn = None
 def _get_notify():
     global _notify_fn
     if _notify_fn is None:
-        from desktop.api import notify_frontend
+        from desktop.common import notify_frontend
         _notify_fn = notify_frontend
     return _notify_fn
 

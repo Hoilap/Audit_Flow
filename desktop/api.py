@@ -40,4 +40,17 @@ init_db()
 _migrate_config_files()
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    uvicorn.run(
+        "desktop.api:app",
+        host="127.0.0.1",
+        port=8000,
+        reload=True,
+        reload_dirs=["desktop", "audit_workflow"],
+        reload_excludes=[
+            "outputs/*",
+            "inputs/*",
+            "generated_parsers/*",
+            "config/*",
+            "*.db",
+        ],
+    )

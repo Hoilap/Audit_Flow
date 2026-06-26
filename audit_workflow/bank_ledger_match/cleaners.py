@@ -272,7 +272,7 @@ def parse_generated_bank(config: dict[str, Any], item: dict[str, Any]) -> pd.Dat
         raise RuntimeError(f"无法加载生成解析器：{parser_path}")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    rows = module.parse(str(resolve_path(config, item["path"])), {"bank_input": item})
+    rows = module.parse(str(resolve_path(config, item["path"])), item)
     df = pd.DataFrame(rows)
     for col in BANK_COLUMNS:
         if col not in df.columns:
@@ -302,7 +302,7 @@ def parse_generated_ledger(config: dict[str, Any], item: dict[str, Any]) -> pd.D
         raise RuntimeError(f"无法加载生成解析器：{parser_path}")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    rows = module.parse(str(resolve_path(config, item["path"])), {"ledger_input": item})
+    rows = module.parse(str(resolve_path(config, item["path"])), item)
     df = pd.DataFrame(rows)
     for col in LEDGER_COLUMNS:
         if col not in df.columns:

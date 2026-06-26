@@ -214,8 +214,6 @@ export const customWorkflowTask = {
   ],
 }
 
-export const llmCodePath = 'outputs/llm_code/generated_from_llm.py'
-
 /**
  * 右栏（证据面板）区块顺序配置。
  * 调整数组顺序即可自定义右栏显示顺序。
@@ -227,6 +225,7 @@ export const llmCodePath = 'outputs/llm_code/generated_from_llm.py'
  */
 export const evidencePanelSections = [
   ['review-editor',     '人工复核',      true,  false, false],
+  ['config-editor',     '配置确认',      true,  false, true],
   ['project-file-tree', '项目文件',      true,  true,  false],
   ['git-log',           'Git 历史',      true,  true,  true],
 ]
