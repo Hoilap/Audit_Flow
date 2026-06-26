@@ -278,6 +278,14 @@ function renderDetectMethodSelector() {
     options.push(
       { value: 'xinjiyuan_bank_ledger', label: '📜 新纪元银行账' },
     )
+  } else if (step?.id === 'clean-settlement') {
+    options.push(
+      { value: 'script', label: '📜 硬编码规则' },
+    )
+  } else if (step?.id === 'clean-outbound') {
+    options.push(
+      { value: 'script', label: '📜 硬编码规则' },
+    )
   } else {
     options.push(
       { value: 'script', label: '📜 脚本（关键词）' },

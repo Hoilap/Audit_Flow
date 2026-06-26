@@ -192,6 +192,8 @@ export async function runStep(stepIndex = state.activeStepIndex) {
       const form = new FormData()
       form.append('customer_name', customerName)
       form.append('task_name', taskDirName)
+      const parser = state.detectMethod === 'llm' ? 'llm_settlement' : state.detectMethod
+      form.append('parser', parser)
       result = await api.workflow(step.endpoint, form)
       markStep(task.id, step.id, 'completed', result)
       const mode = result.cleaning_mode === 'llm' ? 'LLM 生成脚本' : '硬编码规则'
@@ -220,6 +222,8 @@ export async function runStep(stepIndex = state.activeStepIndex) {
       const form = new FormData()
       form.append('customer_name', customerName)
       form.append('task_name', taskDirName)
+      const parser = state.detectMethod === 'llm' ? 'llm_outbound' : state.detectMethod
+      form.append('parser', parser)
       result = await api.workflow(step.endpoint, form)
       markStep(task.id, step.id, 'completed', result)
       const paths = result.paths || {}
@@ -255,6 +259,7 @@ export async function runStep(stepIndex = state.activeStepIndex) {
           retryForm.append('sheet_type', sheetType)
           retryForm.append('column_signature', colSig)
           retryForm.append('force_regenerate', 'true')
+          retryForm.append('parser', state.detectMethod === 'llm' ? 'llm_outbound' : state.detectMethod)
           const retryResult = await api.workflow(
             '/workflow/outbound_settlement_match/clean_outbound_sheet',
             retryForm,

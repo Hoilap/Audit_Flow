@@ -58,10 +58,14 @@ tasks:
         allow_script: false
       - id: clean-settlement
         allow_llm: true
-        allow_script: false
+        allow_script: true
+        allow_scripts_list:
+          - llm_settlement
       - id: clean-outbound
         allow_llm: true
-        allow_script: false
+        allow_script: true
+        allow_scripts_list:
+          - llm_outbound
       - id: match
         allow_llm: true
         allow_script: false
