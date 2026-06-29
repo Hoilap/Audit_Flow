@@ -334,7 +334,11 @@ def workflow_bank_ledger_match_clean(
         cfg = {}
     try:
         bank_csv, ledger_csv = blm_pipeline.run_clean(cfg)
-        return {"bank_csv": str(bank_csv), "ledger_csv": str(ledger_csv)}
+        resp: dict[str, Any] = {"bank_csv": str(bank_csv), "ledger_csv": str(ledger_csv)}
+        warnings = cfg.get("_cleaning", {}).get("warnings", [])
+        if warnings:
+            resp["warnings"] = warnings
+        return resp
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -359,7 +363,11 @@ def workflow_bank_ledger_match_clean_bank(
     _apply_parser_to_config(cfg, parser)
     try:
         bank_csv = blm_pipeline.run_clean_bank(cfg, parser=parser or None)
-        return {"bank_csv": str(bank_csv)}
+        resp: dict[str, Any] = {"bank_csv": str(bank_csv)}
+        warnings = cfg.get("_cleaning", {}).get("warnings", [])
+        if warnings:
+            resp["warnings"] = warnings
+        return resp
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -384,7 +392,11 @@ def workflow_bank_ledger_match_clean_ledger(
     _apply_parser_to_config(cfg, parser)
     try:
         ledger_csv = blm_pipeline.run_clean_ledger(cfg, parser=parser or None)
-        return {"ledger_csv": str(ledger_csv)}
+        resp: dict[str, Any] = {"ledger_csv": str(ledger_csv)}
+        warnings = cfg.get("_cleaning", {}).get("warnings", [])
+        if warnings:
+            resp["warnings"] = warnings
+        return resp
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -395,19 +407,39 @@ def workflow_bank_ledger_match_check(
     task_name: str = Form("bank_ledger_match"),
 ):
     """
-    Step 4 - Check: 读取 monthly_flow_check.csv 返回数据完备性报告。
-    检查银行流水和序时账按月/账号的流入流出是否一致。
+    Step 4 - Check: 基于当前 clean 数据实时重新生成 monthly_flow_check.csv，
+    然后返回数据完备性报告。检查银行流水和序时账按月/账号的流入流出是否一致。
     """
     logger.info("开始 Check: customer=%s, task=%s", customer_name, task_name)
     try:
-        check_path = os.path.join(
-            _project_root(), "outputs", customer_name, task_name,
-            "matches", "monthly_flow_check.csv",
+        # 构建配置并重新生成 monthly_flow_check.csv
+        if customer_name:
+            cfg = _build_full_config(customer_name, task_name)
+        else:
+            cfg = {}
+
+        # 检查 clean 数据是否存在
+        out_dir = os.path.join(
+            _project_root(), "outputs", customer_name, task_name
         )
+        bank_csv = os.path.join(out_dir, "clean", "bank_transactions.csv")
+        ledger_csv = os.path.join(out_dir, "clean", "ledger_entries.csv")
+        if not os.path.exists(bank_csv) and not os.path.exists(ledger_csv):
+            return {
+                "ok": False,
+                "error": "清洗数据不存在。请先执行 Clean 步骤生成 bank_transactions.csv 和 ledger_entries.csv。",
+                "summary": {"total_rows": 0, "ok_count": 0, "mismatch_count": 0},
+                "rows": [],
+            }
+
+        # 基于当前 clean 数据重新生成
+        blm_pipeline.run_check(cfg)
+
+        check_path = os.path.join(out_dir, "matches", "monthly_flow_check.csv")
         if not os.path.exists(check_path):
             return {
                 "ok": False,
-                "error": "monthly_flow_check.csv 不存在。请先执行 Match 步骤生成该文件，或直接运行 Clean → Match。",
+                "error": "monthly_flow_check.csv 生成失败。",
                 "summary": {"total_rows": 0, "ok_count": 0, "mismatch_count": 0},
                 "rows": [],
             }

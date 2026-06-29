@@ -128,6 +128,17 @@ export async function runStep(stepIndex = state.activeStepIndex) {
         body: `使用解析器「${parser}」清洗银行流水完成。`,
         result,
       })
+      // 数据质量警告
+      if (result.warnings && result.warnings.length > 0) {
+        const lines = result.warnings.map(w =>
+          `  ${w.source_file || w.source_id}: ${w.message}`
+        )
+        addMessage({
+          title: '⚠ 数据质量警告（银行流水）',
+          body: `清洗后发现以下数据质量问题，请检查：\n${lines.join('\n')}`,
+          failed: true,
+        })
+      }
     }
     // ── Step 3b: Clean Ledger ──
     else if (step.id === 'clean-ledger') {
@@ -139,6 +150,17 @@ export async function runStep(stepIndex = state.activeStepIndex) {
         body: `使用解析器「${parser}」清洗序时账完成。`,
         result,
       })
+      // 数据质量警告
+      if (result.warnings && result.warnings.length > 0) {
+        const lines = result.warnings.map(w =>
+          `  ${w.source_file || w.source_id}: ${w.message}`
+        )
+        addMessage({
+          title: '⚠ 数据质量警告（序时账）',
+          body: `清洗后发现以下数据质量问题，请检查：\n${lines.join('\n')}`,
+          failed: true,
+        })
+      }
     }
     // ── Step 4: Check ──
     else if (step.id === 'check') {
@@ -621,6 +643,22 @@ export function setupEventSource() {
       const data = JSON.parse(e.data)
       import('./agentActions.js').then(({ handleAgentStepEvent }) => {
         handleAgentStepEvent(data)
+      })
+    } catch (err) {
+      // 忽略解析错误
+    }
+  })
+
+  // 数据质量警告（清洗过程中实时推送）
+  es.addEventListener('data_quality_warning', (e) => {
+    try {
+      const data = JSON.parse(e.data)
+      const typeLabel = data.type === 'ledger' ? '序时账' : '银行流水'
+      const issues = (data.issues || []).map(i => i.message).join('; ')
+      addMessage({
+        title: `⚠ 数据质量警告（${typeLabel}）`,
+        body: `${data.source_file || data.source_id}: ${issues}`,
+        failed: true,
       })
     } catch (err) {
       // 忽略解析错误

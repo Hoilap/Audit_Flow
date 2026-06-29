@@ -1,5 +1,5 @@
 llm:
-  default: dashscope_3.6
+  default: dashscope_3.7
   enabled: true
   generated_parser_dir: generated_parsers
   providers:

@@ -157,6 +157,111 @@ def read_excel_headerless(path: Path, sheet_name: str | None = None) -> tuple[st
     return str(first_name), sheets[first_name]
 
 
+def safe_read_excel_sheet(
+    path: str | Path,
+    sheet_hint: str | int | None = None,
+    engine: str | None = None,
+    header: int | list[int] | None = None,
+    dtype: object = object,
+    *,
+    keywords: list[str] | None = None,
+) -> tuple[str, pd.DataFrame]:
+    """安全读取 Excel 工作表，始终返回单个 DataFrame（不会返回 dict）。
+
+    工作表选择逻辑：
+    1. 如果 sheet_hint 是有效字符串且存在于工作簿中 → 使用该表
+    2. 如果 sheet_hint 是整数 → 直接传给 pd.read_excel
+    3. 否则读取所有工作表：
+       a. 仅一个非空表 → 使用它
+       b. 多个非空表 → 按 keywords 对表头打分，选最高分
+       c. 全部为空 → 使用第一个表
+
+    Args:
+        path: Excel 文件路径
+        sheet_hint: 建议的工作表名或索引（来自 config["sheet"]）
+        engine: pandas 引擎，None 则按后缀自动选择
+        header: 传给 pd.read_excel 的 header 参数
+        dtype: 传给 pd.read_excel 的 dtype 参数
+        keywords: 用于多表评分的关键词列表，默认银行流水相关词
+    """
+    path = Path(path)
+    if engine is None:
+        suffix = path.suffix.lower()
+        if suffix == ".xls":
+            try:
+                import xlrd  # noqa: F401
+            except ModuleNotFoundError as exc:
+                raise RuntimeError(
+                    "读取 .xls 需要安装 xlrd：python -m pip install xlrd"
+                ) from exc
+            engine = "xlrd"
+        elif suffix in {".xlsx", ".xlsm"}:
+            engine = "openpyxl"
+        else:
+            raise ValueError(f"不支持的 Excel 格式：{path}")
+
+    if keywords is None:
+        keywords = [
+            "日期", "交易日期", "记账日期", "入账日期",
+            "金额", "借方", "贷方", "收入", "支出", "余额",
+            "摘要", "用途", "备注", "对方", "户名", "账号",
+        ]
+
+    # --- sheet_hint 是整数，直接透传 ---
+    if isinstance(sheet_hint, int):
+        df = pd.read_excel(path, sheet_name=sheet_hint, header=header, dtype=dtype, engine=engine)
+        return str(sheet_hint), df
+
+    # --- sheet_hint 是非空字符串，验证是否存在 ---
+    if sheet_hint and isinstance(sheet_hint, str):
+        xls = pd.ExcelFile(path, engine=engine)
+        if sheet_hint in xls.sheet_names:
+            df = pd.read_excel(
+                path, sheet_name=sheet_hint, header=header, dtype=dtype, engine=engine
+            )
+            return sheet_hint, df
+        # 指定的工作表不存在，回退到自动检测
+
+    # --- 读取所有工作表，智能选择 ---
+    all_sheets: dict[str, pd.DataFrame] = pd.read_excel(
+        path, sheet_name=None, header=header, dtype=dtype, engine=engine
+    )
+    if not all_sheets:
+        raise ValueError(f"Excel 文件中没有工作表：{path}")
+
+    non_empty = {
+        name: df for name, df in all_sheets.items()
+        if not df.dropna(how="all").empty
+    }
+
+    # 仅一个非空表
+    if len(non_empty) == 1:
+        name, df = next(iter(non_empty.items()))
+        return str(name), df
+
+    # 多个非空表 → 按表头关键词打分
+    if len(non_empty) > 1:
+        best_name = ""
+        best_score = -1
+        for name, df in non_empty.items():
+            score = 0
+            # 检查表头行（前 5 行的所有文本）
+            head_text = " ".join(
+                str(v) for v in df.head(5).values.flatten() if pd.notna(v)
+            ).lower()
+            for kw in keywords:
+                if kw in head_text:
+                    score += 1
+            if score > best_score:
+                best_score = score
+                best_name = name
+        return str(best_name), non_empty[best_name]
+
+    # 全部为空，返回第一个
+    first_name = next(iter(all_sheets))
+    return str(first_name), all_sheets[first_name]
+
+
 def safe_get(row: pd.Series, idx: int) -> object:
     if idx >= len(row):
         return ""

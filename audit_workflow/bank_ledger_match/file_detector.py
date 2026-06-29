@@ -225,7 +225,7 @@ def identify_files_with_llm(
     class FileIdentification(BaseModel):
         file_index: int = Field(description="文件序号（对应输入中的序号）")
         id: str = Field(description="唯一标识符，如 icbc_bank_2022")
-        type: str = Field(description="bank_statement 或 ledger")
+        type: str = Field(description="bank_statement 或 ledger 或 working_paper")
         bank_name: str = Field(default="", description="银行全称")
         account_no: str = Field(default="", description="银行账号")
         date_from: str = Field(default="", description="数据起始日期 YYYY-MM-DD")
@@ -283,7 +283,7 @@ async def identify_files_with_llm_async(
     class FileIdentification(BaseModel):
         file_index: int = Field(description="文件序号（对应输入中的序号）")
         id: str = Field(description="唯一标识符，如 icbc_bank_2022")
-        type: str = Field(description="bank_statement 或 ledger")
+        type: str = Field(description="bank_statement 或 ledger 或 working_paper")
         bank_name: str = Field(default="", description="银行全称")
         account_no: str = Field(default="", description="银行账号")
         date_from: str = Field(default="", description="数据起始日期 YYYY-MM-DD")
@@ -333,19 +333,25 @@ def _identify_files_local(
     results = []
     for i, f in enumerate(files):
         name_lower = f["name"].lower()
-        bank_hits = sum(1 for kw in _KEYWORD_HINTS["bank"] if kw.lower() in name_lower)
-        ledger_hits = sum(1 for kw in _KEYWORD_HINTS["ledger"] if kw.lower() in name_lower)
 
-        if bank_hits > ledger_hits:
-            ftype = "bank_statement"
-        elif ledger_hits > bank_hits:
-            ftype = "ledger"
+        # 底稿关键词优先级最高（"底稿"文件即使含"流水"也不应归类为银行流水）
+        wp_hits = sum(1 for kw in _KEYWORD_HINTS.get("working_paper", []) if kw.lower() in name_lower)
+        if wp_hits > 0:
+            ftype = "working_paper"
         else:
-            # 看扩展名和大小猜
-            if f["ext"] == ".csv":
-                ftype = "bank_statement"  # CSV 更像银行流水
-            else:
+            bank_hits = sum(1 for kw in _KEYWORD_HINTS["bank"] if kw.lower() in name_lower)
+            ledger_hits = sum(1 for kw in _KEYWORD_HINTS["ledger"] if kw.lower() in name_lower)
+
+            if bank_hits > ledger_hits:
                 ftype = "bank_statement"
+            elif ledger_hits > bank_hits:
+                ftype = "ledger"
+            else:
+                # 看扩展名和大小猜
+                if f["ext"] == ".csv":
+                    ftype = "bank_statement"  # CSV 更像银行流水
+                else:
+                    ftype = "bank_statement"
 
         # 猜测银行
         bank_name = ""
@@ -416,9 +422,10 @@ def generate_task_config(
 
         if item["type"] == "bank_statement":
             bank_items.append(entry)
-        else:
+        elif item["type"] == "ledger":
             entry["year"] = int(item.get("date_from", "2022")[:4]) if item.get("date_from") else project_info.get("audit_year", 2022)
             ledger_items.append(entry)
+        # working_paper 等其他类型不纳入 bank/ledger 清洗
 
     # 匹配参数默认值
     match_cfg = {

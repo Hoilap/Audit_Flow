@@ -21,6 +21,18 @@ class Record:
     trans_date: date
 
 
+def write_monthly_flow_check(config: dict[str, Any]) -> Path:
+    """从当前 clean 数据重新生成 monthly_flow_check.csv（供 check 端点调用）。"""
+    clean_dir = output_dir(config) / "clean"
+    bank_path = clean_dir / "bank_transactions.csv"
+    ledger_path = clean_dir / "ledger_entries.csv"
+    bank_df = _load_csv(bank_path)
+    ledger_df = _load_csv(ledger_path)
+    out = output_dir(config) / "matches"
+    out.mkdir(parents=True, exist_ok=True)
+    return _write_monthly_flow_check(bank_df, ledger_df, config, out)
+
+
 def match_to_csv(config: dict[str, Any]) -> tuple[Path, Path, Path]:
     clean_dir = output_dir(config) / "clean"
     bank_path = clean_dir / "bank_transactions.csv"
