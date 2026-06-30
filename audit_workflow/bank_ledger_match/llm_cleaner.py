@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 import hashlib
+import importlib
+import importlib.util
 import logging
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
 
-from audit_workflow.llm_agent import resolve_provider
+from audit_workflow.llm_agent import llm_generate, resolve_provider
 from .config import resolve_path, output_dir
 from .llm_agent import run_bank_parser_agent, run_ledger_parser_agent
 from .utils import read_excel_headerless, strip_code_fence
@@ -203,20 +205,22 @@ def _legacy_parser_dir(config: dict[str, Any]) -> Path | None:
 def ensure_llm_bank_parser(config: dict[str, Any], item: dict[str, Any]) -> Path:
     llm_config = config.get("llm", {})
     parser_dir = _parser_dir(config)
+    force_regenerate = config.get("_force_regenerate", False)
 
-    # 旧缓存目录（项目根 generated_parsers/），向后兼容已有文件
-    legacy_dir = _legacy_parser_dir(config)
-    if legacy_dir:
-        legacy_id = legacy_dir / f"{item['id']}.py"
-        if legacy_id.exists():
-            _log.info("BLM parser cache hit (legacy id): %s", legacy_id)
-            return legacy_id
+    if not force_regenerate:
+        # 旧缓存目录（项目根 generated_parsers/），向后兼容已有文件
+        legacy_dir = _legacy_parser_dir(config)
+        if legacy_dir:
+            legacy_id = legacy_dir / f"{item['id']}.py"
+            if legacy_id.exists():
+                _log.info("BLM parser cache hit (legacy id): %s", legacy_id)
+                return legacy_id
 
-    # ── 缓存检查 1: 按 item ID（向后兼容已有文件）──
-    parser_path = parser_dir / f"{item['id']}.py"
-    if parser_path.exists():
-        _log.info("BLM parser cache hit (by id): %s", parser_path.name)
-        return parser_path
+        # ── 缓存检查 1: 按 item ID（向后兼容已有文件）──
+        parser_path = parser_dir / f"{item['id']}.py"
+        if parser_path.exists():
+            _log.info("BLM parser cache hit (by id): %s", parser_path.name)
+            return parser_path
 
     if not llm_config.get("enabled", False):
         raise RuntimeError(
@@ -234,7 +238,7 @@ def ensure_llm_bank_parser(config: dict[str, Any], item: dict[str, Any]) -> Path
     # ── 缓存检查 2: 按列签名（相同表头结构的文件复用已生成代码，避免重复调用 LLM）──
     col_sig = _compute_column_signature(df)
     sig_path = parser_dir / f"bank_{col_sig}.py"
-    if sig_path.exists():
+    if not force_regenerate and sig_path.exists():
         _log.info(
             "BLM parser cache hit (by column signature %s): %s → reusing for %s",
             col_sig, sig_path.name, item["id"],
@@ -263,7 +267,7 @@ def ensure_llm_bank_parser(config: dict[str, Any], item: dict[str, Any]) -> Path
         "account_no": item.get("account_no", ""),
         "sample_rows": sample,
         "requirements": [
-            "使用 pandas 读取 Excel，兼容 xls/xlsx/xlsm。",
+            "使用 pandas 读取 Excel。必须根据文件扩展名选择引擎：.xls 用 engine='xlrd'，.xlsx/.xlsm 用 engine='openpyxl'。不要写死 engine='openpyxl'，.xls 文件用 openpyxl 会报 'File contains no valid workbook part'。",
             "从 sample_rows 直接判断表头行号，在 pd.read_excel() 中写死 header=N，不要在代码中运行时查找表头。",
             "金额字段要去掉逗号和货币符号。不要用正负号表示方向。遇到负数金额输出 0，不要取绝对值。",
             "日期输出 ISO 格式 YYYY-MM-DD。",
@@ -274,6 +278,9 @@ def ensure_llm_bank_parser(config: dict[str, Any], item: dict[str, Any]) -> Path
             "对单元格值使用 in 操作符前必须先用 str() 转换（如 '日期' in str(val)），避免 float(NaN) 导致 TypeError。",
         ],
     }
+    extra = config.get("_user_requirement", "")
+    if extra:
+        user_prompt["requirements"].append(f"【用户额外要求】{extra}")
 
     result, usage = run_bank_parser_agent(config, user_prompt, SYSTEM_PROMPT)
     code = result.code
@@ -310,8 +317,54 @@ def ensure_llm_bank_parser(config: dict[str, Any], item: dict[str, Any]) -> Path
             )
             code = patched
 
-    # 保存到列签名路径（便于后续同结构文件复用）
+    # ── 执行测试：在真实文件上试跑，失败则让 LLM 分析错误后重新生成 ──
+    total_usage = {k: usage.get(k, 0) for k in ("total_tokens", "prompt_tokens", "completion_tokens")}
     sig_path.write_text(code, encoding="utf-8")
+    try:
+        _test_generated_parser(sig_path, source_path, config, item)
+    except Exception as test_exc:
+        _log.warning(
+            "BLM parser execution test failed for %s: %s: %s",
+            item["id"], type(test_exc).__name__, test_exc,
+        )
+        _notify("blm_clean", {
+            "status": "retry",
+            "item_id": item["id"],
+            "message": f"解析器执行出错（{type(test_exc).__name__}），正在分析错误并重新生成…",
+        })
+        fix_hint = _analyze_execution_error(
+            config, code, type(test_exc).__name__, str(test_exc),
+        )
+        _log.info("LLM fix hint for %s: %s", item["id"], fix_hint)
+        _notify("blm_clean", {
+            "status": "retry",
+            "item_id": item["id"],
+            "message": f"建议引入新prompt:{fix_hint}",
+        })
+        # retry_prompt = {**user_prompt, "requirements": [
+        #     *user_prompt["requirements"],
+        #     f"【上次执行错误修复要求】{fix_hint}",
+        # ]}
+        # result2, usage2 = run_bank_parser_agent(config, retry_prompt, SYSTEM_PROMPT)
+        # for k in total_usage:
+        #     total_usage[k] += usage2.get(k, 0)
+        # code = strip_code_fence(result2.code)
+        # patched = _patch_nested_config(code)
+        # if not _has_nested_config(patched):
+        #     code = patched
+        # sig_path.write_text(code, encoding="utf-8")
+        # try:
+        #     _test_generated_parser(sig_path, source_path, config, item)
+        # except Exception as retry_exc:
+        #     raise RuntimeError(
+        #         f"BLM 解析器重试后仍失败 ({item['id']})\n"
+        #         f"  首次错误: {type(test_exc).__name__}: {test_exc}\n"
+        #         f"  LLM 修复建议: {fix_hint}\n"
+        #         f"  重试错误: {type(retry_exc).__name__}: {retry_exc}\n"
+        #         f"  解析器路径: {sig_path}"
+        #     ) from retry_exc
+        # _log.info("BLM parser retry succeeded for %s (fix: %s)", item["id"], fix_hint)
+
     _log.info("BLM parser generated: %s (for %s)", sig_path.name, item["id"])
 
     _notify("blm_clean", {
@@ -320,7 +373,7 @@ def ensure_llm_bank_parser(config: dict[str, Any], item: dict[str, Any]) -> Path
         "signature": col_sig,
         "message": f"已生成 {item['id']} 的解析代码",
     })
-    _track_usage(usage)
+    _track_usage(total_usage)
 
     return sig_path
 
@@ -329,20 +382,22 @@ def ensure_llm_ledger_parser(config: dict[str, Any], item: dict[str, Any]) -> Pa
     """为序时账生成或缓存 LLM 解析器，返回 .py 文件路径。"""
     llm_config = config.get("llm", {})
     parser_dir = _parser_dir(config)
+    force_regenerate = config.get("_force_regenerate", False)
 
-    # 旧缓存目录（项目根 generated_parsers/），向后兼容
-    legacy_dir = _legacy_parser_dir(config)
-    if legacy_dir:
-        legacy_id = legacy_dir / f"{item['id']}.py"
-        if legacy_id.exists():
-            _log.info("Ledger parser cache hit (legacy id): %s", legacy_id)
-            return legacy_id
+    if not force_regenerate:
+        # 旧缓存目录（项目根 generated_parsers/），向后兼容
+        legacy_dir = _legacy_parser_dir(config)
+        if legacy_dir:
+            legacy_id = legacy_dir / f"{item['id']}.py"
+            if legacy_id.exists():
+                _log.info("Ledger parser cache hit (legacy id): %s", legacy_id)
+                return legacy_id
 
-    # ── 缓存检查 1: 按 item ID ──
-    parser_path = parser_dir / f"{item['id']}.py"
-    if parser_path.exists():
-        _log.info("Ledger parser cache hit (by id): %s", parser_path.name)
-        return parser_path
+        # ── 缓存检查 1: 按 item ID ──
+        parser_path = parser_dir / f"{item['id']}.py"
+        if parser_path.exists():
+            _log.info("Ledger parser cache hit (by id): %s", parser_path.name)
+            return parser_path
 
     if not llm_config.get("enabled", False):
         raise RuntimeError(
@@ -360,7 +415,7 @@ def ensure_llm_ledger_parser(config: dict[str, Any], item: dict[str, Any]) -> Pa
     # ── 缓存检查 2: 按列签名（ledger_ 前缀区分银行流水）──
     col_sig = _compute_column_signature(df)
     sig_path = parser_dir / f"ledger_{col_sig}.py"
-    if sig_path.exists():
+    if not force_regenerate and sig_path.exists():
         _log.info(
             "Ledger parser cache hit (by column signature %s): %s → reusing for %s",
             col_sig, sig_path.name, item["id"],
@@ -390,7 +445,7 @@ def ensure_llm_ledger_parser(config: dict[str, Any], item: dict[str, Any]) -> Pa
         "account_no": item.get("account_no", ""),
         "sample_rows": sample,
         "requirements": [
-            "使用 pandas 读取 Excel，兼容 xls/xlsx/xlsm。",
+            "使用 pandas 读取 Excel。必须根据文件扩展名选择引擎：.xls 用 engine='xlrd'，.xlsx/.xlsm 用 engine='openpyxl'。不要写死 engine='openpyxl'，.xls 文件用 openpyxl 会报 'File contains no valid workbook part'。",
             "从 sample_rows 直接判断表头行号，在 pd.read_excel() 中写死 header=N，不要在代码中运行时查找表头。",
             "金额字段要去掉逗号和货币符号，且必须为非负数。遇到负数金额输出 0，不要取绝对值。不要用负号表示方向。",
             "日期输出 ISO 格式 YYYY-MM-DD。",
@@ -404,6 +459,9 @@ def ensure_llm_ledger_parser(config: dict[str, Any], item: dict[str, Any]) -> Pa
             "有些数据没有属性行，请根据具体数据推断",
         ],
     }
+    extra = config.get("_user_requirement", "")
+    if extra:
+        user_prompt["requirements"].append(f"【用户额外要求】{extra}")
 
     result, usage = run_ledger_parser_agent(config, user_prompt, LEDGER_SYSTEM_PROMPT)
     code = result.code
@@ -440,7 +498,50 @@ def ensure_llm_ledger_parser(config: dict[str, Any], item: dict[str, Any]) -> Pa
             )
             code = patched
 
+    # ── 执行测试：在真实文件上试跑，失败则让 LLM 分析错误后重新生成 ──
+    total_usage = {k: usage.get(k, 0) for k in ("total_tokens", "prompt_tokens", "completion_tokens")}
     sig_path.write_text(code, encoding="utf-8")
+    try:
+        _test_generated_parser(sig_path, source_path, config, item)
+    except Exception as test_exc:
+        _log.warning(
+            "Ledger parser execution test failed for %s: %s: %s",
+            item["id"], type(test_exc).__name__, test_exc,
+        )
+        _notify("blm_clean", {
+            "type": "ledger",
+            "status": "retry",
+            "item_id": item["id"],
+            "message": f"序时账解析器执行出错（{type(test_exc).__name__}），正在分析错误并重新生成…",
+        })
+        fix_hint = _analyze_execution_error(
+            config, code, type(test_exc).__name__, str(test_exc),
+        )
+        _log.info("LLM fix hint for ledger %s: %s", item["id"], fix_hint)
+        retry_prompt = {**user_prompt, "requirements": [
+            *user_prompt["requirements"],
+            f"【上次执行错误修复要求】{fix_hint}",
+        ]}
+        result2, usage2 = run_ledger_parser_agent(config, retry_prompt, LEDGER_SYSTEM_PROMPT)
+        for k in total_usage:
+            total_usage[k] += usage2.get(k, 0)
+        code = strip_code_fence(result2.code)
+        patched = _patch_nested_config(code)
+        if not _has_nested_config(patched):
+            code = patched
+        sig_path.write_text(code, encoding="utf-8")
+        try:
+            _test_generated_parser(sig_path, source_path, config, item)
+        except Exception as retry_exc:
+            raise RuntimeError(
+                f"序时账解析器重试后仍失败 ({item['id']})\n"
+                f"  首次错误: {type(test_exc).__name__}: {test_exc}\n"
+                f"  LLM 修复建议: {fix_hint}\n"
+                f"  重试错误: {type(retry_exc).__name__}: {retry_exc}\n"
+                f"  解析器路径: {sig_path}"
+            ) from retry_exc
+        _log.info("Ledger parser retry succeeded for %s (fix: %s)", item["id"], fix_hint)
+
     _log.info("Ledger parser generated: %s (for %s)", sig_path.name, item["id"])
 
     _notify("blm_clean", {
@@ -450,7 +551,7 @@ def ensure_llm_ledger_parser(config: dict[str, Any], item: dict[str, Any]) -> Pa
         "signature": col_sig,
         "message": f"已生成 {item['id']} 的序时账解析代码",
     })
-    _track_usage(usage)
+    _track_usage(total_usage)
 
     return sig_path
 
@@ -505,6 +606,51 @@ def _compute_column_signature(df) -> str:
     cols = [str(c).strip() for c in data_row if str(c).strip()]
     key = "|".join(sorted(cols))
     return hashlib.md5(key.encode("utf-8")).hexdigest()[:8]
+
+
+# ──────────────────────────────────────────────────────────────────
+# 生成代码执行验证 + LLM 错误分析重试
+# ──────────────────────────────────────────────────────────────────
+
+_ERROR_ANALYZER_SYSTEM_PROMPT = (
+    "你是一个 Python 代码调试助手。下面是一段 LLM 生成的 Excel 解析代码以及它在实际运行时遇到的错误。"
+    "请分析错误原因，输出一条简短的中文修复要求（一句话），作为下次重新生成时的附加 requirement。"
+    "只输出这一条要求文本本身，不要编号、不要加引号、不要任何解释。"
+)
+
+
+def _analyze_execution_error(
+    config: dict[str, Any], code: str, error_type: str, error_detail: str,
+) -> str:
+    """将生成的代码和运行时错误发给 LLM，返回一条修复要求文本。"""
+    prompt = (
+        f"错误类型: {error_type}\n"
+        f"错误详情: {error_detail}\n\n"
+        f"生成的代码:\n```python\n{code[:4000]}\n```\n\n"
+        f"请输出一条修复要求："
+    )
+    llm_config = config.get("llm", {})
+    try:
+        text, _ = llm_generate(llm_config, prompt, _ERROR_ANALYZER_SYSTEM_PROMPT)
+        return text.strip().strip('"').strip("'")
+    except Exception as exc:
+        _log.warning("LLM error analysis failed: %s", exc)
+        return f"修复 {error_type}: {error_detail}"
+
+
+def _test_generated_parser(
+    parser_path: Path, source_path: Path, config: dict[str, Any], item: dict[str, Any],
+) -> None:
+    """加载生成的解析器并在实际文件上执行 parse()。成功返回 None，失败抛异常。"""
+    spec = importlib.util.spec_from_file_location("_test_parser", parser_path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"无法加载解析器进行测试：{parser_path}")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    test_config = {**item}
+    if not test_config.get("sheet"):
+        test_config["sheet"] = 0
+    mod.parse(str(source_path), test_config)
 
 
 def _notify(event: str, data: dict) -> None:

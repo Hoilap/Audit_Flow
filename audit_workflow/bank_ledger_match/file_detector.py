@@ -309,13 +309,16 @@ async def identify_files_with_llm_async(
     results = []
     for item in result.results:
         file_info = files[item.file_index] if item.file_index < len(files) else {}
+        account_no = item.account_no
+        if not account_no:
+            account_no = _extract_account_no_from_preview(file_info.get("excel_preview"))
         results.append({
             "id": item.id,
             "type": item.type,
             "path": file_info.get("path", ""),
             "name": file_info.get("name", ""),
             "bank_name": item.bank_name,
-            "account_no": item.account_no,
+            "account_no": account_no,
             "date_from": item.date_from,
             "date_to": item.date_to,
             "sheet": item.sheet,
@@ -323,6 +326,42 @@ async def identify_files_with_llm_async(
             "notes": item.notes,
         })
     return results, usage
+
+
+# ── 账号程序化提取 ─────────────────────────────────────────────
+
+_ACCOUNT_HEADER_KEYWORDS = ("账号", "卡号", "account", "账户号", "acc_no", "accno")
+
+
+def _extract_account_no_from_preview(excel_preview: dict[str, Any]) -> str:
+    """从 _preview_excel 返回的预览数据中程序化提取银行账号。
+
+    策略：在每个 sheet 的 preview_rows 中找到表头行（含"账号/卡号"等关键词），
+    然后读取下一行同列的值作为账号。
+    """
+    if not excel_preview:
+        return ""
+    sheets = excel_preview.get("sheets", {})
+    for _sheet_name, sheet_data in sheets.items():
+        rows = sheet_data.get("preview_rows", [])
+        for r_idx, row in enumerate(rows):
+            # 在表头行中找账号列
+            acct_col = None
+            for c_idx, cell in enumerate(row):
+                cell_lower = str(cell).lower().strip()
+                if any(kw in cell_lower for kw in _ACCOUNT_HEADER_KEYWORDS):
+                    acct_col = c_idx
+                    break
+            if acct_col is None:
+                continue
+            # 在后续行中读取该列的值
+            for next_row in rows[r_idx + 1:]:
+                if acct_col < len(next_row):
+                    val = str(next_row[acct_col]).strip()
+                    # 账号应该是较长的纯数字串（至少 8 位）
+                    if val and val.isdigit() and len(val) >= 8:
+                        return val
+    return ""
 
 
 def _identify_files_local(
@@ -381,7 +420,7 @@ def _identify_files_local(
             "path": f["path"],
             "name": f["name"],
             "bank_name": bank_name,
-            "account_no": "",
+            "account_no": _extract_account_no_from_preview(f.get("excel_preview")),
             "date_from": f"{year}-01-01",
             "date_to": f"{year}-12-31",
             "sheet": "",

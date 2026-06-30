@@ -1,5 +1,5 @@
 import { api, apiBase, cancelRequest } from './api.js'
-import { activeTask, findWorkflowTaskByName, getProjectBasePath, resolveProjectPath, markStep, state, stepStatus } from './state.js'
+import { activeTask, findWorkflowTaskByName, getProjectBasePath, resolveProjectPath, markStep, state, stepStatus, taskRunKey } from './state.js'
 import { $ } from './dom.js'
 import { addMessage, renderFileError, renderFileTree, renderFiles, renderWorkflowWorkspace, setAgentStatus, startTimer, stopTimer, renderDetectResult, renderConfigConfirm, renderCheckResult, renderProgramsList, renderSheetTasks, renderSettingsProviders } from './ui.js'
 import { openCsvPreview } from './previewModal.js'
@@ -82,8 +82,9 @@ export async function runStep(stepIndex = state.activeStepIndex) {
       if (!customerName) {
         throw new Error('请先在项目选择器中输入客户名称。')
       }
-      const useLlm = state.detectMethod === 'llm'
-      result = await api.workflowDetect(customerName, taskDirName, useLlm)
+      const parser = state.detectMethod  // 'llm' | 'script'
+      const requirement = state.stepRequirements[taskRunKey()] || ''
+      result = await api.workflowDetect(customerName, taskDirName, parser, requirement)
 
       let bodyText = `扫描完成：找到 ${result.files_count} 个文件。`
       if (result.llm_error) {
@@ -120,8 +121,9 @@ export async function runStep(stepIndex = state.activeStepIndex) {
     }
     // ── Step 3a: Clean Bank ──
     else if (step.id === 'clean-bank') {
-      const parser = state.detectMethod === 'llm' ? 'llm_bank' : state.detectMethod
-      result = await api.workflowCleanBank(customerName, taskDirName, parser)
+      const parser = state.detectMethod  // 'llm' | 'llm_regenerate' | 'icbc_historydetail' | ...
+      const requirement = state.stepRequirements[taskRunKey()] || ''
+      result = await api.workflowCleanBank(customerName, taskDirName, parser, requirement)
       markStep(task.id, step.id, 'completed', result)
       addMessage({
         title: step.title,
@@ -142,8 +144,9 @@ export async function runStep(stepIndex = state.activeStepIndex) {
     }
     // ── Step 3b: Clean Ledger ──
     else if (step.id === 'clean-ledger') {
-      const parser = state.detectMethod === 'llm' ? 'llm_ledger' : state.detectMethod
-      result = await api.workflowCleanLedger(customerName, taskDirName, parser)
+      const parser = state.detectMethod  // 'llm' | 'llm_regenerate' | 'xinjiyuan_bank_ledger' | ...
+      const requirement = state.stepRequirements[taskRunKey()] || ''
+      result = await api.workflowCleanLedger(customerName, taskDirName, parser, requirement)
       markStep(task.id, step.id, 'completed', result)
       addMessage({
         title: step.title,
@@ -183,8 +186,9 @@ export async function runStep(stepIndex = state.activeStepIndex) {
     // ── Step 6: Fill ──
     else if (step.id === 'fill') {
       const useLlm = state.detectMethod === 'llm'
+      const requirement = useLlm ? (state.stepRequirements[taskRunKey()] || '') : ''
       result = useLlm
-        ? await api.workflowFillLlm(customerName, taskDirName)
+        ? await api.workflowFillLlm(customerName, taskDirName, requirement)
         : await api.workflowFill(customerName, taskDirName)
       const methodLabel = useLlm ? '🤖 LLM 自适应填表' : '📜 脚本填表'
       markStep(task.id, step.id, 'completed', result)
@@ -213,8 +217,10 @@ export async function runStep(stepIndex = state.activeStepIndex) {
       const form = new FormData()
       form.append('customer_name', customerName)
       form.append('task_name', taskDirName)
-      const parser = state.detectMethod === 'llm' ? 'llm_settlement' : state.detectMethod
+      const parser = state.detectMethod  // 'llm' | 'llm_regenerate' | 'script'
       form.append('parser', parser)
+      const requirement = state.stepRequirements[taskRunKey()] || ''
+      if (requirement) form.append('requirement', requirement)
       result = await api.workflow(step.endpoint, form)
       markStep(task.id, step.id, 'completed', result)
       const mode = result.cleaning_mode === 'llm' ? 'LLM 生成脚本' : '硬编码规则'
@@ -243,8 +249,10 @@ export async function runStep(stepIndex = state.activeStepIndex) {
       const form = new FormData()
       form.append('customer_name', customerName)
       form.append('task_name', taskDirName)
-      const parser = state.detectMethod === 'llm' ? 'llm_outbound' : state.detectMethod
+      const parser = state.detectMethod  // 'llm' | 'llm_regenerate' | 'script'
       form.append('parser', parser)
+      const requirement = state.stepRequirements[taskRunKey()] || ''
+      if (requirement) form.append('requirement', requirement)
       result = await api.workflow(step.endpoint, form)
       markStep(task.id, step.id, 'completed', result)
       const paths = result.paths || {}
@@ -280,7 +288,7 @@ export async function runStep(stepIndex = state.activeStepIndex) {
           retryForm.append('sheet_type', sheetType)
           retryForm.append('column_signature', colSig)
           retryForm.append('force_regenerate', 'true')
-          retryForm.append('parser', state.detectMethod === 'llm' ? 'llm_outbound' : state.detectMethod)
+          retryForm.append('parser', state.detectMethod)
           const retryResult = await api.workflow(
             '/workflow/outbound_settlement_match/clean_outbound_sheet',
             retryForm,
@@ -303,6 +311,8 @@ export async function runStep(stepIndex = state.activeStepIndex) {
       form.append('task_name', taskDirName)
       const parser = state.detectMethod === 'llm' ? 'llm' : state.detectMethod
       if (parser) form.append('parser', parser)
+      const requirement = state.stepRequirements[taskRunKey()] || ''
+      if (requirement) form.append('requirement', requirement)
       result = await api.workflow(step.endpoint, form)
       markStep(task.id, step.id, 'completed', result)
       // Match 步骤特殊消息

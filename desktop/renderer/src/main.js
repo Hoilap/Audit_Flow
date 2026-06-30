@@ -1,5 +1,5 @@
 import { workflowTasks } from './config.js'
-import { findWorkflowTaskByName, state } from './state.js'
+import { findWorkflowTaskByName, state, taskRunKey } from './state.js'
 import { $, $$ } from './dom.js'
 import { renderEvidencePanel, renderShell, renderWorkflowWorkspace, setAgentStatus, showPage } from './ui.js'
 import { cancelRunningStep, commitAll, createProject, deleteProject, loadProjects, loadProgramReadmes, previewFile, refreshFiles, refreshLog, refreshTokens, runAllSteps, runNextStep, runStep, selectProject, setupEventSource, toggleCustomMode, updateCustomCustomerName, updateCustomTaskName, updateDetectMethod, updateProject, uploadFile, syncLlmConfig, updateLlmModel, loadSettingsProviders, saveLlmProviders, revealProviderKey, addLlmProvider, deleteLlmProvider } from './actions.js'
@@ -147,6 +147,10 @@ function bindEvents() {
   document.addEventListener('input', (event) => {
     if (event.target.id === 'project-customer-input') {
       updateCustomCustomerName(event.target.value)
+    }
+    // 附加需求 textarea 实时保存
+    if (event.target.id === 'step-requirement') {
+      state.stepRequirements[taskRunKey()] = event.target.value
     }
   })
 

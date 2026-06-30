@@ -53,15 +53,21 @@ def _build_osm_config(customer_name: str, task_name: str) -> dict:
 
 
 def _apply_parser_to_config(cfg: dict, parser: str) -> None:
-    """根据前端传入的 parser 参数调整 config 中的 LLM 开关。
+    """根据前端传入的 parser 参数配置 LLM 开关和解析器选择。
 
-    parser 以 'llm' 开头 → 启用 LLM；否则关闭 LLM（走硬编码）。
+    parser 取值:
+      - "llm"            → 使用 LLM 缓存的解析器（有缓存直接用，无则生成）
+      - "llm_regenerate" → 跳过缓存检查，重新调 LLM 生成解析器
+      - "script"         → 使用硬编码脚本解析
     """
-    if parser:
-        if parser.startswith("llm"):
-            cfg.setdefault("llm", {})["enabled"] = True
-        else:
-            cfg.setdefault("llm", {})["enabled"] = False
+    if not parser:
+        return
+    cfg["parser"] = parser
+    is_llm = parser in ("llm", "llm_regenerate")
+    cfg.setdefault("llm", {})["enabled"] = is_llm
+    # llm_regenerate: 设置强制重新生成标志，ensure_* 函数跳过缓存
+    if parser == "llm_regenerate":
+        cfg["_force_regenerate"] = True
 
 
 @router.post("/workflow/outbound_settlement_match/detect")
@@ -84,12 +90,15 @@ def workflow_osm_clean_settlement(
     customer_name: str = Form(...),
     task_name: str = Form("outbound_settlement_match"),
     parser: str = Form(""),
+    requirement: str = Form(""),
 ):
     """OSM Step 2 - Clean Settlement: Aggregate platform settlement CSVs."""
     logger.info("OSM Clean Settlement: customer=%s, task=%s, parser=%s", customer_name, task_name, parser)
     try:
         cfg = _build_osm_config(customer_name, task_name)
         _apply_parser_to_config(cfg, parser)
+        if requirement:
+            cfg["_user_requirement"] = requirement
         settlement_path, summary_path = osm_pipeline.run_clean_settlement(cfg)
         token_tracker.record_from_config(cfg, "settlement")
         cleaning_info = cfg.get("_cleaning", {}).get("settlement", {})
@@ -112,12 +121,15 @@ def workflow_osm_clean_outbound(
     customer_name: str = Form(...),
     task_name: str = Form("outbound_settlement_match"),
     parser: str = Form(""),
+    requirement: str = Form(""),
 ):
     """OSM Step 3 - Clean Outbound: Parse Excel sheets into standardized CSVs."""
     logger.info("OSM Clean Outbound: customer=%s, task=%s, parser=%s", customer_name, task_name, parser)
     try:
         cfg = _build_osm_config(customer_name, task_name)
         _apply_parser_to_config(cfg, parser)
+        if requirement:
+            cfg["_user_requirement"] = requirement
         paths = osm_pipeline.run_clean_outbound(cfg)
         token_tracker.record_from_config(cfg, "outbound")
         cleaning_info = cfg.get("_cleaning", {}).get("outbound", {})
@@ -145,6 +157,7 @@ def workflow_osm_clean_outbound_sheet(
     column_signature: str = Form(""),
     force_regenerate: bool = Form(False),
     parser: str = Form(""),
+    requirement: str = Form(""),
 ):
     """OSM: Retry cleaning a single outbound sheet.
 
@@ -162,7 +175,6 @@ def workflow_osm_clean_outbound_sheet(
             safe_run_cleaner,
             compute_column_signature,
             patch_rename_dedup,
-            _parser_dir,
         )
         from audit_workflow.outbound_settlement_match.outbound_cleaner import (
             _read_sheet_auto_header,
@@ -170,20 +182,17 @@ def workflow_osm_clean_outbound_sheet(
 
         cfg = _build_osm_config(customer_name, task_name)
         _apply_parser_to_config(cfg, parser)
+        if requirement:
+            cfg["_user_requirement"] = requirement
+        # force_regenerate 表单参数也触发强制重新生成
+        if force_regenerate:
+            cfg["_force_regenerate"] = True
         inputs = Path(cfg["project"]["inputs_dir"])
         outbound_dir = inputs / "outbound"
         xlsx_path = outbound_dir / file
 
         if not xlsx_path.exists():
             raise HTTPException(status_code=404, detail=f"文件不存在: {file}")
-
-        # If force_regenerate, delete cached script
-        if force_regenerate and column_signature:
-            script_dir = _parser_dir(cfg)
-            cached = script_dir / f"outbound_{sheet_type}_{column_signature}.py"
-            if cached.exists():
-                cached.unlink()
-                logger.info("Deleted cached script: %s", cached.name)
 
         # Read sheet and compute column signature
         xl = pd.ExcelFile(str(xlsx_path), engine="openpyxl")

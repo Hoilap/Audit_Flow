@@ -32,7 +32,10 @@ export const workflowTasks = [
         formFields: [
           { name: 'customer_name', type: 'customer_name', label: '客户名称', required: true },
           { name: 'task_name', type: 'task_name', label: '任务名称', required: true },
-          { name: 'use_llm', type: 'checkbox', label: '使用LLM智能识别', default: true },
+          { name: 'parser', type: 'select', label: '识别方式', options: [
+            { value: 'llm', label: 'LLM 智能识别' },
+            { value: 'script', label: '脚本（关键词）识别' },
+          ]},
         ],
         prompt: '请在数据源页面上传银行流水和序时账文件后，点击运行此步骤。系统将自动识别文件类型。',
       },
@@ -55,8 +58,8 @@ export const workflowTasks = [
         outputs: ['clean/bank_transactions.csv'],
         formFields: [
           { name: 'parser', type: 'select', label: '解析器', options: [
-            { value: '', label: '自动（使用 task.yml 配置）' },
-            { value: 'llm_bank', label: 'LLM 智能解析' },
+            { value: 'llm', label: 'LLM 智能解析' },
+            { value: 'llm_regenerate', label: 'LLM 重新生成' },
             { value: 'icbc_historydetail', label: 'ICBC historydetail' },
             { value: 'generated_bank', label: '预生成解析器' },
           ]},
@@ -71,7 +74,8 @@ export const workflowTasks = [
         outputs: ['clean/ledger_entries.csv'],
         formFields: [
           { name: 'parser', type: 'select', label: '解析器', options: [
-            { value: '', label: '自动（使用 task.yml 配置）' },
+            { value: 'llm', label: 'LLM 智能解析' },
+            { value: 'llm_regenerate', label: 'LLM 重新生成' },
             { value: 'xinjiyuan_bank_ledger', label: '新纪元银行账' },
           ]},
         ],

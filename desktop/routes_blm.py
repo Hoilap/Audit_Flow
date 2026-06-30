@@ -59,15 +59,42 @@ def _build_full_config(customer_name: str, task_name: str) -> dict:
 
 
 def _apply_parser_to_config(cfg: dict, parser: str) -> None:
-    """根据前端传入的 parser 参数调整 config 中的 LLM 开关。
-    parser 以 'llm' 开头 → 启用 LLM；否则关闭 LLM。
-    同时设置 matching.llm.enabled（用于 LLM 补充匹配）。
+    """根据前端传入的 parser 参数配置 LLM 开关和解析器选择。
+
+    parser 取值:
+      - "llm"            → 使用 LLM 缓存的解析器（有缓存直接用，无则生成）
+      - "llm_regenerate" → 跳过缓存检查，重新调 LLM 生成解析器
+      - "script"         → 使用硬编码脚本解析
+      - 其他具体解析器名  → 直接使用（如 icbc_historydetail, xinjiyuan_bank_ledger）
     """
-    if parser:
-        llm_on = parser.startswith("llm")
-        cfg.setdefault("llm", {})["enabled"] = llm_on
-        cfg.setdefault("matching", {}).setdefault("llm", {})
-        cfg["matching"]["llm"]["enabled"] = llm_on
+    if not parser:
+        return
+    cfg["parser"] = parser
+    is_llm = parser in ("llm", "llm_regenerate")
+    cfg.setdefault("llm", {})["enabled"] = is_llm
+    cfg.setdefault("matching", {}).setdefault("llm", {})
+    cfg["matching"]["llm"]["enabled"] = is_llm
+    # llm_regenerate: 设置强制重新生成标志，ensure_* 函数跳过缓存
+    if parser == "llm_regenerate":
+        cfg["_force_regenerate"] = True
+
+
+def _normalize_parser_for_bank(parser: str) -> str:
+    """将前端 parser 值映射为 bank cleaner 可识别的名称。
+    llm / llm_regenerate → llm_bank
+    """
+    if parser in ("llm", "llm_regenerate"):
+        return "llm_bank"
+    return parser
+
+
+def _normalize_parser_for_ledger(parser: str) -> str:
+    """将前端 parser 值映射为 ledger cleaner 可识别的名称。
+    llm / llm_regenerate → llm_ledger
+    """
+    if parser in ("llm", "llm_regenerate"):
+        return "llm_ledger"
+    return parser
 
 
 @router.post("/workflow/bank_ledger_match/match")
@@ -76,6 +103,7 @@ def workflow_match(
     customer_name: str = Form(""),
     task_name: str = Form("bank_ledger_match"),
     parser: str = Form(""),
+    requirement: str = Form(""),
 ):
     logger.info("开始 Match: customer=%s, task=%s, parser=%s", customer_name, task_name, parser)
     if customer_name:
@@ -85,6 +113,8 @@ def workflow_match(
     else:
         cfg = {}
     _apply_parser_to_config(cfg, parser)
+    if requirement:
+        cfg["_user_requirement"] = requirement
     try:
         matches, unmatched_bank, unmatched_ledger = blm_pipeline.run_match(cfg)
         return {"matches": str(matches), "unmatched_bank": str(unmatched_bank), "unmatched_ledger": str(unmatched_ledger)}
@@ -146,14 +176,20 @@ def workflow_verify(
 async def workflow_detect(
     customer_name: str = Form(...),
     task_name: str = Form("bank_ledger_match"),
+    parser: str = Form(""),
     use_llm: str = Form("true"),
+    requirement: str = Form(""),
 ):
     """
     Step 1 - Detect: 扫描 inputs/{customer}/{task}/ 下的文件，
                      用 LLM 自动识别文件类型、银行、时间段，生成 task.yml。
-    use_llm: "true" → LLM 识别, "false" → 本地脚本/关键词识别。
+    parser: "llm" / "llm_regenerate" → LLM 识别, "script" / 其他 → 本地脚本/关键词识别。
+    use_llm: 向后兼容的旧参数，仅在 parser 为空时生效。
     """
-    logger.info("开始 Detect: customer=%s, task=%s, use_llm=%s", customer_name, task_name, use_llm)
+    # 统一 parser 参数：优先用 parser，否则回退到旧的 use_llm
+    if not parser:
+        parser = "llm" if str(use_llm).lower() in ("1", "true", "yes", "on") else "script"
+    logger.info("开始 Detect: customer=%s, task=%s, parser=%s", customer_name, task_name, parser)
     try:
         # 1. 扫描文件
         root_dir = _project_root()
@@ -177,7 +213,7 @@ async def workflow_detect(
         }
 
         # 3. 识别文件
-        use_llm_flag = str(use_llm).lower() in ("1", "true", "yes", "on")
+        use_llm_flag = parser in ("llm", "llm_regenerate")
         llm_cfg = _load_llm_config()
         llm_enabled = llm_cfg.get("llm", {}).get("enabled", False) and use_llm_flag
         llm_error = None
@@ -228,6 +264,7 @@ async def workflow_detect(
             "task_config": task_cfg,
             "task_yml_path": str(saved_path),
             "llm_used": llm_enabled,
+            "user_requirement": requirement,
         }
 
         # 去掉 excel_preview 减少返回体积（那是给 LLM 看的 prompt 数据）
@@ -323,7 +360,8 @@ def workflow_bank_ledger_match_clean(
     task_name: str = Form("bank_ledger_match"),
 ):
     """
-    Step 3 - Clean: 用 task.yml 配置执行清洗。
+    Step 3 - Clean: 用 task.yml 配置执行清洗（bank + ledger 一起）。
+    parser 由 task.yml 中每个 input item 的配置决定，不接受前端覆盖。
     """
     logger.info("开始 Clean: customer=%s, task=%s", customer_name, task_name)
     if customer_name:
@@ -349,6 +387,7 @@ def workflow_bank_ledger_match_clean_bank(
     customer_name: str = Form(""),
     task_name: str = Form("bank_ledger_match"),
     parser: str = Form(""),
+    requirement: str = Form(""),
 ):
     """
     Clean Bank: 仅清洗银行流水，parser 由前端传入。
@@ -361,8 +400,11 @@ def workflow_bank_ledger_match_clean_bank(
     else:
         cfg = {}
     _apply_parser_to_config(cfg, parser)
+    if requirement:
+        cfg["_user_requirement"] = requirement
     try:
-        bank_csv = blm_pipeline.run_clean_bank(cfg, parser=parser or None)
+        effective_parser = _normalize_parser_for_bank(parser)
+        bank_csv = blm_pipeline.run_clean_bank(cfg, parser=effective_parser or None)
         resp: dict[str, Any] = {"bank_csv": str(bank_csv)}
         warnings = cfg.get("_cleaning", {}).get("warnings", [])
         if warnings:
@@ -378,6 +420,7 @@ def workflow_bank_ledger_match_clean_ledger(
     customer_name: str = Form(""),
     task_name: str = Form("bank_ledger_match"),
     parser: str = Form(""),
+    requirement: str = Form(""),
 ):
     """
     Clean Ledger: 仅清洗序时账，parser 由前端传入。
@@ -390,8 +433,11 @@ def workflow_bank_ledger_match_clean_ledger(
     else:
         cfg = {}
     _apply_parser_to_config(cfg, parser)
+    if requirement:
+        cfg["_user_requirement"] = requirement
     try:
-        ledger_csv = blm_pipeline.run_clean_ledger(cfg, parser=parser or None)
+        effective_parser = _normalize_parser_for_ledger(parser)
+        ledger_csv = blm_pipeline.run_clean_ledger(cfg, parser=effective_parser or None)
         resp: dict[str, Any] = {"ledger_csv": str(ledger_csv)}
         warnings = cfg.get("_cleaning", {}).get("warnings", [])
         if warnings:

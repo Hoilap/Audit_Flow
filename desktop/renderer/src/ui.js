@@ -1,5 +1,5 @@
 import { navItems, workflowTasks, evidencePanelSections } from './config.js'
-import { activeTask, getProjectBasePath, resolveProjectPath, state, stepStatus, findWorkflowTaskByName } from './state.js'
+import { activeStep, activeTask, getProjectBasePath, resolveProjectPath, state, stepStatus, findWorkflowTaskByName, taskRunKey } from './state.js'
 import { $, $$, escapeHtml, formatSeconds, isCsv } from './dom.js'
 import { parseCsv } from './csv.js'
 import { api } from './api.js'
@@ -215,6 +215,20 @@ export function renderWorkflowWorkspace() {
   }
   renderReviewFiles()
   renderProjectFileTree()
+
+  // ------ 附加需求 textarea ------
+  const reqBar = $('#step-requirement-bar')
+  const reqEl = $('#step-requirement')
+  if (reqBar && reqEl) {
+    const step = activeStep()
+    const llmSteps = ['detect', 'clean-bank', 'clean-ledger', 'clean-settlement', 'clean-outbound', 'fill', 'match']
+    const isLlm = step && llmSteps.includes(step.id)
+    reqBar.style.display = isLlm ? '' : 'none'
+    if (isLlm) {
+      const key = taskRunKey()
+      reqEl.value = state.stepRequirements[key] || ''
+    }
+  }
 }
 
 /**
@@ -258,17 +272,25 @@ function renderProjectSelector() {
 }
 
 /**
- * 渲染统一的识别方式 / 解析器选择器。
- * LLM智能解析 始终显示；脚本解析器根据当前激活的 clean 步骤动态展示。
+ * 渲染统一的解析器选择器。
+ * LLM智能解析 / LLM重新生成 始终显示；脚本解析器根据当前激活的 clean 步骤动态展示。
  */
 function renderDetectMethodSelector() {
   const task = activeTask()
   const step = task.steps[state.activeStepIndex]
   const method = state.detectMethod
 
+  // detect 步骤只需要 llm / script 两种
+  const isDetectStep = step?.id === 'detect' || step?.id === 'osm-detect'
+
   let options = [
     { value: 'llm', label: '🤖 LLM 智能解析' },
   ]
+
+  if (!isDetectStep) {
+    // clean 步骤追加「LLM 重新生成」选项
+    options.push({ value: 'llm_regenerate', label: '🔄 LLM 重新生成' })
+  }
 
   // 根据当前 clean 步骤追加脚本解析器选项
   if (step?.id === 'clean-bank') {
@@ -303,7 +325,7 @@ function renderDetectMethodSelector() {
 
   return `
     <div class="project-bar-inner" style="margin-top:6px;">
-      <span class="project-bar-label">识别方式</span>
+      <span class="project-bar-label">解析器</span>
       ${radios}
     </div>
   `
@@ -1092,7 +1114,7 @@ export async function renderDataProfile(filePath) {
 }
 
 function agentPage() {
-  return `<section class="page" id="page-agent"><div class="page-header"><div><h1>Agent 工作流</h1><p id="active-task-desc" class="subtle"></p></div><div class="toolbar"><button id="run-next-step">执行下一步</button><button id="run-all-steps" class="primary">执行全部</button></div></div><div id="workflow-task-list" class="project-bar"></div><div id="detect-method-bar" class="project-bar"></div><div class="agent-grid" style="margin-top:12px;"><div><div class="card"><div class="page-header" style="margin-bottom:12px;"><div><h2 id="active-task-title"></h2><p class="subtle">每个步骤可独立执行，也可按顺序全部执行。</p></div></div><div id="workflow-step-list" class="step-list"></div></div><div class="conversation" id="chat"><div class="message"><div class="message-head"><span>Agent</span><span>Ready</span></div><p>请先选择项目，每个步骤可点击 ▶ 独立运行。</p></div></div></div></div></section>`
+  return `<section class="page" id="page-agent"><div class="page-header"><div><h1>Agent 工作流</h1><p id="active-task-desc" class="subtle"></p></div><div class="toolbar"><button id="run-next-step">执行下一步</button><button id="run-all-steps" class="primary">执行全部</button></div></div><div id="workflow-task-list" class="project-bar"></div><div id="detect-method-bar" class="project-bar"></div><div class="agent-grid" style="margin-top:12px;"><div><div class="card"><div class="page-header" style="margin-bottom:12px;"><div><h2 id="active-task-title"></h2><p class="subtle">每个步骤可独立执行，也可按顺序全部执行。</p></div></div><div id="workflow-step-list" class="step-list"></div></div><div class="conversation" id="chat"><div class="message"><div class="message-head"><span>Agent</span><span>Ready</span></div><p>请先选择项目，每个步骤可点击 ▶ 独立运行。</p></div></div><div class="step-requirement-bar" id="step-requirement-bar" style="display:none;"><label class="step-requirement-label">附加需求</label><textarea id="step-requirement" rows="2" placeholder="可选：对此步骤的额外要求，会传递给 LLM…"></textarea></div></div></div></section>`
 }
 
 function agentLoopPage() {

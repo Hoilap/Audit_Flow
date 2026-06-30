@@ -1285,3 +1285,35 @@ button.danger:hover {
   border-color: var(--primary);
   color: var(--primary);
 }
+
+/* ── 步骤附加需求输入框 ── */
+.step-requirement-bar {
+  border-top: 1px solid var(--border);
+  padding: 10px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.step-requirement-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.step-requirement-bar textarea {
+  width: 100%;
+  min-height: 48px;
+  max-height: 120px;
+  resize: vertical;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-family: inherit;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.step-requirement-bar textarea:focus {
+  border-color: var(--primary);
+}

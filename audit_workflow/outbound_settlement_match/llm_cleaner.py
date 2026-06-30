@@ -196,7 +196,8 @@ def ensure_llm_settlement_cleaner(
     _zero_usage = {"total_tokens": 0, "prompt_tokens": 0, "completion_tokens": 0}
     script_dir = _parser_dir(config)
     script_path = script_dir / f"settlement_{column_signature}.py"
-    if script_path.exists():
+    force_regenerate = config.get("_force_regenerate", False)
+    if not force_regenerate and script_path.exists():
         logger.info("Reusing cached settlement cleaner: %s", script_path.name)
         return script_path, _zero_usage
 
@@ -237,6 +238,9 @@ def ensure_llm_settlement_cleaner(
             "自动识别并去除重复列名：df = df.loc[:, ~df.columns.duplicated(keep='first')]", 
         ],
     }
+    extra = config.get("_user_requirement", "")
+    if extra:
+        user_prompt["requirements"].append(f"【用户额外要求】{extra}")
 
     return _generate_with_retry(
         config=config,
@@ -263,7 +267,8 @@ def ensure_llm_outbound_cleaner(
     _zero_usage = {"total_tokens": 0, "prompt_tokens": 0, "completion_tokens": 0}
     script_dir = _parser_dir(config)
     script_path = script_dir / f"outbound_{sheet_type}_{column_signature}.py"
-    if script_path.exists():
+    force_regenerate = config.get("_force_regenerate", False)
+    if not force_regenerate and script_path.exists():
         logger.info("Reusing cached outbound cleaner: %s", script_path.name)
         return script_path, _zero_usage
 
@@ -310,6 +315,9 @@ def ensure_llm_outbound_cleaner(
             "自动识别并去除重复列名：df = df.loc[:, ~df.columns.duplicated(keep='first')]",
         ],
     }
+    extra = config.get("_user_requirement", "")
+    if extra:
+        user_prompt["requirements"].append(f"【用户额外要求】{extra}")
 
     return _generate_with_retry(
         config=config,
