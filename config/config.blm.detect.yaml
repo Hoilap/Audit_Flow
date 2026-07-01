@@ -1,0 +1,45 @@
+# BLM Detect 配置
+# 控制 file_detector.py 的目录分类规则和默认参数
+
+# 子目录名 → 文件类型映射（不区分大小写）
+# 文件放在哪个子目录下就归为哪种类型
+directory_types:
+  bank: bank_statement
+  ledger: ledger
+  "working paper": working_paper
+
+# 底稿相关默认值
+working_paper_defaults:
+  output_filename: "资金流水专项核查工作底稿-自动填报.xlsm"
+  wp03:
+    enabled: true
+    sheet: "WP-03"
+    start_row: 6
+    min_amount: 70000
+    columns:
+      entity: B
+      bank_date: C
+      bank_debit: D
+      bank_credit: E
+      counterparty: F
+      ledger_date: G
+      voucher_no: H
+      ledger_summary: I
+      ledger_counterparty: J
+      ledger_debit: K
+      ledger_credit: L
+  wp02:
+    enabled: true
+    sheet: "WP-02"
+
+# 匹配参数默认值
+matching_defaults:
+  date_tolerance_days: 30
+  group_date_tolerance_days: 30
+  amount_tolerance: 0.01
+  high_confidence_score: 0.82
+  medium_confidence_score: 0.65
+  one_to_one_min_score: 0.58
+  group_max_size: 6
+  group_candidate_pool_limit: 24
+  strict_account_match: true

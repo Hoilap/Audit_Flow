@@ -182,13 +182,15 @@ async def workflow_detect(
 ):
     """
     Step 1 - Detect: 扫描 inputs/{customer}/{task}/ 下的文件，
-                     用 LLM 自动识别文件类型、银行、时间段，生成 task.yml。
-    parser: "llm" / "llm_regenerate" → LLM 识别, "script" / 其他 → 本地脚本/关键词识别。
-    use_llm: 向后兼容的旧参数，仅在 parser 为空时生效。
+                     根据子目录结构 (bank/ledger/working paper) 自动分类。
+    parser:
+      - "llm" / "llm_regenerate" → 目录分类 + LLM 提取元数据（银行名称、账号、日期）
+      - 其他 / 空 → 目录分类 + 脚本提取元数据（关键词 + 预览）
     """
     # 统一 parser 参数：优先用 parser，否则回退到旧的 use_llm
     if not parser:
         parser = "llm" if str(use_llm).lower() in ("1", "true", "yes", "on") else "script"
+    use_llm_flag = parser in ("llm", "llm_regenerate")
     logger.info("开始 Detect: customer=%s, task=%s, parser=%s", customer_name, task_name, parser)
     try:
         # 1. 扫描文件
@@ -202,6 +204,7 @@ async def workflow_detect(
                 "error": f"在 inputs/{customer_name}/{task_name}/ 下未找到任何文件。请先在数据源页面上传文件。",
                 "files": [],
                 "identifications": [],
+                "warnings": [],
             }
 
         # 2. 项目信息
@@ -212,31 +215,52 @@ async def workflow_detect(
             "audit_year": 2022,
         }
 
-        # 3. 识别文件
-        use_llm_flag = parser in ("llm", "llm_regenerate")
-        llm_cfg = _load_llm_config()
-        llm_enabled = llm_cfg.get("llm", {}).get("enabled", False) and use_llm_flag
+        # 3. 识别文件（目录分类 + 元数据提取）
+        scan_dir = os.path.join(inputs_dir, customer_name, task_name)
         llm_error = None
+        detect_usage = {}
 
-        if llm_enabled:
-            try:
-                identifications, detect_usage = await file_detector.identify_files_with_llm_async(
-                    files,
-                    llm_cfg.get("llm", {}),
-                    project_info,
+        if use_llm_flag:
+            llm_cfg = _load_llm_config()
+            llm_inner = llm_cfg.get("llm", {})
+            if llm_inner.get("enabled", False):
+                try:
+                    identifications, warnings, detect_usage = await file_detector.identify_files_with_llm_async(
+                        files, llm_inner, project_info, base_dir=scan_dir,
+                    )
+                    token_tracker.record(detect_usage)
+                except Exception as llm_exc:
+                    import traceback
+                    llm_error = {
+                        "type": type(llm_exc).__name__,
+                        "message": str(llm_exc),
+                        "traceback": traceback.format_exc(),
+                    }
+                    # LLM 失败不兜底，直接返回错误
+                    files_light = [{k: v for k, v in f.items() if k != "excel_preview"} for f in files]
+                    logger.warning("Detect LLM 失败: customer=%s, error=%s", customer_name, llm_exc)
+                    return {
+                        "ok": False,
+                        "error": f"LLM 元数据提取失败: {llm_exc}",
+                        "files_count": len(files),
+                        "files": files_light,
+                        "identifications": [],
+                        "task_config": {},
+                        "task_yml_path": "",
+                        "llm_used": True,
+                        "llm_error": llm_error,
+                        "warnings": [],
+                    }
+            else:
+                # LLM 未启用，回退到 script
+                identifications, warnings = file_detector._identify_files_local(
+                    files, project_info, base_dir=scan_dir,
                 )
-                token_tracker.record(detect_usage)
-            except Exception as llm_exc:
-                # LLM 调用失败：记录错误原因，回退到本地识别
-                import traceback
-                llm_error = {
-                    "type": type(llm_exc).__name__,
-                    "message": str(llm_exc),
-                    "traceback": traceback.format_exc(),
-                }
-                identifications = file_detector._identify_files_local(files, project_info)
+                use_llm_flag = False
         else:
-            identifications = file_detector._identify_files_local(files, project_info)
+            identifications, warnings = file_detector._identify_files_local(
+                files, project_info, base_dir=scan_dir,
+            )
 
         # 4. 生成 task.yml 配置
         task_cfg = file_detector.generate_task_config(
@@ -263,14 +287,16 @@ async def workflow_detect(
             "identifications": identifications,
             "task_config": task_cfg,
             "task_yml_path": str(saved_path),
-            "llm_used": llm_enabled,
+            "llm_used": use_llm_flag,
             "user_requirement": requirement,
+            "warnings": warnings,
         }
 
-        # 去掉 excel_preview 减少返回体积（那是给 LLM 看的 prompt 数据）
+        # 去掉 excel_preview 减少返回体积
         files_light = [{k: v for k, v in f.items() if k != "excel_preview"} for f in files]
 
-        logger.info("Detect 完成: customer=%s, task=%s, files=%d, llm_used=%s", customer_name, task_name, len(files), llm_enabled)
+        logger.info("Detect 完成: customer=%s, task=%s, files=%d, llm=%s, warnings=%d",
+                     customer_name, task_name, len(files), use_llm_flag, len(warnings))
         return {
             "ok": True,
             "files_count": len(files),
@@ -278,8 +304,9 @@ async def workflow_detect(
             "identifications": identifications,
             "task_config": task_cfg,
             "task_yml_path": str(saved_path),
-            "llm_used": llm_enabled,
+            "llm_used": use_llm_flag,
             "llm_error": llm_error,
+            "warnings": warnings,
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

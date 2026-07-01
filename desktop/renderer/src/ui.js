@@ -1521,18 +1521,45 @@ export function renderDetectResult(result) {
     return `<div style="margin-top:6px;">
       <div class="label" style="margin-bottom:4px;">${escapeHtml(title)} (${items.length} 个)</div>
       <table class="table" style="font-size:12px;">
-        <thead><tr><th>ID</th><th>文件名</th><th>银行/来源</th><th>时间段</th><th>解析器</th><th>置信度</th></tr></thead>
-        <tbody>${items.map((i) => `<tr>
+        <thead><tr><th>ID</th><th>文件名</th><th>银行/来源</th><th>银行账号</th><th>工作表</th><th>时间段</th><th>解析器</th><th>置信度</th></tr></thead>
+        <tbody>${items.map((i) => {
+          const missingFields = []
+          if (!i.bank_name) missingFields.push('银行名称')
+          if (!i.account_no) missingFields.push('银行账号')
+          const hasIssue = missingFields.length > 0
+          const rowStyle = hasIssue ? 'background:#fff3cd;' : ''
+          const bankCell = i.bank_name
+            ? escapeHtml(i.bank_name)
+            : '<span style="color:#d9534f;font-weight:bold;">⚠ 未识别</span>'
+          const acctCell = i.account_no
+            ? escapeHtml(i.account_no)
+            : '<span style="color:#d9534f;font-weight:bold;">⚠ 未识别</span>'
+          const sheetCell = i.sheet ? escapeHtml(i.sheet) : '<span class="subtle">-</span>'
+          const warnTitle = hasIssue ? ` title="缺失字段: ${missingFields.join(', ')}"` : ''
+          return `<tr style="${rowStyle}"${warnTitle}>
           <td><strong>${escapeHtml(i.id)}</strong></td>
           <td>${escapeHtml(i.name || '')}</td>
-          <td>${escapeHtml(i.bank_name || '')}</td>
+          <td>${bankCell}</td>
+          <td>${acctCell}</td>
+          <td>${sheetCell}</td>
           <td>${escapeHtml(i.date_from || '')} ~ ${escapeHtml(i.date_to || '')}</td>
           <td><span class="badge">${escapeHtml(i.parser || '')}</span></td>
           <td>${((i.confidence || 0) * 100).toFixed(0)}%</td>
-        </tr>`).join('')}</tbody>
+        </tr>`
+        }).join('')}</tbody>
       </table>
     </div>`
   }
+
+  // 构建警告横幅 HTML
+  const warningsHtml = (result.warnings && result.warnings.length > 0)
+    ? `<div style="background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:10px 14px;margin:8px 0;font-size:13px;">
+        <strong style="color:#856404;">⚠️ 检测警告 (${result.warnings.length})</strong>
+        <ul style="margin:6px 0 0 0;padding-left:20px;color:#856404;">
+          ${result.warnings.map(w => `<li>${escapeHtml(w)}</li>`).join('')}
+        </ul>
+      </div>`
+    : ''
 
   const block = document.createElement('div')
   block.className = 'message'
@@ -1567,6 +1594,7 @@ ${escapeHtml(result.llm_error.traceback || '')}</pre>
     <div class="message-body">
     <p>扫描到 <strong>${result.files_count}</strong> 个文件。</p>
     ${llmStatusHtml}
+    ${warningsHtml}
     ${idTable(bankItems, '银行流水')}
     ${idTable(ledgerItems, '序时账')}
     <p style="margin-top:8px;" class="subtle">task.yml 已自动生成 → 进入下一步「确认配置」进行审核。</p>

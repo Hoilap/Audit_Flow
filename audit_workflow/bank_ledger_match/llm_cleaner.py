@@ -10,6 +10,7 @@ from typing import Any
 import pandas as pd
 
 from audit_workflow.llm_agent import llm_generate, resolve_provider
+from audit_workflow.util import build_smart_sample
 from .config import resolve_path, output_dir
 from .llm_agent import run_bank_parser_agent, run_ledger_parser_agent
 from .utils import read_excel_headerless, strip_code_fence
@@ -258,7 +259,7 @@ def ensure_llm_bank_parser(config: dict[str, Any], item: dict[str, Any]) -> Path
         "message": f"正在为 {item['id']}（{item.get('bank_name', '')}）生成解析代码…",
     })
 
-    sample = _build_smart_sample(df)
+    sample = build_smart_sample(df)
     user_prompt = {
         "id": item["id"],
         "path": source_path.name,
@@ -436,7 +437,7 @@ def ensure_llm_ledger_parser(config: dict[str, Any], item: dict[str, Any]) -> Pa
         "message": f"正在为 {item['id']}（序时账）生成解析代码…",
     })
 
-    sample = _build_smart_sample(df)
+    sample = build_smart_sample(df)
     user_prompt = {
         "id": item["id"],
         "path": source_path.name,
@@ -554,36 +555,6 @@ def ensure_llm_ledger_parser(config: dict[str, Any], item: dict[str, Any]) -> Pa
     _track_usage(total_usage)
 
     return sig_path
-
-
-def _build_smart_sample(df, *, header_min_cells: int = 8, data_rows: int = 8) -> list[dict]:
-    """构建发送给 LLM 的样本数据。
-
-    策略：先找到表头行（第一个拥有 >=header_min_cells 个非空值的行），
-    然后取从文件开头到表头行 + 其后 data_rows 行数据行作为样本。
-    这样 LLM 能看到标题/元信息行 + 列名表头 + 真实数据，理解完整的文件结构。
-
-    如果找不到表头行，回退到前 30 行。
-    """
-    header_idx = None
-    for i in range(min(20, len(df))):
-        non_empty = sum(1 for v in df.iloc[i] if pd.notna(v) and str(v).strip())
-        if non_empty >= header_min_cells:
-            header_idx = i
-            break
-
-    if header_idx is not None:
-        end = min(header_idx + 1 + data_rows, len(df))
-        sample_df = df.iloc[:end]
-    else:
-        sample_df = df.head(30)
-
-    # 逐列 fillna 避免 pandas FutureWarning（object dtype downcast）
-    import warnings as _warnings
-    with _warnings.catch_warnings():
-        _warnings.simplefilter("ignore", FutureWarning)
-        sample_df = sample_df.fillna("")
-    return sample_df.astype(str).to_dict(orient="records")
 
 
 def _compute_column_signature(df) -> str:

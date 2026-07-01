@@ -82,17 +82,20 @@ export async function runStep(stepIndex = state.activeStepIndex) {
       if (!customerName) {
         throw new Error('请先在项目选择器中输入客户名称。')
       }
-      const parser = state.detectMethod  // 'llm' | 'script'
+      const parser = state.detectMethod  // 'llm' | 'llm_regenerate' | 其他
       const requirement = state.stepRequirements[taskRunKey()] || ''
       result = await api.workflowDetect(customerName, taskDirName, parser, requirement)
 
       let bodyText = `扫描完成：找到 ${result.files_count} 个文件。`
       if (result.llm_error) {
-        bodyText += `\n⚠️ LLM 调用失败，已回退到本地关键词识别。错误原因：${result.llm_error.message}`
+        bodyText += `\n⚠️ LLM 调用失败，已回退到脚本识别。错误原因：${result.llm_error.message}`
       } else if (result.llm_used) {
-        bodyText += `\n🤖 LLM 识别已启用。`
+        bodyText += '\n🤖 LLM 元数据提取已启用。'
       } else {
-        bodyText += `\n📜 使用脚本（关键词）识别。`
+        bodyText += '\n📜 使用脚本识别元数据。'
+      }
+      if (result.warnings && result.warnings.length > 0) {
+        bodyText += '\n⚠️ ' + result.warnings.join('\n⚠️ ')
       }
 
       markStep(task.id, step.id, 'completed', result)

@@ -19,7 +19,10 @@ tasks:
     steps:
       - id: detect
         allow_llm: true
-        allow_script: false
+        allow_script: true
+        allow_scripts_list:
+          - id: script
+            label: "脚本识别"
       - id: confirm
         allow_llm: false
         allow_script: false
@@ -56,7 +59,10 @@ tasks:
     steps:
       - id: osm-detect
         allow_llm: true
-        allow_script: false
+        allow_script: true
+        allow_scripts_list:
+          - id: script
+            label: "脚本识别"
       - id: clean-settlement
         allow_llm: true
         allow_script: true
