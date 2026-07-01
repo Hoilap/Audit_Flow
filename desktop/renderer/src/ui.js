@@ -273,9 +273,10 @@ function renderProjectSelector() {
 
 /**
  * 渲染统一的解析器选择器。
- * 根据 config.task_definitions.yml 动态生成选项：
- *   - allow_llm=true  → 显示 "LLM 智能解析"（非 detect 步骤追加 "LLM 重新生成"）
+ * 完全由 config.task_definitions.yml 驱动：
+ *   - allow_llm=true  → 显示 "🤖 LLM 智能解析"（非 detect 步骤追加 "🔄 LLM 重新生成"）
  *   - allow_script=true 且 allow_scripts_list 有值 → 显示列表中的脚本解析器
+ *   - YAML 中无对应任务定义 → 显示错误提示
  */
 function renderDetectMethodSelector() {
   const task = activeTask()
@@ -287,16 +288,24 @@ function renderDetectMethodSelector() {
     (d) => d.name === state.customTaskName || d.dir_name === state.customTaskName
   )
 
+  // ── YAML 中找不到任务定义 → 报错 ──
+  if (!def) {
+    return `
+      <div class="project-bar-inner" style="margin-top:6px;">
+        <span class="project-bar-label">解析器</span>
+        <span style="color:var(--danger,#e55);">⚠ 未在 task_definitions.yml 中找到「${escapeHtml(state.customTaskName)}」的定义</span>
+      </div>
+    `
+  }
+
   // 查找当前步骤在定义中的配置
   const stepDef = def?.steps?.find((s) => s.id === step.id)
-
   const isDetectStep = step?.id === 'detect' || step?.id === 'osm-detect'
 
   let options = []
 
   // ── LLM 选项 ──
-  if (stepDef?.allow_llm !== false) {
-    // 默认 allow_llm=true；只在明确 allow_llm=false 时隐藏
+  if (stepDef?.allow_llm) {
     options.push({ value: 'llm', label: '🤖 LLM 智能解析' })
     if (!isDetectStep) {
       options.push({ value: 'llm_regenerate', label: '🔄 LLM 重新生成' })
@@ -305,47 +314,35 @@ function renderDetectMethodSelector() {
 
   // ── 脚本解析器选项（来自 allow_scripts_list） ──
   if (stepDef?.allow_script && Array.isArray(stepDef.allow_scripts_list) && stepDef.allow_scripts_list.length > 0) {
-    for (const scriptName of stepDef.allow_scripts_list) {
-      options.push({ value: scriptName, label: `📜 ${scriptName}` })
+    for (const entry of stepDef.allow_scripts_list) {
+      // 兼容旧格式（纯字符串）和新格式（{id, label} 对象）
+      const id = typeof entry === 'string' ? entry : entry.id
+      const label = typeof entry === 'string' ? entry : (entry.label || entry.id)
+      options.push({ value: id, label: `📜 ${label}` })
     }
   }
 
-  // 如果没有来自 YAML 的配置（向后兼容自定义任务），回退到旧硬编码
-  if (!def) {
-    options = [
-      { value: 'llm', label: '🤖 LLM 智能解析' },
-    ]
-    if (!isDetectStep) {
-      options.push({ value: 'llm_regenerate', label: '🔄 LLM 重新生成' })
-    }
-    if (step?.id === 'clean-bank') {
-      options.push(
-        { value: 'icbc_historydetail', label: '📜 ICBC historydetail' },
-        { value: 'generated_bank', label: '📜 预生成解析器' },
-      )
-    } else if (step?.id === 'clean-ledger') {
-      options.push(
-        { value: 'xinjiyuan_bank_ledger', label: '📜 新纪元银行账' },
-      )
-    } else if (step?.id === 'clean-settlement') {
-      options.push(
-        { value: 'script', label: '📜 硬编码规则' },
-      )
-    } else if (step?.id === 'clean-outbound') {
-      options.push(
-        { value: 'script', label: '📜 硬编码规则' },
-      )
-    } else {
-      options.push(
-        { value: 'script', label: '📜 脚本（关键词）' },
-      )
-    }
+  // ── 无可选项 → 提示 ──
+  if (options.length === 0) {
+    return `
+      <div class="project-bar-inner" style="margin-top:6px;">
+        <span class="project-bar-label">解析器</span>
+        <span class="subtle">此步骤无可用的解析器</span>
+      </div>
+    `
   }
 
   const method = state.detectMethod
 
+  // 如果当前选中的值不在可用选项中，自动回退到第一个
+  const validValues = options.map(o => o.value)
+  const selectedMethod = validValues.includes(method) ? method : validValues[0]
+  if (selectedMethod !== method) {
+    state.detectMethod = selectedMethod
+  }
+
   const radios = options.map(o => {
-    const checked = method === o.value ? 'checked' : ''
+    const checked = selectedMethod === o.value ? 'checked' : ''
     return `<label class="project-bar-custom" style="margin-right:12px;">
       <input type="radio" name="detect-method" value="${o.value}" ${checked} /> ${escapeHtml(o.label)}
     </label>`

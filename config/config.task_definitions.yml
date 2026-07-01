@@ -10,7 +10,7 @@
 #   id                — 步骤 ID（与前端 workflowTasks 步骤对应）
 #   allow_llm         — 该步骤是否允许调用 LLM
 #   allow_script      — 该步骤是否可直接调用预置脚本
-#   allow_scripts_list — 可选预置脚本/解析器列表（前端下拉选择用）
+#   allow_scripts_list — 可选预置脚本/解析器列表，每项为 {id, label}，id 须与后端路由一一对应
 
 tasks:
   - name: 序时账银行流水匹配
@@ -27,15 +27,16 @@ tasks:
         allow_llm: true
         allow_script: false
         allow_scripts_list:
-          - llm_bank
-          - icbc_historydetail
-          - generated_bank
+          - id: icbc_historydetail
+            label: "ICBC 历史明细"
+          - id: generated_bank
+            label: "预生成解析器"
       - id: clean-ledger
         allow_llm: true
         allow_script: true
         allow_scripts_list:
-          - llm_ledger
-          - xinjiyuan_bank_ledger
+          - id: xinjiyuan_bank_ledger
+            label: "新纪元银行账"
       - id: check
         allow_llm: false
         allow_script: false
@@ -60,12 +61,14 @@ tasks:
         allow_llm: true
         allow_script: true
         allow_scripts_list:
-          - llm_settlement
+          - id: llm_settlement
+            label: "LLM 结算清洗"
       - id: clean-outbound
         allow_llm: true
         allow_script: true
         allow_scripts_list:
-          - llm_outbound
+          - id: llm_outbound
+            label: "LLM 出库清洗"
       - id: match
         allow_llm: true
         allow_script: false
