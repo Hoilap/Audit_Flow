@@ -2,7 +2,7 @@ import { workflowTasks } from './config.js'
 import { findWorkflowTaskByName, state, taskRunKey } from './state.js'
 import { $, $$ } from './dom.js'
 import { renderEvidencePanel, renderShell, renderWorkflowWorkspace, setAgentStatus, showPage } from './ui.js'
-import { cancelRunningStep, commitAll, createProject, deleteProject, loadProjects, loadProgramReadmes, previewFile, refreshFiles, refreshLog, refreshTokens, runAllSteps, runNextStep, runStep, selectProject, setupEventSource, toggleCustomMode, updateCustomCustomerName, updateCustomTaskName, updateDetectMethod, updateProject, uploadFile, syncLlmConfig, updateLlmModel, loadSettingsProviders, saveLlmProviders, revealProviderKey, addLlmProvider, deleteLlmProvider } from './actions.js'
+import { cancelRunningStep, commitAll, createProject, deleteProject, loadProjects, loadTaskDefinitions, loadProgramReadmes, previewFile, refreshFiles, refreshLog, refreshTokens, runAllSteps, runNextStep, runStep, selectProject, setupEventSource, toggleCustomMode, updateCustomCustomerName, updateCustomTaskName, updateDetectMethod, updateProject, uploadFile, syncLlmConfig, updateLlmModel, loadSettingsProviders, saveLlmProviders, revealProviderKey, addLlmProvider, deleteLlmProvider } from './actions.js'
 import { openReviewEditor } from './reviewEditor.js'
 import { renderProjectsTable, showProjectFormModal } from './ui.js'
 
@@ -19,6 +19,7 @@ function bindEvents() {
       // 切换到 Agent 工作流页面时刷新项目选择器
       if (navButton.dataset.page === 'agent') {
         await loadProjects()
+        await loadTaskDefinitions()
         renderWorkflowWorkspace()
       }
       // 切换到审计程序页面时加载 README 文档
@@ -311,6 +312,7 @@ async function init() {
   $$('.page').forEach((page) => page.classList.toggle('active', page.id === `page-${state.activePage}`))
   // 加载项目数据
   await loadProjects()
+  await loadTaskDefinitions()
   if (state.projects.length > 0) {
     state.activeProjectId = state.projects[0].id
     const p = state.projects[0]

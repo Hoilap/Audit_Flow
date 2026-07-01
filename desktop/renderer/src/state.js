@@ -21,6 +21,8 @@ export const state = {
   customTaskName: workflowTasks[0].name,
   /** 解析器选择: 'llm' | 'llm_regenerate' | 'script' | 具体解析器名 */
   detectMethod: 'llm',
+  /** 从 /task-definitions API 加载的任务定义（config.task_definitions.yml），供解析器选择器动态渲染 */
+  taskDefinitions: [],
   /** 每个步骤的附加需求，key 为 taskRunKey (taskId:stepId)，value 为文本 */
   stepRequirements: {},
   /** 右栏区块折叠状态，key 为 section id，value 为 true 表示已折叠 */

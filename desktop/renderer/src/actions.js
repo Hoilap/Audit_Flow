@@ -414,6 +414,19 @@ export async function loadProjects() {
   }
 }
 
+/**
+ * 从后端 /task-definitions API 加载任务定义（config.task_definitions.yml）。
+ * 存入 state.taskDefinitions，供渲染解析器选择器使用。
+ */
+export async function loadTaskDefinitions() {
+  try {
+    const data = await api.listTaskDefinitions()
+    state.taskDefinitions = data.definitions || []
+  } catch (error) {
+    state.taskDefinitions = []
+  }
+}
+
 export async function createProject(payload) {
   const data = await api.createProject(payload)
   await loadProjects()

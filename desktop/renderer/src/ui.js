@@ -273,48 +273,76 @@ function renderProjectSelector() {
 
 /**
  * 渲染统一的解析器选择器。
- * LLM智能解析 / LLM重新生成 始终显示；脚本解析器根据当前激活的 clean 步骤动态展示。
+ * 根据 config.task_definitions.yml 动态生成选项：
+ *   - allow_llm=true  → 显示 "LLM 智能解析"（非 detect 步骤追加 "LLM 重新生成"）
+ *   - allow_script=true 且 allow_scripts_list 有值 → 显示列表中的脚本解析器
  */
 function renderDetectMethodSelector() {
   const task = activeTask()
   const step = task.steps[state.activeStepIndex]
-  const method = state.detectMethod
+  if (!step) return ''
 
-  // detect 步骤只需要 llm / script 两种
+  // 查找当前任务在 task_definitions.yml 中的定义
+  const def = state.taskDefinitions?.find(
+    (d) => d.name === state.customTaskName || d.dir_name === state.customTaskName
+  )
+
+  // 查找当前步骤在定义中的配置
+  const stepDef = def?.steps?.find((s) => s.id === step.id)
+
   const isDetectStep = step?.id === 'detect' || step?.id === 'osm-detect'
 
-  let options = [
-    { value: 'llm', label: '🤖 LLM 智能解析' },
-  ]
+  let options = []
 
-  if (!isDetectStep) {
-    // clean 步骤追加「LLM 重新生成」选项
-    options.push({ value: 'llm_regenerate', label: '🔄 LLM 重新生成' })
+  // ── LLM 选项 ──
+  if (stepDef?.allow_llm !== false) {
+    // 默认 allow_llm=true；只在明确 allow_llm=false 时隐藏
+    options.push({ value: 'llm', label: '🤖 LLM 智能解析' })
+    if (!isDetectStep) {
+      options.push({ value: 'llm_regenerate', label: '🔄 LLM 重新生成' })
+    }
   }
 
-  // 根据当前 clean 步骤追加脚本解析器选项
-  if (step?.id === 'clean-bank') {
-    options.push(
-      { value: 'icbc_historydetail', label: '📜 ICBC historydetail' },
-      { value: 'generated_bank', label: '📜 预生成解析器' },
-    )
-  } else if (step?.id === 'clean-ledger') {
-    options.push(
-      { value: 'xinjiyuan_bank_ledger', label: '📜 新纪元银行账' },
-    )
-  } else if (step?.id === 'clean-settlement') {
-    options.push(
-      { value: 'script', label: '📜 硬编码规则' },
-    )
-  } else if (step?.id === 'clean-outbound') {
-    options.push(
-      { value: 'script', label: '📜 硬编码规则' },
-    )
-  } else {
-    options.push(
-      { value: 'script', label: '📜 脚本（关键词）' },
-    )
+  // ── 脚本解析器选项（来自 allow_scripts_list） ──
+  if (stepDef?.allow_script && Array.isArray(stepDef.allow_scripts_list) && stepDef.allow_scripts_list.length > 0) {
+    for (const scriptName of stepDef.allow_scripts_list) {
+      options.push({ value: scriptName, label: `📜 ${scriptName}` })
+    }
   }
+
+  // 如果没有来自 YAML 的配置（向后兼容自定义任务），回退到旧硬编码
+  if (!def) {
+    options = [
+      { value: 'llm', label: '🤖 LLM 智能解析' },
+    ]
+    if (!isDetectStep) {
+      options.push({ value: 'llm_regenerate', label: '🔄 LLM 重新生成' })
+    }
+    if (step?.id === 'clean-bank') {
+      options.push(
+        { value: 'icbc_historydetail', label: '📜 ICBC historydetail' },
+        { value: 'generated_bank', label: '📜 预生成解析器' },
+      )
+    } else if (step?.id === 'clean-ledger') {
+      options.push(
+        { value: 'xinjiyuan_bank_ledger', label: '📜 新纪元银行账' },
+      )
+    } else if (step?.id === 'clean-settlement') {
+      options.push(
+        { value: 'script', label: '📜 硬编码规则' },
+      )
+    } else if (step?.id === 'clean-outbound') {
+      options.push(
+        { value: 'script', label: '📜 硬编码规则' },
+      )
+    } else {
+      options.push(
+        { value: 'script', label: '📜 脚本（关键词）' },
+      )
+    }
+  }
+
+  const method = state.detectMethod
 
   const radios = options.map(o => {
     const checked = method === o.value ? 'checked' : ''

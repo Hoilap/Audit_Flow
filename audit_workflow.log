@@ -2510,3 +2510,4 @@ Length: 0, dtype: str' for dtype 'int64'
 [2026-07-01 01:55:42] WARNING audit_workflow.bank_ledger_match.cleaners - 数据质量问题 [icbc_ledger_2022] C:\Users\DengKaina\Desktop\Audit_workflow\inputs\桂平金山\bank_ledger_match\金山工行帐（新纪元导出）.xlsx (ledger): 1/516 条记录金额为 0 或为空
 [2026-07-01 01:55:42] INFO    audit_workflow.bank_ledger_match.cleaners - parse_ledgers: 合计 802 条记录（2 个文件）
 [2026-07-01 01:55:55] INFO    audit_workflow - 开始 Check: customer=桂平金山, task=bank_ledger_match
+[2026-07-01 02:10:41] INFO    audit_workflow - 开始 Match: customer=桂平金山, task=bank_ledger_match, parser=llm
