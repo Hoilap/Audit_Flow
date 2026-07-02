@@ -82,61 +82,85 @@ def _validate_data_quality(
     - amount: 金额为 0 或 NaN（可能是解析器遗漏或数据异常）
     - transaction_date: 日期为空（无法参与时间维度匹配）
     - account_no: 账号为空（无法按账户维度匹配）
+
+    每个 issue 包含 bad_rows（1-based 数据行号列表）便于前端定位。
     """
     if df is None or len(df) == 0:
         return []
     issues: list[dict[str, Any]] = []
     total = len(df)
 
+    def _row_label(bad_mask) -> tuple[int, list[int]]:
+        """返回 (bad_count, 1-based 行号列表)。"""
+        bad_indices = df.index[bad_mask].tolist()
+        # 转成 1-based 数据行号（假设 DataFrame 从 0 开始连续索引）
+        rows = [int(i) + 1 for i in bad_indices]
+        return len(rows), rows
+
+    def _fmt_rows(rows: list[int], total_bad: int) -> str:
+        """格式化行号片段：最多展示 10 个，超出部分用 ... 表示。"""
+        if total_bad <= 10:
+            return f"行号: {', '.join(str(r) for r in rows)}"
+        shown = rows[:10]
+        return f"行号: {', '.join(str(r) for r in shown)} ... 等共 {total_bad} 行"
+
     # 金额为 0 或 NaN
     if "amount" in df.columns:
         amt = pd.to_numeric(df["amount"], errors="coerce").fillna(0)
-        bad = (amt == 0).sum()
+        bad_mask = amt == 0
+        bad, rows = _row_label(bad_mask)
         if bad > 0:
             issues.append({
                 "field": "amount",
-                "count": int(bad),
+                "count": bad,
                 "total": total,
-                "message": f"{bad}/{total} 条记录金额为 0 或为空",
+                "bad_rows": rows,
+                "message": f"{bad}/{total} 条记录金额为 0 或为空（{_fmt_rows(rows, bad)}）",
             })
 
     # 金额为负数（不符合约定：amount 应始终为正，flow 标记方向）
     for col in ("amount", "bank_debit", "bank_credit", "ledger_debit", "ledger_credit"):
         if col in df.columns:
             vals = pd.to_numeric(df[col], errors="coerce").fillna(0)
-            neg = (vals < 0).sum()
-            if neg > 0:
+            bad_mask = vals < 0
+            bad, rows = _row_label(bad_mask)
+            if bad > 0:
                 issues.append({
                     "field": col,
-                    "count": int(neg),
+                    "count": bad,
                     "total": total,
-                    "message": f"{neg}/{total} 条记录 {col} 为负数（应始终为正数）",
+                    "bad_rows": rows,
+                    "message": f"{bad}/{total} 条记录 {col} 为负数（应始终为正数）（{_fmt_rows(rows, bad)}）",
                 })
 
     # 日期为空
     if "transaction_date" in df.columns:
-        bad = df["transaction_date"].isna().sum() + (
+        bad_mask = df["transaction_date"].isna() | (
             df["transaction_date"].astype(str).str.strip() == ""
-        ).sum()
+        )
+        bad, rows = _row_label(bad_mask)
         if bad > 0:
             issues.append({
                 "field": "transaction_date",
-                "count": int(bad),
+                "count": bad,
                 "total": total,
-                "message": f"{bad}/{total} 条记录日期为空",
+                "bad_rows": rows,
+                "message": f"{bad}/{total} 条记录日期为空（{_fmt_rows(rows, bad)}）",
             })
 
     # 账号为空
     if "account_no" in df.columns:
-        bad = df["account_no"].isna().sum() + (
+        bad_mask = df["account_no"].isna() | (
             df["account_no"].astype(str).str.strip() == ""
-        ).sum()
+        )
+        bad, rows = _row_label(bad_mask)
         if bad > 0:
             issues.append({
                 "field": "account_no",
-                "count": int(bad),
+                "count": bad,
                 "total": total,
-                "message": f"{bad}/{total} 条记录账号为空",
+                "bad_rows": rows,
+                "message": f"{bad}/{total} 条记录账号为空（{_fmt_rows(rows, bad)}）",
             })
 
     if issues:
