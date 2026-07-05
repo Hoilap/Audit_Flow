@@ -13,6 +13,23 @@ from .llm_agent import run_match_decision_agent
 from .utils import join_unique, parse_amount, text, text_similarity
 
 
+def _record_match_llm_usage(usage: dict) -> None:
+    """记录 LLM 匹配的 token 用量并推送到前端。"""
+    if not usage:
+        return
+    total = usage.get("total_tokens", 0)
+    prompt = usage.get("prompt_tokens", 0)
+    completion = usage.get("completion_tokens", 0)
+    print(f"LLM Token 用量: prompt={prompt}, completion={completion}, total={total}")
+    try:
+        from desktop.common import token_tracker, notify_frontend
+        token_tracker.record(usage)
+        notify_frontend("token_updated", token_tracker.snapshot())
+    except ImportError:
+        # 在非 desktop 环境下运行（如 CLI）时忽略
+        pass
+
+
 SYSTEM_PROMPT = """你是审计资金流水匹配复核助手。
 你的任务是判断候选银行流水组合与候选序时账记录是否可以匹配。
 必须遵守：
@@ -53,26 +70,59 @@ def apply_llm_supplemental_matches(
     out = output_dir(config) / "matches"
     out.mkdir(parents=True, exist_ok=True)
 
+    # 检查是否为完全重新匹配模式
+    full_rematch = cfg.get("full_rematch", False)
+
+    # 统计记录
+    if full_rematch:
+        print(f"LLM 完全重新匹配: 银行流水 {len(bank_records)} 条, 序时账 {len(ledger_records)} 条")
+        # full_rematch 模式下清空已有匹配结果
+        groups.clear()
+        used_bank.clear()
+        used_ledger.clear()
+    else:
+        remaining_bank = [r for r in bank_records if r.id not in used_bank]
+        remaining_ledger = [r for r in ledger_records if r.id not in used_ledger]
+        print(f"LLM 辅助匹配: 未匹配银行流水 {len(remaining_bank)} 条, 未匹配序时账 {len(remaining_ledger)} 条")
+
     candidates = _build_candidates(config, bank_records, ledger_records, used_bank, used_ledger)
     candidates_path = out / "llm_candidates.csv"
     decisions_path = out / "llm_decisions.csv"
-    _write_candidates(candidates_path, candidates)
+    print(f"LLM 辅助匹配: 构建 {len(candidates)} 个候选匹配")
     if not candidates:
         pd.DataFrame().to_csv(decisions_path, index=False, encoding="utf-8-sig")
+        _write_candidates(candidates_path, candidates)
+        print("LLM 辅助匹配: 无候选匹配，跳过")
         return
 
     llm_candidates = [candidate for candidate in candidates if not candidate.review_only or candidate.llm_review]
-    decisions = _load_cached_decisions(decisions_path, llm_candidates) if cfg.get("reuse_decisions", True) else []
+    print(f"LLM 辅助匹配: llm_candidates={len(llm_candidates)} (review_only={sum(1 for c in candidates if c.review_only and not c.llm_review)})")
+    
+    # full_rematch 模式下不使用缓存的决策
+    use_cache = cfg.get("reuse_decisions", True) and not full_rematch
+    decisions = _load_cached_decisions(decisions_path, llm_candidates) if use_cache else []
+    print(f"LLM 辅助匹配: 从缓存加载 {len(decisions)} 个决策 (use_cache={use_cache})")
+    
     decided_signatures = {text(item.get("candidate_signature")) for item in decisions}
     missing_candidates = [
         candidate for candidate in llm_candidates if _candidate_signature(candidate) not in decided_signatures
     ]
+    print(f"LLM 辅助匹配: 需要调用 LLM 的候选={len(missing_candidates)}")
+    
     if missing_candidates:
         new_decisions = _ask_llm(config, missing_candidates)
         _attach_candidate_signatures(new_decisions, missing_candidates)
         decisions.extend(new_decisions)
         _write_decisions(decisions_path, decisions)
+        print(f"LLM 辅助匹配: 调用 LLM 完成，新增 {len(new_decisions)} 个决策")
+    else:
+        print("LLM 辅助匹配: 所有决策均来自缓存，无需调用 LLM")
+    
     decisions_by_id = {text(item.get("candidate_id")): item for item in decisions}
+    print(f"LLM 辅助匹配: decisions_by_id 包含 {len(decisions_by_id)} 个决策")
+
+    # 将 LLM 决定写入 candidates CSV 的 approve 列，供人工复核编辑器初始化
+    _write_candidates(candidates_path, candidates, decisions_by_id)
     review_path = out / text(cfg.get("manual_review_file") or "manual_review_candidates.csv")
     manual_approvals = _load_manual_approvals(review_path)
     amount_tol = int(round(parse_amount(config.get("matching", {}).get("amount_tolerance", 0.01)) * 100))
@@ -212,8 +262,16 @@ def _build_candidates(
     monthly_balance_cfg = cfg.get("monthly_balance_enumeration", {}) or {}
     monthly_balance_enabled = bool(monthly_balance_cfg.get("enabled", True))
 
-    remaining_bank = [record for record in bank_records if record.id not in used_bank]
-    remaining_ledger = [record for record in ledger_records if record.id not in used_ledger]
+    # full_rematch 模式下使用所有记录，否则只使用未匹配记录
+    full_rematch = cfg.get("full_rematch", False)
+    if full_rematch:
+        remaining_bank = list(bank_records)
+        remaining_ledger = list(ledger_records)
+        print(f"LLM full_rematch: 使用全部 {len(remaining_bank)} 条银行流水和 {len(remaining_ledger)} 条序时账")
+    else:
+        remaining_bank = [record for record in bank_records if record.id not in used_bank]
+        remaining_ledger = [record for record in ledger_records if record.id not in used_ledger]
+        print(f"LLM 辅助匹配: 使用 {len(remaining_bank)} 条未匹配银行流水和 {len(remaining_ledger)} 条未匹配序时账")
     candidates: list[Candidate] = []
     seen: dict[tuple[tuple[str, ...], tuple[str, ...]], int] = {}
 
@@ -1405,9 +1463,11 @@ def _ask_llm(config: dict[str, Any], candidates: list[Candidate]) -> list[dict[s
             },
             "candidates": [_candidate_payload(candidate) for candidate in batch],
         }
-        result = run_match_decision_agent(config, payload, SYSTEM_PROMPT)
+        result, usage = run_match_decision_agent(config, payload, SYSTEM_PROMPT)
         batch_decisions = [item.model_dump() for item in result.decisions]
         decisions.extend(batch_decisions)
+        # 记录 LLM token 用量并推送到前端
+        _record_match_llm_usage(usage)
     return decisions
 
 
@@ -1441,15 +1501,24 @@ def _review_row(
     previous: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     previous = previous or {}
+    # 将 LLM 的 approve 决策转换为 1/0 格式，用于初始化 approve 列
+    llm_approve_raw = decision.get("approve", "")
+    llm_approve_val = ""
+    if isinstance(llm_approve_raw, bool):
+        llm_approve_val = "1" if llm_approve_raw else "0"
+    elif isinstance(llm_approve_raw, str):
+        llm_approve_val = "1" if llm_approve_raw.lower() in ("true", "1", "yes") else "0" if llm_approve_raw.lower() in ("false", "0", "no") else ""
+    # 如果 previous 中已有 approve 值（来自人工编辑），则保留；否则使用 LLM 的决定
+    approve_val = previous.get("approve", "") or llm_approve_val
     return {
-        "approve": previous.get("approve", ""),
+        "approve": approve_val,
         "manual_note": previous.get("manual_note", ""),
         "status": status,
         "candidate_id": candidate.candidate_id,
         "candidate_signature": _candidate_signature(candidate),
         "match_type": candidate.match_type,
         "review_reason": candidate.review_reason,
-        "llm_approve": decision.get("approve", ""),
+        "llm_approve": llm_approve_raw,
         "llm_confidence": decision.get("confidence", ""),
         "llm_reason": decision.get("reason", ""),
         "period_start": candidate.period[0].isoformat(),
@@ -1546,9 +1615,50 @@ def _short(value: object, limit: int) -> str:
     return raw if len(raw) <= limit else raw[:limit] + "..."
 
 
-def _write_candidates(path: Path, candidates: list[Candidate]) -> None:
-    rows = []
+def _write_candidates(path: Path, candidates: list[Candidate], decisions_by_id: dict[str, dict[str, Any]] | None = None) -> None:
+    """将候选匹配写入 CSV 文件。
+    
+    Args:
+        path: CSV 文件路径
+        candidates: 候选匹配列表
+        decisions_by_id: LLM 决策字典（可选），如果提供则写入 approve 和 llm_reason 列
+    """
+    # 预计算：每个 bank/ledger id 出现在多少个候选中
+    from collections import Counter
+    bank_id_counts = Counter()
+    ledger_id_counts = Counter()
     for candidate in candidates:
+        for record in candidate.bank_group:
+            bank_id_counts[record.id] += 1
+        for record in candidate.ledger_group:
+            ledger_id_counts[record.id] += 1
+
+    rows = []
+    for idx, candidate in enumerate(candidates):
+        # 检测是否有数据在其他行也被匹配
+        bank_ids = [record.id for record in candidate.bank_group]
+        ledger_ids = [record.id for record in candidate.ledger_group]
+        has_duplicate_bank = any(bank_id_counts[bid] > 1 for bid in bank_ids)
+        has_duplicate_ledger = any(ledger_id_counts[lid] > 1 for lid in ledger_ids)
+        duplicate_info = ""
+        if has_duplicate_bank and has_duplicate_ledger:
+            duplicate_info = "银行+序时账均有重复"
+        elif has_duplicate_bank:
+            duplicate_info = "银行流水有重复"
+        elif has_duplicate_ledger:
+            duplicate_info = "序时账有重复"
+        else:
+            duplicate_info = "无重复"
+
+        # 获取 LLM 决策（如果提供）
+        approve_val = ""
+        llm_reason_val = ""
+        if decisions_by_id:
+            decision = decisions_by_id.get(candidate.candidate_id, {})
+            if decision:
+                approve_val = "1" if _as_bool(decision.get("approve")) else "0"
+                llm_reason_val = text(decision.get("reason"))
+
         rows.append(
             {
                 "candidate_id": candidate.candidate_id,
@@ -1563,15 +1673,28 @@ def _write_candidates(path: Path, candidates: list[Candidate]) -> None:
                 "ledger_count": len(candidate.ledger_group),
                 "bank_total": round(_sum_cents(candidate.bank_group) / 100, 2),
                 "ledger_total": round(_sum_cents(candidate.ledger_group) / 100, 2),
-                "bank_ids": "|".join(record.id for record in candidate.bank_group),
-                "ledger_ids": "|".join(record.id for record in candidate.ledger_group),
+                "bank_ids": "|".join(bank_ids),
+                "ledger_ids": "|".join(ledger_ids),
                 "candidate_signature": _candidate_signature(candidate),
                 "bank_summary": _review_lines(candidate.bank_group),
                 "ledger_summary": _review_lines(candidate.ledger_group),
+                "duplicate_info": duplicate_info,
+                "approve": approve_val,
+                "llm_reason": llm_reason_val,
             }
         )
+    
+    # 打印写入统计
+    approve_count = sum(1 for r in rows if r["approve"] == "1")
+    reject_count = sum(1 for r in rows if r["approve"] == "0")
+    empty_count = sum(1 for r in rows if r["approve"] == "")
+    print(f"_write_candidates: 写入 {len(rows)} 行, approve=1: {approve_count}, approve=0: {reject_count}, approve=空: {empty_count}")
+    
     pd.DataFrame(rows).to_csv(path, index=False, encoding="utf-8-sig")
 
 
 def _write_decisions(path: Path, decisions: list[dict[str, Any]]) -> None:
     pd.DataFrame(decisions).to_csv(path, index=False, encoding="utf-8-sig")
+
+
+

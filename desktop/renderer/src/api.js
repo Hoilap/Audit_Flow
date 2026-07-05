@@ -1,4 +1,4 @@
-export const apiBase = 'http://127.0.0.1:8000'
+export const apiBase = 'http://127.0.0.1:8001'
 
 let currentController = null
 
@@ -28,6 +28,7 @@ export async function request(path, options = {}) {
 export const api = {
   listFiles: (root = 'outputs') => request(`/files/list?root=${encodeURIComponent(root)}`),
   readFile: (path) => request(`/files/read?path=${encodeURIComponent(path)}`),
+  fileMtime: (path) => request(`/files/mtime?path=${encodeURIComponent(path)}`),
   uploadFile: (form) => request('/files/upload', { method: 'POST', body: form }),
   copyFromPath: (sourcePath, dest) => {
     const form = new FormData()
@@ -106,20 +107,14 @@ export const api = {
     if (requirement) form.append('requirement', requirement)
     return request('/workflow/bank_ledger_match/match', { method: 'POST', body: form })
   },
-  /** Step 6: 填入底稿（脚本方式） */
-  workflowFill: (customerName, taskName) => {
+  /** Step 8: 填入底稿（parser: 'llm' | 'script'） */
+  workflowFill: (customerName, taskName, parser = '', requirement = '') => {
     const form = new FormData()
     form.append('customer_name', customerName)
     form.append('task_name', taskName)
-    return request('/workflow/bank_ledger_match/fill', { method: 'POST', body: form })
-  },
-  /** Step 6: 填入底稿（LLM 方式，自适应模板布局） */
-  workflowFillLlm: (customerName, taskName, requirement = '') => {
-    const form = new FormData()
-    form.append('customer_name', customerName)
-    form.append('task_name', taskName)
+    if (parser) form.append('parser', parser)
     if (requirement) form.append('requirement', requirement)
-    return request('/workflow/bank_ledger_match/fill_llm', { method: 'POST', body: form })
+    return request('/workflow/bank_ledger_match/fill', { method: 'POST', body: form })
   },
 
   // ---------- Project CRUD ----------

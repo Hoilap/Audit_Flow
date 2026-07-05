@@ -20,7 +20,7 @@ function bindEvents() {
       if (navButton.dataset.page === 'agent') {
         await loadProjects()
         await loadTaskDefinitions()
-        renderWorkflowWorkspace()
+        await renderWorkflowWorkspace()
       }
       // 切换到审计程序页面时加载 README 文档
       if (navButton.dataset.page === 'programs') {
@@ -43,7 +43,7 @@ function bindEvents() {
     const stepCard = event.target.closest('[data-step-index]')
     if (stepCard) {
       state.activeStepIndex = Number(stepCard.dataset.stepIndex)
-      renderWorkflowWorkspace()
+      await renderWorkflowWorkspace()
     }
 
     // 步骤卡独立运行按钮
@@ -298,13 +298,13 @@ async function openProjectForm(project) {
     await refreshProjectTable()
     if (state.activeProjectId === id) {
       state.activeProjectId = null
-      renderWorkflowWorkspace()
+      await renderWorkflowWorkspace()
     }
   })
 }
 
 async function init() {
-  renderShell()
+  await renderShell()
   bindEvents()
   setupEventSource()   // 建立 SSE 连接，实时接收后端事件
   showPage(state.activePage)
@@ -324,7 +324,7 @@ async function init() {
     } else {
       state.activeTaskId = '__custom__'
     }
-    renderWorkflowWorkspace()
+    await renderWorkflowWorkspace()
   }
   
   // 初始化 LLM 配置和 token 显示

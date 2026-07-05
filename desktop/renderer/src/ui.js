@@ -4,7 +4,7 @@ import { $, $$, escapeHtml, formatSeconds, isCsv } from './dom.js'
 import { parseCsv } from './csv.js'
 import { api } from './api.js'
 
-export function renderShell() {
+export async function renderShell() {
   $('#nav').innerHTML = navItems.map(([id, icon, label]) => `
     <button class="${state.activePage === id ? 'active' : ''}" data-page="${id}"><span class="nav-icon">${icon}</span>${label}</button>
   `).join('')
@@ -22,7 +22,7 @@ export function renderShell() {
   // 右侧证据面板仅在 Agent 页面显示
   updateEvidencePanelVisibility()
   renderEvidencePanel()
-  renderWorkflowWorkspace()
+  await renderWorkflowWorkspace()
 }
 
 /**
@@ -152,7 +152,7 @@ export function renderTimeline(activeStepId = null, failed = false) {
   }).join('')
 }
 
-export function renderWorkflowWorkspace() {
+export async function renderWorkflowWorkspace() {
   const task = activeTask()
   const promptEl = $('#prompt')
   if (promptEl && !promptEl.value.trim()) {
@@ -213,7 +213,7 @@ export function renderWorkflowWorkspace() {
       desc.textContent = task.description
     }
   }
-  renderReviewFiles()
+  await renderReviewFiles()
   renderProjectFileTree()
 
   // ------ 附加需求 textarea ------
@@ -400,9 +400,12 @@ export function renderStepFiles() {
 
 /**
  * 渲染复核文件列表（根据当前选中工作流的 reviewFiles 配置）。
- * 每个文件可点击打开人工复核编辑器。
+ * 直接显示所有配置的复核文件，不需要等待步骤执行后才生成。
+ * 显示最新生成时间。
+ * 
+ * 优化：先立即显示文件列表（不阻塞初始化），然后在后台异步获取修改时间并更新 UI。
  */
-function renderReviewFiles() {
+async function renderReviewFiles() {
   const wfTask = findWorkflowTaskByName(state.customTaskName)
   const reviewFiles = wfTask ? wfTask.reviewFiles || [] : []
   const list = $('#review-file-list')
@@ -411,22 +414,87 @@ function renderReviewFiles() {
     list.innerHTML = '<div class="subtle">此工作流暂无人工复核文件</div>'
     return
   }
-  const existingSet = new Set(state.files.map(normalizePath))
-  const existing = reviewFiles
-    .map((rel) => resolveProjectPath(rel))
-    .filter((full) => full && existingSet.has(full))
 
-  if (existing.length === 0) {
-    list.innerHTML = '<div class="subtle">暂无人工复核文件，执行步骤后生成</div>'
+  // 直接显示所有配置的复核文件（不需要等待步骤执行）
+  const fileEntries = reviewFiles
+    .map((rel) => resolveProjectPath(rel))
+    .filter((full) => full)
+
+  if (fileEntries.length === 0) {
+    list.innerHTML = `<div class="review-placeholder">
+      <div class="subtle">📋 暂无人工复核文件</div>
+      <div class="subtle" style="margin-top:4px;">请先选择项目</div>
+    </div>`
     return
   }
-  list.innerHTML = existing.map((file) => {
+
+  // 立即显示文件列表（不等待 API 调用，避免阻塞初始化）
+  list.innerHTML = fileEntries.map((file) => {
     const name = shortName(file)
     return `<div class="file-row review-file-item" data-file="${escapeHtml(file)}" title="${escapeHtml(file)}">
-      <span>📝 ${escapeHtml(name)}</span>
-      <button class="open-review-btn" data-file="${escapeHtml(file)}">打开复核</button>
+      <span class="review-file-icon">📋</span>
+      <span class="review-file-name">${escapeHtml(name)}</span>
+      <span class="review-time review-time-loading">⏳ 加载中…</span>
+      <button class="open-review-btn" data-file="${escapeHtml(file)}" disabled>打开复核</button>
     </div>`
   }).join('')
+
+  // 后台异步获取修改时间（不阻塞初始化链）
+  _fetchAndUpdateMtimes(fileEntries)
+}
+
+/**
+ * 后台获取文件修改时间并更新 UI（不阻塞初始化）。
+ * 使用 3 秒超时，避免 fetch 挂起导致 UI 永远不更新。
+ */
+async function _fetchAndUpdateMtimes(fileEntries) {
+  try {
+    const mtimeResults = await Promise.all(
+      fileEntries.map(async (file) => {
+        // 3 秒超时，避免 fetch 挂起
+        const timeout = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('timeout')), 3000)
+        )
+        try {
+          const res = await Promise.race([api.fileMtime(file), timeout])
+          return { file, mtime: res.mtime || '', exists: res.exists }
+        } catch {
+          return { file, mtime: '', exists: false }
+        }
+      })
+    )
+
+    // 按修改时间排序（最新的在前，不存在的排最后）
+    const sorted = [...mtimeResults].sort((a, b) => {
+      if (!a.exists && !b.exists) return 0
+      if (!a.exists) return 1
+      if (!b.exists) return -1
+      return new Date(b.mtime).getTime() - new Date(a.mtime).getTime()
+    })
+
+    const list = $('#review-file-list')
+    if (!list) return
+
+    list.innerHTML = sorted.map(({ file, mtime, exists }) => {
+      const name = shortName(file)
+      const timeStr = mtime ? new Date(mtime).toLocaleString('zh-CN', {
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit'
+      }) : ''
+      const statusClass = exists ? '' : 'review-file-missing'
+      const statusBadge = exists
+        ? `<span class="review-time" title="${escapeHtml(timeStr)}">🕐 ${escapeHtml(timeStr)}</span>`
+        : `<span class="review-time review-time-missing">未生成</span>`
+      return `<div class="file-row review-file-item ${statusClass}" data-file="${escapeHtml(file)}" title="${escapeHtml(file)}">
+        <span class="review-file-icon">${exists ? '📝' : '📋'}</span>
+        <span class="review-file-name">${escapeHtml(name)}</span>
+        ${statusBadge}
+        <button class="open-review-btn" data-file="${escapeHtml(file)}" ${exists ? '' : 'disabled'}>${exists ? '打开复核' : '不可用'}</button>
+      </div>`
+    }).join('')
+  } catch {
+    // 静默失败，保持初始渲染的文件列表
+  }
 }
 
 /**

@@ -43,11 +43,14 @@ export async function openReviewEditor(filePath) {
   const editState = {}
   records.forEach((row, rowIdx) => {
     const cid = row[colIndex['candidate_id']] || `row_${rowIdx}`
+    // 直接使用 approve 列（已由 _write_candidates 写入 LLM 决定）
+    const approveVal = (row[colIndex['approve']] || '').trim()
+    
     editState[cid] = {
       bank_summary: row[colIndex['bank_summary']] || '',
       ledger_summary: row[colIndex['ledger_summary']] || '',
       llm_reason: row[colIndex['llm_reason']] || '',
-      approve: row[colIndex['approve']] || '1',
+      approve: approveVal,
       manual_note: row[colIndex['manual_note']] || '',
       status: row[colIndex['status']] || '',
     }
@@ -61,9 +64,9 @@ export async function openReviewEditor(filePath) {
 
   function renderTable() {
     const displayHeaders = [
-      'approve', 'status', 'candidate_id', 'match_type',
+      'approve', 'candidate_id', 'match_type',
       'bank_summary', 'ledger_summary', 'llm_reason',
-      'review_reason', 'manual_note',
+      'review_reason', 'duplicate_info', 'manual_note',
     ]
 
     // 构建表头
@@ -73,21 +76,18 @@ export async function openReviewEditor(filePath) {
     const tbody = records.map((row, rowIdx) => {
       const cid = row[colIndex['candidate_id']] || `row_${rowIdx}`
       const st = editState[cid] || {}
+      // approve 可能为空（无 LLM 决策），此时不预选任何按钮
+      const approveVal = st.approve || ''
+      const llmReason = st.llm_reason || ''
+      const hasLlmDecision = llmReason !== ''
 
       return `<tr data-review-row="${escapeHtml(cid)}">
         <td>
-          <select class="review-approve" data-cid="${escapeHtml(cid)}">
-            <option value="1" ${st.approve === '1' ? 'selected' : ''}>✓ 通过</option>
-            <option value="0" ${st.approve === '0' ? 'selected' : ''}>✗ 拒绝</option>
-          </select>
-        </td>
-        <td>
-          <select class="review-status" data-cid="${escapeHtml(cid)}">
-            <option value="approved_applied" ${st.status === 'approved_applied' ? 'selected' : ''}>已通过-已应用</option>
-            <option value="approved_pending" ${st.status === 'approved_pending' ? 'selected' : ''}>已通过-待应用</option>
-            <option value="rejected" ${st.status === 'rejected' ? 'selected' : ''}>已拒绝</option>
-            <option value="pending_review" ${st.status === 'pending_review' ? 'selected' : ''}>待复核</option>
-          </select>
+          <div class="approve-buttons">
+            <button class="approve-btn approve-yes ${approveVal === '1' ? 'active' : ''}" data-cid="${escapeHtml(cid)}" data-value="1" title="批准">✓ 通过</button>
+            <button class="approve-btn approve-no ${approveVal === '0' ? 'active' : ''}" data-cid="${escapeHtml(cid)}" data-value="0" title="拒绝">✗ 拒绝</button>
+          </div>
+          ${hasLlmDecision ? '<span class="llm-badge" title="LLM 已给出建议">🤖</span>' : ''}
         </td>
         <td class="cell-id">${escapeHtml(cid)}</td>
         <td class="cell-match-type">${escapeHtml(row[colIndex['match_type']] || '')}</td>
@@ -95,6 +95,7 @@ export async function openReviewEditor(filePath) {
         <td class="cell-wide"><textarea class="review-ta" data-cid="${escapeHtml(cid)}" data-field="ledger_summary" rows="4">${escapeHtml(st.ledger_summary)}</textarea></td>
         <td class="cell-wide"><textarea class="review-ta" data-cid="${escapeHtml(cid)}" data-field="llm_reason" rows="4">${escapeHtml(st.llm_reason)}</textarea></td>
         <td class="cell-mid">${escapeHtml(row[colIndex['review_reason']] || '')}</td>
+        <td class="cell-mid">${escapeHtml(row[colIndex['duplicate_info']] || '')}</td>
         <td><textarea class="review-ta" data-cid="${escapeHtml(cid)}" data-field="manual_note" rows="2">${escapeHtml(st.manual_note)}</textarea></td>
       </tr>`
     }).join('')
@@ -126,21 +127,17 @@ export async function openReviewEditor(filePath) {
       })
     })
 
-    // 绑定 select 变更
-    modal.getBodyEl().querySelectorAll('.review-approve').forEach(sel => {
-      sel.addEventListener('change', () => {
-        const cid = sel.dataset.cid
+    // 绑定 approve 按钮点击
+    modal.getBodyEl().querySelectorAll('.approve-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const cid = btn.dataset.cid
+        const value = btn.dataset.value
         if (editState[cid]) {
-          editState[cid].approve = sel.value
-        }
-      })
-    })
-
-    modal.getBodyEl().querySelectorAll('.review-status').forEach(sel => {
-      sel.addEventListener('change', () => {
-        const cid = sel.dataset.cid
-        if (editState[cid]) {
-          editState[cid].status = sel.value
+          editState[cid].approve = value
+          // 更新按钮样式
+          const row = btn.closest('tr')
+          row.querySelectorAll('.approve-btn').forEach(b => b.classList.remove('active'))
+          btn.classList.add('active')
         }
       })
     })
@@ -172,7 +169,7 @@ async function saveReview(filePath, records, headers, colIndex, editState) {
     if (colIndex['bank_summary'] !== undefined) newRow[colIndex['bank_summary']] = st.bank_summary
     if (colIndex['ledger_summary'] !== undefined) newRow[colIndex['ledger_summary']] = st.ledger_summary
     if (colIndex['llm_reason'] !== undefined) newRow[colIndex['llm_reason']] = st.llm_reason
-    if (colIndex['approve'] !== undefined) newRow[colIndex['approve']] = st.approve
+    if (colIndex['approve'] !== undefined) newRow[colIndex['approve']] = st.approve || '1'
     if (colIndex['status'] !== undefined) newRow[colIndex['status']] = st.status
     if (colIndex['manual_note'] !== undefined) newRow[colIndex['manual_note']] = st.manual_note
 

@@ -26,13 +26,18 @@ def run_ledger_parser_agent(config: dict[str, Any], prompt: dict[str, Any], syst
 
 def run_match_decision_agent(
     config: dict[str, Any], prompt: dict[str, Any], system_prompt: str
-) -> Any:
+) -> tuple[Any, dict]:
+    """运行匹配决策 LLM Agent。
+
+    返回: (output, usage) 元组，usage 包含 token 用量信息。
+    """
     models = _output_models()
     llm_config = config.get("llm", {})
     task_config = config.get("matching", {}).get("llm", {})
     agent = build_agent(llm_config, system_prompt, models["MatchDecisionBatch"], task_config=task_config)
     result = agent.run_sync(json.dumps(prompt, ensure_ascii=False))
-    return _agent_output(result)
+    usage = _extract_token_usage(result)
+    return _agent_output(result), usage
 
 
 def _output_models() -> dict[str, Any]:

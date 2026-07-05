@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 import json
 import os
+from typing import Any
 
 import yaml as yaml_lib
 from fastapi import APIRouter, HTTPException, Form
@@ -63,8 +64,10 @@ def _apply_parser_to_config(cfg: dict, parser: str) -> None:
 
     parser 取值:
       - "llm"            → 使用 LLM 缓存的解析器（有缓存直接用，无则生成）
+                       → 匹配时跳过已匹配记录，仅对未匹配记录进行 LLM 辅助匹配
       - "llm_regenerate" → 跳过缓存检查，重新调 LLM 生成解析器
-      - "script"         → 使用硬编码脚本解析
+                       → 匹配时忽略所有已匹配记录，完全重新匹配
+      - "script"         → 使用硬编码脚本解析，不启用 LLM 辅助匹配
       - 其他具体解析器名  → 直接使用（如 icbc_historydetail, xinjiyuan_bank_ledger）
     """
     if not parser:
@@ -74,6 +77,8 @@ def _apply_parser_to_config(cfg: dict, parser: str) -> None:
     cfg.setdefault("llm", {})["enabled"] = is_llm
     cfg.setdefault("matching", {}).setdefault("llm", {})
     cfg["matching"]["llm"]["enabled"] = is_llm
+    # 区分 llm_regenerate（完全重新匹配）和 llm（仅匹配未匹配记录）
+    cfg["matching"]["llm"]["full_rematch"] = (parser == "llm_regenerate")
     # llm_regenerate: 设置强制重新生成标志，ensure_* 函数跳过缓存
     if parser == "llm_regenerate":
         cfg["_force_regenerate"] = True
@@ -545,8 +550,16 @@ def workflow_bank_ledger_match_fill(
     config: str = Form(None),
     customer_name: str = Form(""),
     task_name: str = Form("bank_ledger_match"),
+    parser: str = Form(""),
+    requirement: str = Form(""),
 ):
-    logger.info("开始 Fill: customer=%s, task=%s", customer_name, task_name)
+    """Step 8 - Fill: 将匹配结果填入工作底稿。
+    parser:
+      - "llm" / "llm_regenerate" → LLM 自适应填表
+      - "script" / 其他 / 空       → 脚本填表（硬编码列映射）
+    """
+    use_llm = parser in ("llm", "llm_regenerate")
+    logger.info("开始 Fill: customer=%s, task=%s, parser=%s", customer_name, task_name, parser)
     if customer_name:
         cfg = _build_full_config(customer_name, task_name)
     elif config:
@@ -554,9 +567,13 @@ def workflow_bank_ledger_match_fill(
     else:
         cfg = {}
     try:
-        path = blm_pipeline.run_fill(cfg)
-        logger.info("Fill 完成: %s", path)
-        return {"working_paper": str(path)}
+        if use_llm:
+            path, usage = blm_pipeline.run_fill_llm(cfg)
+            token_tracker.record(usage)
+            return {"working_paper": str(path), "llm_used": True, "usage": usage}
+        else:
+            path = blm_pipeline.run_fill(cfg)
+            return {"working_paper": str(path), "llm_used": False}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -566,18 +583,13 @@ def workflow_bank_ledger_match_fill_llm(
     config: str = Form(None),
     customer_name: str = Form(""),
     task_name: str = Form("bank_ledger_match"),
+    requirement: str = Form(""),
 ):
-    """使用 LLM 生成填表代码并执行，自适应任意模板布局。"""
-    logger.info("开始 Fill (LLM): customer=%s, task=%s", customer_name, task_name)
-    if customer_name:
-        cfg = _build_full_config(customer_name, task_name)
-    elif config:
-        cfg = json.loads(config)
-    else:
-        cfg = {}
-    try:
-        path, usage = blm_pipeline.run_fill_llm(cfg)
-        token_tracker.record(usage)
-        return {"working_paper": str(path), "usage": usage}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    """[已废弃] 请使用 /fill 并传 parser=llm。保留向后兼容。"""
+    return workflow_bank_ledger_match_fill(
+        config=config,
+        customer_name=customer_name,
+        task_name=task_name,
+        parser="llm",
+        requirement=requirement,
+    )

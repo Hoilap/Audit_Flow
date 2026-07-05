@@ -125,6 +125,16 @@ def list_files(root: str = "outputs"):
     return {"files": result}
 
 
+@router.get("/files/mtime")
+def file_mtime(path: str):
+    """Return file modification time as ISO string, or empty if not found."""
+    p = os.path.abspath(path)
+    if not os.path.exists(p):
+        return {"mtime": "", "exists": False}
+    mtime = os.path.getmtime(p)
+    return {"mtime": datetime.fromtimestamp(mtime).strftime("%Y-%m-%d %H:%M:%S"), "exists": True}
+
+
 @router.get("/files/read")
 def read_file(path: str):
     p = os.path.abspath(path)

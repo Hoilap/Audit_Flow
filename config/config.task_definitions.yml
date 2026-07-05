@@ -51,7 +51,10 @@ tasks:
         allow_script: false
       - id: fill
         allow_llm: true
-        allow_script: false
+        allow_script: true
+        allow_scripts_list:
+          - id: script
+            label: "脚本填表"
 
   - name: 出库结算匹配
     dir_name: outbound_settlement_match

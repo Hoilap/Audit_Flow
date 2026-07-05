@@ -34,14 +34,8 @@ export async function refreshLog() {
 }
 
 export async function refreshApprove() {
-  const wfTask = findWorkflowTaskByName(state.customTaskName)
-  const reviewFiles = wfTask ? wfTask.reviewFiles || [] : []
-  if (reviewFiles.length > 0) {
-    const resolved = resolveProjectPath(reviewFiles[0])
-    if (resolved) await openReviewEditor(resolved)
-  } else {
-    alert('当前工作流没有配置复核文件。')
-  }
+  // 刷新右侧复核文件列表，不弹出编辑器
+  await renderReviewFiles()
 }
 
 export function cancelRunningStep() {
@@ -58,7 +52,7 @@ export async function runStep(stepIndex = state.activeStepIndex) {
   state.activeStepIndex = stepIndex
   logger.info('runStep', `${step.title} (id=${step.id})`)
   markStep(task.id, step.id, 'running')
-  renderWorkflowWorkspace()
+  await renderWorkflowWorkspace()
   setAgentStatus('Running', 28)
   startTimer()
 
@@ -186,14 +180,13 @@ export async function runStep(stepIndex = state.activeStepIndex) {
         addMessage({ title: step.title, body: result.error || '检查失败', failed: true })
       }
     }
-    // ── Step 6: Fill ──
+    // ── Step 8: Fill ──
     else if (step.id === 'fill') {
-      const useLlm = state.detectMethod === 'llm'
-      const requirement = useLlm ? (state.stepRequirements[taskRunKey()] || '') : ''
-      result = useLlm
-        ? await api.workflowFillLlm(customerName, taskDirName, requirement)
-        : await api.workflowFill(customerName, taskDirName)
-      const methodLabel = useLlm ? '🤖 LLM 自适应填表' : '📜 脚本填表'
+      const parser = state.detectMethod  // 'llm' | 'llm_regenerate' | 'script'
+      const requirement = state.stepRequirements[taskRunKey()] || ''
+      result = await api.workflowFill(customerName, taskDirName, parser, requirement)
+      const methodLabel = (parser === 'llm' || parser === 'llm_regenerate')
+        ? '🤖 LLM 自适应填表' : '📜 脚本填表'
       markStep(task.id, step.id, 'completed', result)
       addMessage({ title: step.title, body: `${methodLabel} 完成，右侧已更新生成文件。`, result })
     }
@@ -334,14 +327,9 @@ export async function runStep(stepIndex = state.activeStepIndex) {
     setAgentStatus('Completed', 100)
     await refreshFiles()
     await refreshTokens()
-    // 自动弹出复核文件 —— 仅在 match 步骤后
+    // 刷新右侧复核文件列表 —— 仅在 match 步骤后
     if (step.id === 'match') {
-      const wfTask = findWorkflowTaskByName(state.customTaskName)
-      const reviewFiles = wfTask ? wfTask.reviewFiles || [] : []
-      if (reviewFiles.length > 0) {
-        const resolved = resolveProjectPath(reviewFiles[0])
-        if (resolved) openReviewEditor(resolved)
-      }
+      await renderReviewFiles()
     }
     return result
   } catch (error) {
@@ -357,7 +345,7 @@ export async function runStep(stepIndex = state.activeStepIndex) {
     throw error
   } finally {
     stopTimer()
-    renderWorkflowWorkspace()
+    await renderWorkflowWorkspace()
   }
 }
 
@@ -452,7 +440,7 @@ export async function deleteProject(id) {
 /**
  * 当下拉选择已有项目时调用。
  */
-export function selectProject(projectId) {
+export async function selectProject(projectId) {
   const id = projectId ? Number(projectId) : null
   state.activeProjectId = id
   if (id) {
@@ -478,18 +466,18 @@ export function selectProject(projectId) {
     state.activeProjectId = null
   }
   state.activeStepIndex = 0
-  renderWorkflowWorkspace()
+  await renderWorkflowWorkspace()
 }
 
 /**
  * 切换自定义模式 checkbox
  */
-export function toggleCustomMode(checked) {
+export async function toggleCustomMode(checked) {
   state.activeProjectId = checked ? null : (state.projects[0]?.id || null)
   if (!checked && state.projects.length > 0 && !state.activeProjectId) {
     state.activeProjectId = state.projects[0].id
   }
-  renderWorkflowWorkspace()
+  await renderWorkflowWorkspace()
 }
 
 /**
@@ -502,7 +490,7 @@ export function updateCustomCustomerName(name) {
 /**
  * 自定义模式下更新任务名称
  */
-export function updateCustomTaskName(taskName) {
+export async function updateCustomTaskName(taskName) {
   state.customTaskName = taskName
   const wfTask = findWorkflowTaskByName(taskName)
   if (wfTask) {
@@ -517,15 +505,15 @@ export function updateCustomTaskName(taskName) {
     }
   }
   state.activeStepIndex = 0
-  renderWorkflowWorkspace()
+  await renderWorkflowWorkspace()
 }
 
 /**
  * 更新 Detect 步骤的识别方式：'llm' | 'script'
  */
-export function updateDetectMethod(method) {
+export async function updateDetectMethod(method) {
   state.detectMethod = method
-  renderWorkflowWorkspace()
+  await renderWorkflowWorkspace()
 }
 
 /**

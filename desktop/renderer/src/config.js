@@ -228,7 +228,7 @@ export const customWorkflowTask = {
  *   - 特殊 id: 'project-file-tree' / 'git-log' / 'review-editor'
  */
 export const evidencePanelSections = [
-  ['review-editor',     '人工复核',      true,  false, false],
+  ['review-editor',     '人工复核',      true,  true,  false],
   ['config-editor',     '配置确认',      true,  false, true],
   ['project-file-tree', '项目文件',      true,  true,  false],
   ['git-log',           'Git 历史',      true,  true,  true],
