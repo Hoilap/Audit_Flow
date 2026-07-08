@@ -90,7 +90,10 @@ def apply_manual_approvals(config: dict[str, Any]) -> tuple[Path, Path, Path, Pa
 def _load_csv(path: Path) -> pd.DataFrame:
     if not path.exists() or path.stat().st_size == 0:
         return pd.DataFrame()
-    return pd.read_csv(path, dtype=str).fillna("")
+    try:
+        return pd.read_csv(path, dtype=str).fillna("")
+    except pd.errors.EmptyDataError:
+        return pd.DataFrame()
 
 
 def _records_by_id(df: pd.DataFrame, kind: str, id_col: str) -> dict[str, Record]:

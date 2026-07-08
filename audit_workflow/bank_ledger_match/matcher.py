@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from datetime import date
 from datetime import datetime
@@ -33,7 +34,7 @@ def write_monthly_flow_check(config: dict[str, Any]) -> Path:
     return _write_monthly_flow_check(bank_df, ledger_df, config, out)
 
 
-def match_to_csv(config: dict[str, Any]) -> tuple[Path, Path, Path]:
+def match_to_csv(config: dict[str, Any]) -> tuple[Path, Path, Path, dict[str, Any]]:
     clean_dir = output_dir(config) / "clean"
     bank_path = clean_dir / "bank_transactions.csv"
     ledger_path = clean_dir / "ledger_entries.csv"
@@ -42,7 +43,7 @@ def match_to_csv(config: dict[str, Any]) -> tuple[Path, Path, Path]:
     out = output_dir(config) / "matches"
     out.mkdir(parents=True, exist_ok=True)
     _write_monthly_flow_check(bank_df, ledger_df, config, out)
-    matches_df, unmatched_bank_df, unmatched_ledger_df = match_transactions(bank_df, ledger_df, config)
+    matches_df, unmatched_bank_df, unmatched_ledger_df, stats = match_transactions(bank_df, ledger_df, config)
 
     matches_path = out / "matches.csv"
     unmatched_bank_path = out / "unmatched_bank.csv"
@@ -50,12 +51,12 @@ def match_to_csv(config: dict[str, Any]) -> tuple[Path, Path, Path]:
     matches_path = _safe_to_csv(matches_df, matches_path)
     unmatched_bank_path = _safe_to_csv(unmatched_bank_df, unmatched_bank_path)
     unmatched_ledger_path = _safe_to_csv(unmatched_ledger_df, unmatched_ledger_path)
-    return matches_path, unmatched_bank_path, unmatched_ledger_path
+    return matches_path, unmatched_bank_path, unmatched_ledger_path, stats
 
 
 def match_transactions(
     bank_df: pd.DataFrame, ledger_df: pd.DataFrame, config: dict[str, Any]
-) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, dict[str, Any]]:
     cfg = config.get("matching", {})
     amount_tol = amount_to_cents(cfg.get("amount_tolerance", 0.01))
     one_to_one_date_tol = int(cfg.get("date_tolerance_days", 3))
@@ -72,20 +73,30 @@ def match_transactions(
     used_bank: set[str] = set()
     used_ledger: set[str] = set()
     groups: list[dict[str, Any]] = []
+    heuristic_stats: dict[str, int] = {
+        "fee_aggregation": 0,
+        "cross_account_transfer": 0,
+        "one_to_one": 0,
+        "one_to_many": 0,
+        "many_to_one": 0,
+        "many_to_many": 0,
+        "cleanup": 0,
+    }
 
     # 检查是否为完全重新匹配模式（llm_regenerate）
     llm_cfg = config.get("matching", {}).get("llm", {})
     full_rematch = llm_cfg.get("enabled", False) and llm_cfg.get("full_rematch", False)
     if full_rematch:
-        print("完全重新匹配模式 (llm_regenerate)：跳过规则匹配，仅使用 LLM 进行匹配")
+        print("完全重新匹配模式 (llm_init)：跳过规则匹配，仅使用 LLM 进行匹配")
 
     if not full_rematch:
         # Pass 0: 手续费聚合预匹配
-        _fee_aggregation_match(bank_records, ledger_records, used_bank, used_ledger, amount_tol, config, groups)
+        heuristic_stats["fee_aggregation"] = _fee_aggregation_match(bank_records, ledger_records, used_bank, used_ledger, amount_tol, config, groups)
 
         # Pass 0.5: 跨账号调拨匹配
-        _cross_account_transfer_match(bank_records, ledger_records, used_bank, used_ledger, amount_tol, config, groups)
+        heuristic_stats["cross_account_transfer"] = _cross_account_transfer_match(bank_records, ledger_records, used_bank, used_ledger, amount_tol, config, groups)
 
+        _before_p1 = len(groups)
         pair_candidates: list[tuple[float, Record, Record]] = []
         for bank in bank_records:
             for ledger in ledger_records:
@@ -102,8 +113,10 @@ def match_transactions(
             groups.append(_make_group(config, "one_to_one", [bank], [ledger], score, len(groups) + 1))
             used_bank.add(bank.id)
             used_ledger.add(ledger.id)
+        heuristic_stats["one_to_one"] = len(groups) - _before_p1
 
         # Pass 2: 1:N matching (one bank → many ledger)
+        _before_p2 = len(groups)
         for bank in bank_records:
             if bank.id in used_bank:
                 continue
@@ -127,8 +140,10 @@ def match_transactions(
                 groups.append(_make_group(config, "one_to_many", [bank], subset, score, len(groups) + 1))
                 used_bank.add(bank.id)
                 used_ledger.update(item.id for item in subset)
+        heuristic_stats["one_to_many"] = len(groups) - _before_p2
 
         # Pass 3: N:1 matching (many bank → one ledger)
+        _before_p3 = len(groups)
         for ledger in ledger_records:
             if ledger.id in used_ledger:
                 continue
@@ -152,21 +167,25 @@ def match_transactions(
                 groups.append(_make_group(config, "many_to_one", subset, [ledger], score, len(groups) + 1))
                 used_bank.update(item.id for item in subset)
                 used_ledger.add(ledger.id)
+        heuristic_stats["many_to_one"] = len(groups) - _before_p3
 
+        _before_p4 = len(groups)
         for group in _daily_many_to_many(bank_records, ledger_records, used_bank, used_ledger, amount_tol, config):
             bank_group, ledger_group = group
             score = _group_score(bank_group, ledger_group, amount_tol, group_date_tol)
             groups.append(_make_group(config, "many_to_many", bank_group, ledger_group, score, len(groups) + 1))
             used_bank.update(item.id for item in bank_group)
             used_ledger.update(item.id for item in ledger_group)
+        heuristic_stats["many_to_many"] = len(groups) - _before_p4
 
         # Pass 4: 清理残余 — 对少量未匹配记录使用宽松规则匹配
-        _cleanup_small_unmatched(bank_records, ledger_records, used_bank, used_ledger, amount_tol, config, groups)
+        heuristic_stats["cleanup"] = _cleanup_small_unmatched(bank_records, ledger_records, used_bank, used_ledger, amount_tol, config, groups)
 
         print(f"规则匹配完成: {len(groups)} 条匹配, 未匹配银行流水 {len(bank_records) - len(used_bank)} 条, 未匹配序时账 {len(ledger_records) - len(used_ledger)} 条")
 
     # LLM 辅助匹配（由前端 parser 参数控制）
     llm_cfg = config.get("matching", {}).get("llm", {})
+    llm_stats: dict[str, Any] = {}
     if llm_cfg.get("enabled", False):
         from .llm_matcher import apply_llm_supplemental_matches
 
@@ -174,19 +193,32 @@ def match_transactions(
             print("LLM 完全重新匹配模式: 对所有记录进行 LLM 匹配...")
         else:
             print(f"LLM 辅助匹配已启用，对未匹配记录进行匹配...")
-        apply_llm_supplemental_matches(config, bank_records, ledger_records, used_bank, used_ledger, groups)
+        llm_stats = apply_llm_supplemental_matches(config, bank_records, ledger_records, used_bank, used_ledger, groups)
         print(f"LLM 辅助匹配完成，当前共 {len(groups)} 条匹配")
 
     matches_df = pd.DataFrame(groups)
     unmatched_bank = bank_df[~bank_df["txn_id"].isin(used_bank)].copy() if "txn_id" in bank_df else bank_df
     unmatched_ledger = ledger_df[~ledger_df["entry_id"].isin(used_ledger)].copy() if "entry_id" in ledger_df else ledger_df
-    return matches_df, unmatched_bank, unmatched_ledger
+
+    heuristic_total = sum(heuristic_stats.values())
+    combined_stats: dict[str, Any] = {
+        "heuristic": heuristic_stats,
+        "heuristic_total": heuristic_total,
+        "llm": llm_stats,
+        "total_matches": len(groups),
+        "unmatched_bank": len(unmatched_bank),
+        "unmatched_ledger": len(unmatched_ledger),
+    }
+    return matches_df, unmatched_bank, unmatched_ledger, combined_stats
 
 
 def _load_csv(path: Path) -> pd.DataFrame:
-    if not path.exists():
+    if not path.exists() or path.stat().st_size == 0:
         return pd.DataFrame()
-    return pd.read_csv(path, dtype=str).fillna("")
+    try:
+        return pd.read_csv(path, dtype=str).fillna("")
+    except pd.errors.EmptyDataError:
+        return pd.DataFrame()
 
 
 def _safe_to_csv(df: pd.DataFrame, path: Path) -> Path:
@@ -398,7 +430,7 @@ def _fee_aggregation_match(
             continue
 
         pool.sort(key=lambda r: abs((r.trans_date - ledger.trans_date).days))
-        pool = pool[:50]
+        pool = pool[:200]
 
         target = ledger.amount_cents
         subset = None
@@ -420,9 +452,9 @@ def _fee_aggregation_match(
                         subset = list(chosen)
                         break
 
-        # Tier 3: 小子集DFS (max_size=8，避免组合爆炸)
+        # Tier 3: 小子集DFS (max_size=10，避免组合爆炸)
         if subset is None:
-            dfs_result = _find_subset(pool, target, amount_tol, max_size=8)
+            dfs_result = _find_subset(pool, target, amount_tol, max_size=10)
             if dfs_result and len(dfs_result) >= 2:
                 subset = dfs_result
 
@@ -459,7 +491,7 @@ def _fee_aggregation_match(
             continue
 
         expanded_pool.sort(key=lambda r: abs((r.trans_date - ledger.trans_date).days))
-        expanded_pool = expanded_pool[:50]
+        expanded_pool = expanded_pool[:200]
 
         target = ledger.amount_cents
         subset = None
@@ -480,7 +512,7 @@ def _fee_aggregation_match(
                         break
 
         if subset is None:
-            dfs_result = _find_subset(expanded_pool, target, amount_tol, max_size=8)
+            dfs_result = _find_subset(expanded_pool, target, amount_tol, max_size=10)
             if dfs_result and len(dfs_result) >= 2:
                 subset = dfs_result
 
@@ -634,6 +666,7 @@ def _digits(value: object) -> str:
 
 
 _FEE_KEYWORDS = ("手续费", "SMSP", "Service Charge")
+_FEE_DATE_PATTERN = re.compile(r"\d{4}/\d{2}/\d{2}\s*[-~到]\s*\d{4}/\d{2}/\d{2}")
 _FEE_MAX_CENTS = 100000  # ≤1000元视为手续费，排除OBSS/GIRO大额支付
 
 
@@ -643,7 +676,8 @@ def _is_fee_record(rec: Record) -> bool:
         str(rec.row.get(k, "")) for k in ("summary", "description", "counterparty_name")
     )
     has_keyword = any(kw in row_text for kw in _FEE_KEYWORDS)
-    return has_keyword and rec.amount_cents <= _FEE_MAX_CENTS
+    has_date_range = bool(_FEE_DATE_PATTERN.search(row_text))
+    return (has_keyword or has_date_range) and rec.amount_cents <= _FEE_MAX_CENTS
 
 
 _OBSS_PREFIXES = ("OBSS", "GIRO")

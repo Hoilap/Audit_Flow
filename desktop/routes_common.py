@@ -3,6 +3,7 @@
 import json
 import os
 import shutil
+import traceback
 from datetime import datetime
 from pathlib import Path
 
@@ -187,6 +188,7 @@ def git_revert(path: str):
         repo.git.checkout("--", path)
         return {"ok": True}
     except Exception as e:
+        logger.error("Git Revert 失败: path=%s, error=%s\n%s", path, e, traceback.format_exc())
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -244,6 +246,7 @@ async def copy_from_path(source: str = Form(...), dest: str = Form("inputs/")):
         else:
             shutil.copy2(source_path, target)
     except Exception as e:
+        logger.error("复制文件失败: source=%s, dest=%s, error=%s\n%s", source, dest, e, traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"复制失败: {e}")
 
     rel = os.path.relpath(target, project_root)

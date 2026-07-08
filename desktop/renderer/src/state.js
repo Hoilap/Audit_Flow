@@ -21,6 +21,8 @@ export const state = {
   customTaskName: workflowTasks[0].name,
   /** 解析器选择: 'llm' | 'llm_regenerate' | 'script' | 具体解析器名 */
   detectMethod: 'llm',
+  /** Match 步骤独立的解析器选择: 'llm_init' | 'llm_step_once' | 'llm_step_all' */
+  matchMethod: 'llm_step_once',
   /** 从 /task-definitions API 加载的任务定义（config.task_definitions.yml），供解析器选择器动态渲染 */
   taskDefinitions: [],
   /** 每个步骤的附加需求，key 为 taskRunKey (taskId:stepId)，value 为文本 */

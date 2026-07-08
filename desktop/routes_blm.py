@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 import json
 import os
+import traceback
 from typing import Any
 
 import yaml as yaml_lib
@@ -21,6 +22,7 @@ from .common import (
     _workflow_state,
     _resolve_workflow_state_key,
     _load_llm_config,
+    notify_frontend,
 )
 from audit_workflow.bank_ledger_match import pipeline as blm_pipeline
 from audit_workflow.bank_ledger_match import file_detector
@@ -63,41 +65,53 @@ def _apply_parser_to_config(cfg: dict, parser: str) -> None:
     """根据前端传入的 parser 参数配置 LLM 开关和解析器选择。
 
     parser 取值:
-      - "llm"            → 使用 LLM 缓存的解析器（有缓存直接用，无则生成）
+      - "llm_step/llm_step_all" → 使用 LLM 缓存的解析器（有缓存直接用，无则生成）
                        → 匹配时跳过已匹配记录，仅对未匹配记录进行 LLM 辅助匹配
-      - "llm_regenerate" → 跳过缓存检查，重新调 LLM 生成解析器
+                       → 不去重，所有候选送 LLM（适合复杂/重叠候选场景）
+      - "llm_step_once" → 同 llm_step，但仅将无重复的单一候选送 LLM（简单样本，节省 token）
+      - "llm_init" → 跳过缓存检查，重新调 LLM 生成解析器
                        → 匹配时忽略所有已匹配记录，完全重新匹配
+                       → 去重，仅保留无重复候选
       - "script"         → 使用硬编码脚本解析，不启用 LLM 辅助匹配
       - 其他具体解析器名  → 直接使用（如 icbc_historydetail, xinjiyuan_bank_ledger）
     """
     if not parser:
         return
     cfg["parser"] = parser
-    is_llm = parser in ("llm", "llm_regenerate")
+    is_llm = parser in ("llm", "llm_regenerate", "llm_init", "llm_step", "llm_step_once", "llm_step_all")
     cfg.setdefault("llm", {})["enabled"] = is_llm
     cfg.setdefault("matching", {}).setdefault("llm", {})
     cfg["matching"]["llm"]["enabled"] = is_llm
-    # 区分 llm_regenerate（完全重新匹配）和 llm（仅匹配未匹配记录）
-    cfg["matching"]["llm"]["full_rematch"] = (parser == "llm_regenerate")
-    # llm_regenerate: 设置强制重新生成标志，ensure_* 函数跳过缓存
-    if parser == "llm_regenerate":
+    # llm_regenerate / llm_init → 完全重新匹配；其他 LLM parser → 仅匹配未匹配记录
+    cfg["matching"]["llm"]["full_rematch"] = (parser in ("llm_init"))
+
+    # llm_step_once / llm_regenerate / llm_init → 去重，仅保留无重复候选（简单样本）
+    # llm_step_all / llm / llm_step → 不去重，所有候选送 LLM（全面匹配）
+    cfg["matching"]["llm"]["deduplicate_candidates"] = (parser in ("llm_init", "llm_step_once"))
+
+    # llm_init 可复用之前的 LLM 决策缓存；llm_step_once / llm_step_all 每次重新调用 LLM
+    # （因为 step 模式与 init 模式的候选集不同，跨模式复用缓存会导致 LLM 不被调用）
+    cfg["matching"]["llm"]["reuse_decisions"] = (parser in ("llm_step_once", "llm_step_all"))
+    
+    # llm_regenerate / llm_init: 设置强制重新生成标志，ensure_* 函数跳过缓存
+    if parser in ("llm_regenerate", "llm_init"):
         cfg["_force_regenerate"] = True
 
 
 def _normalize_parser_for_bank(parser: str) -> str:
     """将前端 parser 值映射为 bank cleaner 可识别的名称。
-    llm / llm_regenerate → llm_bank
+    llm / llm_regenerate / llm_init / llm_step → llm_bank
     """
-    if parser in ("llm", "llm_regenerate"):
+    if parser in ("llm", "llm_regenerate", "llm_init", "llm_step", "llm_step_once", "llm_step_all"):
         return "llm_bank"
     return parser
 
 
 def _normalize_parser_for_ledger(parser: str) -> str:
     """将前端 parser 值映射为 ledger cleaner 可识别的名称。
-    llm / llm_regenerate → llm_ledger
+    llm / llm_regenerate / llm_init / llm_step → llm_ledger
     """
-    if parser in ("llm", "llm_regenerate"):
+    if parser in ("llm", "llm_regenerate", "llm_init", "llm_step", "llm_step_once", "llm_step_all"):
         return "llm_ledger"
     return parser
 
@@ -121,9 +135,11 @@ def workflow_match(
     if requirement:
         cfg["_user_requirement"] = requirement
     try:
-        matches, unmatched_bank, unmatched_ledger = blm_pipeline.run_match(cfg)
-        return {"matches": str(matches), "unmatched_bank": str(unmatched_bank), "unmatched_ledger": str(unmatched_ledger)}
+        matches, unmatched_bank, unmatched_ledger, stats = blm_pipeline.run_match(cfg)
+        notify_frontend("match_completed", stats)
+        return {"matches": str(matches), "unmatched_bank": str(unmatched_bank), "unmatched_ledger": str(unmatched_ledger), "stats": stats}
     except Exception as e:
+        logger.error("Match 失败: customer=%s, task=%s, error=%s\n%s", customer_name, task_name, e, traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -136,6 +152,7 @@ def workflow_approve(config: str = Form(None)):
         a, b, c, d = blm_pipeline.run_approve(cfg)
         return {"result": [str(x) for x in (a, b, c, d)]}
     except Exception as e:
+        logger.error("Approve 失败: error=%s\n%s", e, traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -174,6 +191,7 @@ def workflow_verify(
         }
         return result
     except Exception as e:
+        logger.error("Verify 失败: customer=%s, task=%s, error=%s\n%s", customer_name, task_name, e, traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -195,7 +213,7 @@ async def workflow_detect(
     # 统一 parser 参数：优先用 parser，否则回退到旧的 use_llm
     if not parser:
         parser = "llm" if str(use_llm).lower() in ("1", "true", "yes", "on") else "script"
-    use_llm_flag = parser in ("llm", "llm_regenerate")
+    use_llm_flag = parser in ("llm", "llm_regenerate", "llm_init", "llm_step", "llm_step_once", "llm_step_all")
     logger.info("开始 Detect: customer=%s, task=%s, parser=%s", customer_name, task_name, parser)
     try:
         # 1. 扫描文件
@@ -314,6 +332,7 @@ async def workflow_detect(
             "warnings": warnings,
         }
     except Exception as e:
+        logger.error("Detect 失败: customer=%s, task=%s, error=%s\n%s", customer_name, task_name, e, traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -382,6 +401,7 @@ def workflow_save_config(
     except HTTPException:
         raise
     except Exception as e:
+        logger.error("保存配置失败: customer=%s, task=%s, error=%s\n%s", customer_name, task_name, e, traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -410,6 +430,7 @@ def workflow_bank_ledger_match_clean(
             resp["warnings"] = warnings
         return resp
     except Exception as e:
+        logger.error("Clean 失败: customer=%s, task=%s, error=%s\n%s", customer_name, task_name, e, traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -443,6 +464,7 @@ def workflow_bank_ledger_match_clean_bank(
             resp["warnings"] = warnings
         return resp
     except Exception as e:
+        logger.error("Clean Bank 失败: customer=%s, task=%s, parser=%s, error=%s\n%s", customer_name, task_name, parser, e, traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -476,6 +498,7 @@ def workflow_bank_ledger_match_clean_ledger(
             resp["warnings"] = warnings
         return resp
     except Exception as e:
+        logger.error("Clean Ledger 失败: customer=%s, task=%s, parser=%s, error=%s\n%s", customer_name, task_name, parser, e, traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -542,6 +565,7 @@ def workflow_bank_ledger_match_check(
             "mismatches": mismatches[:50],
         }
     except Exception as e:
+        logger.error("Check 失败: customer=%s, task=%s, error=%s\n%s", customer_name, task_name, e, traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -555,10 +579,10 @@ def workflow_bank_ledger_match_fill(
 ):
     """Step 8 - Fill: 将匹配结果填入工作底稿。
     parser:
-      - "llm" / "llm_regenerate" → LLM 自适应填表
+      - "llm" / "llm_regenerate" / "llm_init" / "llm_step" → LLM 自适应填表
       - "script" / 其他 / 空       → 脚本填表（硬编码列映射）
     """
-    use_llm = parser in ("llm", "llm_regenerate")
+    use_llm = parser in ("llm", "llm_regenerate", "llm_init", "llm_step", "llm_step_once", "llm_step_all")
     logger.info("开始 Fill: customer=%s, task=%s, parser=%s", customer_name, task_name, parser)
     if customer_name:
         cfg = _build_full_config(customer_name, task_name)
@@ -575,6 +599,7 @@ def workflow_bank_ledger_match_fill(
             path = blm_pipeline.run_fill(cfg)
             return {"working_paper": str(path), "llm_used": False}
     except Exception as e:
+        logger.error("Fill 失败: customer=%s, task=%s, parser=%s, error=%s\n%s", customer_name, task_name, parser, e, traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
 

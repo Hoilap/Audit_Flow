@@ -332,19 +332,26 @@ function renderDetectMethodSelector() {
     `
   }
 
-  const method = state.detectMethod
+  const isMatchStep = step?.id === 'match'
+  const method = isMatchStep ? state.matchMethod : state.detectMethod
 
   // 如果当前选中的值不在可用选项中，自动回退到第一个
   const validValues = options.map(o => o.value)
   const selectedMethod = validValues.includes(method) ? method : validValues[0]
   if (selectedMethod !== method) {
-    state.detectMethod = selectedMethod
+    if (isMatchStep) {
+      state.matchMethod = selectedMethod
+    } else {
+      state.detectMethod = selectedMethod
+    }
   }
+
+  const radioName = isMatchStep ? 'match-method' : 'detect-method'
 
   const radios = options.map(o => {
     const checked = selectedMethod === o.value ? 'checked' : ''
     return `<label class="project-bar-custom" style="margin-right:12px;">
-      <input type="radio" name="detect-method" value="${o.value}" ${checked} /> ${escapeHtml(o.label)}
+      <input type="radio" name="${radioName}" value="${o.value}" ${checked} /> ${escapeHtml(o.label)}
     </label>`
   }).join('')
 
@@ -405,7 +412,7 @@ export function renderStepFiles() {
  * 
  * 优化：先立即显示文件列表（不阻塞初始化），然后在后台异步获取修改时间并更新 UI。
  */
-async function renderReviewFiles() {
+export async function renderReviewFiles() {
   const wfTask = findWorkflowTaskByName(state.customTaskName)
   const reviewFiles = wfTask ? wfTask.reviewFiles || [] : []
   const list = $('#review-file-list')

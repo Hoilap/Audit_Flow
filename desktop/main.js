@@ -34,8 +34,19 @@ function killProcessOnPort(port) {
 function startBackend() {
   // 启动前先清理端口占用，避免 WinError 10013
   killProcessOnPort(8001)
-  const py = process.platform === 'win32' ? 'python' : 'python3'
-  backend = spawn(py, ['-m', 'desktop.api'], { cwd: path.join(__dirname, '..') })
+  const projectRoot = path.join(__dirname, '..')
+
+  // 优先使用 .venv 的 Python 解释器，确保依赖包（pydantic_ai 等）已安装
+  let py
+  if (process.platform === 'win32') {
+    const venvPy = path.join(projectRoot, '.venv', 'Scripts', 'python.exe')
+    py = require('fs').existsSync(venvPy) ? venvPy : 'python'
+  } else {
+    const venvPy = path.join(projectRoot, '.venv', 'bin', 'python3')
+    py = require('fs').existsSync(venvPy) ? venvPy : 'python3'
+  }
+  console.log(`[main] using Python: ${py}`)
+  backend = spawn(py, ['-m', 'desktop.api'], { cwd: projectRoot })
   backend.stdout.on('data', (data) => console.log(`[api] ${data}`))
   backend.stderr.on('data', (data) => console.error(`[api-err] ${data}`))
 }

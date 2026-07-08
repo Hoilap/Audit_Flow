@@ -516,6 +516,11 @@ def parse_generated_bank(config: dict[str, Any], item: dict[str, Any]) -> pd.Dat
     df["source_file"] = Path(item["path"]).name
     df["bank_name"] = item.get("bank_name", df.get("bank_name", ""))
     df["account_no"] = item.get("account_no", df.get("account_no", ""))
+    # 覆写 LLM 解析器生成的 txn_id，使用 {source_id}_{source_file}_{source_sheet}_{row_no}
+    # 确保跨多个 source file/sheet 时 ID 唯一，防止 bank_by_id dict 键碰撞导致记录幽灵消耗
+    df["txn_id"] = df.apply(
+        lambda row: f"{row['source_id']}_{row['source_file']}_{row['source_sheet']}_{row['row_no']}", axis=1
+    )
     return df[BANK_COLUMNS]
 
 
@@ -627,4 +632,9 @@ def parse_generated_ledger(config: dict[str, Any], item: dict[str, Any]) -> pd.D
     df["source_file"] = Path(item["path"]).name
     df["bank_name"] = item.get("bank_name", df.get("bank_name", ""))
     df["account_no"] = item.get("account_no", df.get("account_no", ""))
+    # 覆写 LLM 解析器生成的 entry_id，使用 {source_id}_{source_file}_{source_sheet}_{row_no}
+    # 与 parse_generated_bank 保持一致的唯一 ID 策略
+    df["entry_id"] = df.apply(
+        lambda row: f"{row['source_id']}_{row['source_file']}_{row['source_sheet']}_{row['row_no']}", axis=1
+    )
     return df[LEDGER_COLUMNS]

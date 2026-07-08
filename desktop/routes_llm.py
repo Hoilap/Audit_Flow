@@ -6,6 +6,7 @@ import os
 import re
 import subprocess
 import sys
+import traceback
 
 from fastapi import APIRouter, Form
 

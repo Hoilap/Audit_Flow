@@ -1,6 +1,7 @@
 """desktop.routes_llm_config — LLM 配置管理 CRUD 端点 + token 查询。"""
 
 import os
+import traceback
 
 import yaml as yaml_lib
 from fastapi import APIRouter, HTTPException, Form

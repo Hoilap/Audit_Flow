@@ -69,6 +69,21 @@ export async function openReviewEditor(filePath) {
       'review_reason', 'duplicate_info', 'manual_note',
     ]
 
+    // 检查是否存在重复候选，如有则显示警告
+    const duplicateRecords = records.filter((row, rowIdx) => {
+      const info = (row[colIndex['duplicate_info']] || '').trim()
+      return info && info !== '无重复'
+    })
+    let dupWarning = ''
+    if (duplicateRecords.length > 0) {
+      const types = new Set(duplicateRecords.map(r => (r[colIndex['duplicate_info']] || '').trim()))
+      const typeList = [...types].join('、')
+      dupWarning = `<div class="review-warning">
+        ⚠️ 存在 <strong>${duplicateRecords.length}</strong> 条含有重复记录的候选 (${escapeHtml(typeList)})。
+        同一笔银行流水或序时账出现在多个候选匹配中，请仔细审核后决定通过/拒绝，避免批准冲突的匹配。
+      </div>`
+    }
+
     // 构建表头
     const thead = `<tr>${displayHeaders.map(h => `<th>${escapeHtml(h)}</th>`).join('')}</tr>`
 
@@ -108,6 +123,7 @@ export async function openReviewEditor(filePath) {
           <button id="review-refresh">🔄 重新加载</button>
         </div>
       </div>
+      ${dupWarning}
       <div class="review-table-wrap">
         <table class="table review-table">
           <thead>${thead}</thead>

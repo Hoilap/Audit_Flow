@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import os
+import traceback
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Form
@@ -82,6 +83,7 @@ def workflow_osm_detect(
         result = osm_pipeline.run_detect(cfg)
         return {"ok": True, **result}
     except Exception as e:
+        logger.error("OSM Detect 失败: customer=%s, task=%s, error=%s\n%s", customer_name, task_name, e, traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -113,6 +115,7 @@ def workflow_osm_clean_settlement(
             "script_dir": cleaning_info.get("script_dir"),
         }
     except Exception as e:
+        logger.error("OSM Clean Settlement 失败: customer=%s, task=%s, parser=%s, error=%s\n%s", customer_name, task_name, parser, e, traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -144,6 +147,7 @@ def workflow_osm_clean_outbound(
             "script_dir": cleaning_info.get("script_dir"),
         }
     except Exception as e:
+        logger.error("OSM Clean Outbound 失败: customer=%s, task=%s, parser=%s, error=%s\n%s", customer_name, task_name, parser, e, traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -302,7 +306,7 @@ def workflow_osm_clean_outbound_sheet(
             "error": None,
         }
     except Exception as e:
-        logger.warning("Clean sheet failed: %s", e)
+        logger.error("OSM Clean Sheet 失败: customer=%s, task=%s, file=%s, sheet=%s, error=%s\n%s", customer_name, task_name, file, sheet, e, traceback.format_exc())
         return {
             "ok": True,
             "status": "failed",
@@ -339,6 +343,7 @@ def workflow_osm_match(
             "monthly_summary": {"path": str(result["monthly_summary"]), "rows": _count_rows(result["monthly_summary"])},
         }
     except Exception as e:
+        logger.error("OSM Match 失败: customer=%s, task=%s, error=%s\n%s", customer_name, task_name, e, traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -365,4 +370,5 @@ def workflow_osm_run_all(
             "cleaning_outbound": cleaning.get("outbound", {}),
         }
     except Exception as e:
+        logger.error("OSM Run All 失败: customer=%s, task=%s, error=%s\n%s", customer_name, task_name, e, traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))

@@ -1,7 +1,7 @@
 import { api, apiBase, cancelRequest } from './api.js'
 import { activeTask, findWorkflowTaskByName, getProjectBasePath, resolveProjectPath, markStep, state, stepStatus, taskRunKey } from './state.js'
 import { $ } from './dom.js'
-import { addMessage, renderFileError, renderFileTree, renderFiles, renderWorkflowWorkspace, setAgentStatus, startTimer, stopTimer, renderDetectResult, renderConfigConfirm, renderCheckResult, renderProgramsList, renderSheetTasks, renderSettingsProviders } from './ui.js'
+import { addMessage, renderFileError, renderFileTree, renderFiles, renderWorkflowWorkspace, setAgentStatus, startTimer, stopTimer, renderDetectResult, renderConfigConfirm, renderCheckResult, renderProgramsList, renderSheetTasks, renderSettingsProviders, renderReviewFiles } from './ui.js'
 import { openCsvPreview } from './previewModal.js'
 import { openReviewEditor } from './reviewEditor.js'
 import { createModal } from './modal.js'
@@ -300,7 +300,33 @@ export async function runStep(stepIndex = state.activeStepIndex) {
         })
       }
     }
-    // ── 其他步骤（match, verify）── 使用通用 workflow + customer 参数
+    // ── Match 步骤（BLM）── 使用独立的 matchMethod + BLM 特有统计
+    else if (step.id === 'match') {
+      const form = new FormData()
+      form.append('customer_name', customerName)
+      form.append('task_name', taskDirName)
+      const parser = state.matchMethod || 'llm_step_once'
+      form.append('parser', parser)
+      const requirement = state.stepRequirements[taskRunKey()] || ''
+      if (requirement) form.append('requirement', requirement)
+      result = await api.workflow(step.endpoint, form)
+      markStep(task.id, step.id, 'completed', result)
+      if (result.stats) {
+        const s = result.stats
+        const h = s.heuristic || {}
+        const llm = s.llm || {}
+        addMessage({
+          title: step.title,
+          body: `匹配完成：共 ${s.total_matched || 0} 条。` +
+            `启发式: 1:1=${h.one_to_one || 0}, 1:N=${h.one_to_many || 0}, N:1=${h.many_to_one || 0}, N:M=${h.many_to_many || 0}, 手续费聚合=${h.fee_aggregation || 0}, 调拨=${h.cross_account_transfer || 0}。` +
+            `LLM: ${llm.llm_total || 0} 条。`,
+          result,
+        })
+      } else {
+        addMessage({ title: step.title, body: '步骤执行完成，右侧已更新生成文件。', result })
+      }
+    }
+    // ── 其他步骤（verify 等）── 使用通用 workflow + customer 参数
     else {
       const form = new FormData()
       form.append('customer_name', customerName)
@@ -311,17 +337,7 @@ export async function runStep(stepIndex = state.activeStepIndex) {
       if (requirement) form.append('requirement', requirement)
       result = await api.workflow(step.endpoint, form)
       markStep(task.id, step.id, 'completed', result)
-      // Match 步骤特殊消息
-      if (step.id === 'match' && result.summary) {
-        const s = result.summary
-        addMessage({
-          title: step.title,
-          body: `匹配完成：匹配 ${s.matched || 0} 条，未匹配出库 ${s.unmatched_outbound || 0} 条，未匹配结算 ${s.unmatched_settlement || 0} 条。`,
-          result,
-        })
-      } else {
-        addMessage({ title: step.title, body: '步骤执行完成，右侧已更新生成文件。', result })
-      }
+      addMessage({ title: step.title, body: '步骤执行完成，右侧已更新生成文件。', result })
     }
 
     setAgentStatus('Completed', 100)
@@ -513,6 +529,14 @@ export async function updateCustomTaskName(taskName) {
  */
 export async function updateDetectMethod(method) {
   state.detectMethod = method
+  await renderWorkflowWorkspace()
+}
+
+/**
+ * 更新 Match 步骤的解析器选择: 'llm_init' | 'llm_step_once' | 'llm_step_all'
+ */
+export async function updateMatchMethod(method) {
+  state.matchMethod = method
   await renderWorkflowWorkspace()
 }
 

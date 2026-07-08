@@ -2831,3 +2831,73 @@ Length: 0, dtype: str' for dtype 'int64'
 [2026-07-05 19:25:12] INFO    audit_workflow - 开始 Match: customer=桂平金山, task=bank_ledger_match, parser=llm
 [2026-07-05 19:28:51] INFO    audit_workflow - 开始 Match: customer=桂平金山, task=bank_ledger_match, parser=llm_regenerate
 [2026-07-05 20:29:07] INFO    audit_workflow - 开始 Match: customer=桂平金山, task=bank_ledger_match, parser=llm
+[2026-07-06 21:41:02] INFO    audit_workflow - 开始 Match: customer=桂平金山, task=bank_ledger_match, parser=llm_step
+[2026-07-06 21:43:05] INFO    audit_workflow - 开始 Match: customer=桂平金山, task=bank_ledger_match, parser=llm_init
+[2026-07-06 23:26:58] INFO    audit_workflow - 开始 Match: customer=桂平金山, task=bank_ledger_match, parser=llm_init
+[2026-07-06 23:56:19] INFO    audit_workflow - 开始 Match: customer=桂平金山, task=bank_ledger_match, parser=llm_regenerate
+[2026-07-07 00:03:36] INFO    audit_workflow - 开始 Match: customer=桂平金山, task=bank_ledger_match, parser=llm
+[2026-07-07 00:05:24] INFO    audit_workflow - 开始 Match: customer=桂平金山, task=bank_ledger_match, parser=llm
+[2026-07-07 00:07:09] INFO    audit_workflow - 开始 Match: customer=桂平金山, task=bank_ledger_match, parser=llm
+[2026-07-07 01:01:38] INFO    audit_workflow - 开始 Match: customer=桂平金山, task=bank_ledger_match, parser=llm
+[2026-07-07 01:08:17] INFO    audit_workflow - 开始 Match: customer=桂平金山, task=bank_ledger_match, parser=llm_regenerate
+[2026-07-07 01:28:55] INFO    audit_workflow - 开始 Match: customer=桂平金山, task=bank_ledger_match, parser=llm
+[2026-07-07 02:42:22] INFO    audit_workflow - 开始 Match: customer=桂平金山, task=bank_ledger_match, parser=llm_step_once
+[2026-07-08 01:33:41] INFO    audit_workflow - 开始 Match: customer=桂平金山, task=bank_ledger_match, parser=llm_init
+[2026-07-08 21:42:41] INFO    audit_workflow - 开始 Match: customer=桂平金山, task=bank_ledger_match, parser=llm_init
+[2026-07-08 21:44:20] INFO    audit_workflow - 开始 Detect: customer=桂平金山, task=bank_ledger_match, parser=llm
+[2026-07-08 21:44:22] WARNING audit_workflow.bank_ledger_match.file_detector - 银行流水 【中行】桂平金山银行流水2022.11-12月.xls 未能识别银行账号，请检查 task.yml 并手动补充
+[2026-07-08 21:44:22] WARNING audit_workflow.bank_ledger_match.file_detector - 银行流水 中行2022.01-06.xls 未能识别银行账号，请检查 task.yml 并手动补充
+[2026-07-08 21:44:22] WARNING audit_workflow.bank_ledger_match.file_detector - 银行流水 中行2022.07-10 a.xls 未能识别银行账号，请检查 task.yml 并手动补充
+[2026-07-08 21:44:35] INFO    audit_workflow.bank_ledger_match.file_detector - 以下工作表被 LLM 判定为不相关，已排除: 金山中行账（新纪元导出）.xlsx[Sheet1], 金山工行帐（新纪元导出）.xlsx[Sheet1]
+[2026-07-08 21:44:35] INFO    audit_workflow - Detect 完成: customer=桂平金山, task=bank_ledger_match, files=7, llm=True, warnings=1
+[2026-07-08 21:44:43] INFO    audit_workflow - 保存配置: customer=桂平金山, task=bank_ledger_match
+[2026-07-08 21:44:46] INFO    audit_workflow - 开始 Clean Bank: customer=桂平金山, task=bank_ledger_match, parser=llm
+[2026-07-08 21:44:46] INFO    audit_workflow.bank_ledger_match.cleaners - parse_bank_statements: 共 4 个银行流水源待处理
+[2026-07-08 21:44:46] INFO    audit_workflow.bank_ledger_match.cleaners -   [boc_bank_2022_多账户查询业务处理结果] 开始解析，解析器=llm_bank，文件=C:\Users\DengKaina\Desktop\Audit_workflow\inputs\桂平金山\bank_ledger_match\bank\【中行】桂平金山银行流水2022.11-12月.xls
+[2026-07-08 21:44:46] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 67319d16): bank_67319d16.py → reusing for boc_bank_2022_多账户查询业务处理结果
+[2026-07-08 21:44:46] INFO    audit_workflow.bank_ledger_match.cleaners -   [boc_bank_2022_多账户查询业务处理结果] 加载解析器: bank_67319d16.py
+[2026-07-08 21:44:46] INFO    audit_workflow.bank_ledger_match.cleaners -   [boc_bank_2022_多账户查询业务处理结果] 解析器返回 138 条原始记录
+[2026-07-08 21:44:46] INFO    audit_workflow.bank_ledger_match.cleaners -   [boc_bank_2022_多账户查询业务处理结果] 解析成功：138 条记录
+[2026-07-08 21:44:46] INFO    audit_workflow.bank_ledger_match.cleaners -   [icbc_bank_2022_Sheet0] 开始解析，解析器=llm_bank，文件=C:\Users\DengKaina\Desktop\Audit_workflow\inputs\桂平金山\bank_ledger_match\bank\【工行】桂平金山银行流水2022.1-12月.xlsx
+[2026-07-08 21:44:46] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 2a5b5c39): bank_2a5b5c39.py → reusing for icbc_bank_2022_Sheet0
+[2026-07-08 21:44:46] INFO    audit_workflow.bank_ledger_match.cleaners -   [icbc_bank_2022_Sheet0] 加载解析器: bank_2a5b5c39.py
+[2026-07-08 21:44:46] INFO    audit_workflow.bank_ledger_match.cleaners -   [icbc_bank_2022_Sheet0] 解析器返回 698 条原始记录
+[2026-07-08 21:44:46] INFO    audit_workflow.bank_ledger_match.cleaners -   [icbc_bank_2022_Sheet0] 解析成功：698 条记录
+[2026-07-08 21:44:46] INFO    audit_workflow.bank_ledger_match.cleaners -   [boc_bank_2022_多账户查询业务处理结果] 开始解析，解析器=llm_bank，文件=C:\Users\DengKaina\Desktop\Audit_workflow\inputs\桂平金山\bank_ledger_match\bank\中行2022.01-06.xls
+[2026-07-08 21:44:46] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature db8b6edc): bank_db8b6edc.py → reusing for boc_bank_2022_多账户查询业务处理结果
+[2026-07-08 21:44:46] INFO    audit_workflow.bank_ledger_match.cleaners -   [boc_bank_2022_多账户查询业务处理结果] 加载解析器: bank_db8b6edc.py
+[2026-07-08 21:44:46] INFO    audit_workflow.bank_ledger_match.cleaners -   [boc_bank_2022_多账户查询业务处理结果] 解析器返回 17 条原始记录
+[2026-07-08 21:44:46] INFO    audit_workflow.bank_ledger_match.cleaners -   [boc_bank_2022_多账户查询业务处理结果] 解析成功：17 条记录
+[2026-07-08 21:44:46] INFO    audit_workflow.bank_ledger_match.cleaners -   [boc_bank_2022_多账户查询业务处理结果] 开始解析，解析器=llm_bank，文件=C:\Users\DengKaina\Desktop\Audit_workflow\inputs\桂平金山\bank_ledger_match\bank\中行2022.07-10 a.xls
+[2026-07-08 21:44:46] INFO    audit_workflow.bank_ledger_match.llm_cleaner - BLM parser cache hit (by column signature 67319d16): bank_67319d16.py → reusing for boc_bank_2022_多账户查询业务处理结果
+[2026-07-08 21:44:46] INFO    audit_workflow.bank_ledger_match.cleaners -   [boc_bank_2022_多账户查询业务处理结果] 加载解析器: bank_67319d16.py
+[2026-07-08 21:44:47] INFO    audit_workflow.bank_ledger_match.cleaners -   [boc_bank_2022_多账户查询业务处理结果] 解析器返回 240 条原始记录
+[2026-07-08 21:44:47] INFO    audit_workflow.bank_ledger_match.cleaners -   [boc_bank_2022_多账户查询业务处理结果] 解析成功：240 条记录
+[2026-07-08 21:44:47] INFO    audit_workflow.bank_ledger_match.cleaners - parse_bank_statements: 合计 1093 条记录（4 个文件）
+[2026-07-08 21:44:51] INFO    audit_workflow - 开始 Clean Ledger: customer=桂平金山, task=bank_ledger_match, parser=llm
+[2026-07-08 21:44:51] INFO    audit_workflow.bank_ledger_match.cleaners - parse_ledgers: 共 2 个序时账源待处理
+[2026-07-08 21:44:51] INFO    audit_workflow.bank_ledger_match.cleaners -   [boc_ledger_2022_中国银行桂平支行营业部62108180] 开始解析，解析器=llm_ledger，文件=C:\Users\DengKaina\Desktop\Audit_workflow\inputs\桂平金山\bank_ledger_match\ledger\金山中行账（新纪元导出）.xlsx
+[2026-07-08 21:44:51] INFO    audit_workflow.bank_ledger_match.llm_cleaner - Ledger parser cache hit (by column signature 01650118): ledger_01650118.py → reusing for boc_ledger_2022_中国银行桂平支行营业部62108180
+[2026-07-08 21:44:51] INFO    audit_workflow.bank_ledger_match.cleaners -   [boc_ledger_2022_中国银行桂平支行营业部62108180] 加载解析器: ledger_01650118.py
+[2026-07-08 21:44:51] INFO    audit_workflow.bank_ledger_match.cleaners -   [boc_ledger_2022_中国银行桂平支行营业部62108180] 解析器返回 246 条原始记录
+[2026-07-08 21:44:51] INFO    audit_workflow.bank_ledger_match.cleaners -   [boc_ledger_2022_中国银行桂平支行营业部62108180] 解析成功：246 条记录
+[2026-07-08 21:44:51] INFO    audit_workflow.bank_ledger_match.cleaners -   [icbc_ledger_2022_工行贵港桂平新区支行2116006819] 开始解析，解析器=llm_ledger，文件=C:\Users\DengKaina\Desktop\Audit_workflow\inputs\桂平金山\bank_ledger_match\ledger\金山工行帐（新纪元导出）.xlsx
+[2026-07-08 21:44:51] INFO    audit_workflow.bank_ledger_match.llm_cleaner - Ledger parser cache hit (by column signature 783125d4): ledger_783125d4.py → reusing for icbc_ledger_2022_工行贵港桂平新区支行2116006819
+[2026-07-08 21:44:51] INFO    audit_workflow.bank_ledger_match.cleaners -   [icbc_ledger_2022_工行贵港桂平新区支行2116006819] 加载解析器: ledger_783125d4.py
+[2026-07-08 21:44:51] INFO    audit_workflow.bank_ledger_match.cleaners -   [icbc_ledger_2022_工行贵港桂平新区支行2116006819] 解析器返回 516 条原始记录
+[2026-07-08 21:44:51] INFO    audit_workflow.bank_ledger_match.cleaners -   [icbc_ledger_2022_工行贵港桂平新区支行2116006819] 解析成功：516 条记录
+[2026-07-08 21:44:51] WARNING audit_workflow.bank_ledger_match.cleaners - 数据质量问题 [icbc_ledger_2022_工行贵港桂平新区支行2116006819] C:\Users\DengKaina\Desktop\Audit_workflow\inputs\桂平金山\bank_ledger_match\ledger\金山工行帐（新纪元导出）.xlsx (ledger): 1/516 条记录金额为 0 或为空（行号: 296）
+[2026-07-08 21:44:51] INFO    audit_workflow.bank_ledger_match.cleaners - parse_ledgers: 合计 762 条记录（2 个文件）
+[2026-07-08 21:44:57] INFO    audit_workflow - 开始 Check: customer=桂平金山, task=bank_ledger_match
+[2026-07-08 21:45:10] INFO    audit_workflow - 开始 Match: customer=桂平金山, task=bank_ledger_match, parser=llm_init
+[2026-07-08 22:24:26] INFO    audit_workflow - 开始 Match: customer=桂平金山, task=bank_ledger_match, parser=llm_step_once
+[2026-07-09 00:11:57] INFO    audit_workflow - 开始 Match: customer=桂平金山, task=bank_ledger_match, parser=llm_init
+[2026-07-09 00:14:20] INFO    audit_workflow - 开始 Match: customer=桂平金山, task=bank_ledger_match, parser=llm_init
+[2026-07-09 00:17:04] INFO    audit_workflow - 开始 Match: customer=桂平金山, task=bank_ledger_match, parser=llm_init
+[2026-07-09 00:38:07] INFO    audit_workflow - 开始 Match: customer=桂平金山, task=bank_ledger_match, parser=llm_init
+[2026-07-09 00:56:17] INFO    audit_workflow - 开始 Match: customer=桂平金山, task=bank_ledger_match, parser=llm_init
+[2026-07-09 01:55:40] INFO    audit_workflow - 开始 Match: customer=桂平金山, task=bank_ledger_match, parser=llm_init
+[2026-07-09 02:33:26] INFO    audit_workflow - 开始 Match: customer=桂平金山, task=bank_ledger_match, parser=llm_init
+[2026-07-09 02:36:51] INFO    audit_workflow - 开始 Match: customer=桂平金山, task=bank_ledger_match, parser=llm_init
+[2026-07-09 02:38:55] INFO    audit_workflow - 开始 Match: customer=桂平金山, task=bank_ledger_match, parser=llm_step_once
+[2026-07-09 02:42:27] INFO    audit_workflow - 开始 Match: customer=桂平金山, task=bank_ledger_match, parser=llm_step_all

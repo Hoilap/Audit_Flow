@@ -32,7 +32,7 @@ def run_check(config: dict[str, Any]) -> Path:
     return write_monthly_flow_check(config)
 
 
-def run_match(config: dict[str, Any]) -> tuple[Path, Path, Path]:
+def run_match(config: dict[str, Any]) -> tuple[Path, Path, Path, dict[str, Any]]:
     return match_to_csv(config)
 
 
@@ -52,7 +52,7 @@ def run_fill_llm(config: dict[str, Any]) -> tuple[Path, dict]:
 
 def run_all(config: dict[str, Any]) -> dict[str, Path | tuple[Path, ...]]:
     bank_path, ledger_path = run_clean(config)
-    matches_path, unmatched_bank_path, unmatched_ledger_path = run_match(config)
+    matches_path, unmatched_bank_path, unmatched_ledger_path, _stats = run_match(config)
     result: dict[str, Path | tuple[Path, ...]] = {
         "bank_csv": bank_path,
         "ledger_csv": ledger_path,

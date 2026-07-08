@@ -44,8 +44,15 @@ tasks:
         allow_llm: false
         allow_script: false
       - id: match
-        allow_llm: true
-        allow_script: false
+        allow_llm: false
+        allow_script: true
+        allow_scripts_list:
+          - id: llm_init
+            label: "从clean_bank和clean_ledger匹配"
+          - id: llm_step_once
+            label: "从unmatched匹配（仅简单样本）"
+          - id: llm_step_all
+            label: "从unmatched匹配（全部候选）"
       - id: verify
         allow_llm: false
         allow_script: false
@@ -82,36 +89,36 @@ tasks:
         allow_llm: true
         allow_script: false
 
-  - name: 出库表核对
-    dir_name: outbound_check
-    description: "核对出库明细、销售订单和开票记录的一致性"
-    steps:
-      - id: profile
-        allow_llm: true
-        allow_script: true
-      - id: reconcile
-        allow_llm: true
-        allow_script: true
-      - id: verify
-        allow_llm: false
-        allow_script: false
-      - id: report
-        allow_llm: true
-        allow_script: true
+  # - name: 出库表核对
+  #   dir_name: outbound_check
+  #   description: "核对出库明细、销售订单和开票记录的一致性"
+  #   steps:
+  #     - id: profile
+  #       allow_llm: true
+  #       allow_script: true
+  #     - id: reconcile
+  #       allow_llm: true
+  #       allow_script: true
+  #     - id: verify
+  #       allow_llm: false
+  #       allow_script: false
+  #     - id: report
+  #       allow_llm: true
+  #       allow_script: true
 
-  - name: 资金流水专项复核
-    dir_name: cash_flow_review
-    description: "围绕大额、频繁、异常对手方和摘要进行资金流水风险识别"
-    steps:
-      - id: profile
-        allow_llm: true
-        allow_script: true
-      - id: detect
-        allow_llm: true
-        allow_script: true
-      - id: verify
-        allow_llm: false
-        allow_script: false
-      - id: paper
-        allow_llm: true
-        allow_script: true
+  # - name: 资金流水专项复核
+  #   dir_name: cash_flow_review
+  #   description: "围绕大额、频繁、异常对手方和摘要进行资金流水风险识别"
+  #   steps:
+  #     - id: profile
+  #       allow_llm: true
+  #       allow_script: true
+  #     - id: detect
+  #       allow_llm: true
+  #       allow_script: true
+  #     - id: verify
+  #       allow_llm: false
+  #       allow_script: false
+  #     - id: paper
+  #       allow_llm: true
+  #       allow_script: true

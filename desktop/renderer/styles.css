@@ -305,6 +305,16 @@ h3 { font-size: 14px; }
 .review-toolbar button {
   margin-left: 8px;
 }
+.review-warning {
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  color: #856404;
+  font-size: 14px;
+  line-height: 1.5;
+}
 .review-table-wrap {
   overflow: auto;
   max-height: calc(90vh - 160px);

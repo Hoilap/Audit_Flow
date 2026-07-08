@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import re
 from calendar import monthrange
+from collections import Counter
 from dataclasses import dataclass
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -62,10 +63,32 @@ def apply_llm_supplemental_matches(
     used_bank: set[str],
     used_ledger: set[str],
     groups: list[dict[str, Any]],
-) -> None:
+) -> dict[str, Any]:
+    """LLM 辅助匹配，返回匹配统计信息。"""
+    stats: dict[str, Any] = {
+        "bank_total": len(bank_records),
+        "ledger_total": len(ledger_records),
+        "candidates_built": 0,
+        "candidates_llm_review": 0,
+        "candidates_sent_to_llm": 0,
+        "candidates_filtered_dedup": 0,
+        "cached_decisions": 0,
+        "llm_api_calls": 0,
+        "llm_candidates_evaluated": 0,
+        "llm_approved": 0,
+        "llm_rejected": 0,
+        "llm_low_confidence": 0,
+        "llm_no_decision": 0,
+        "manual_approved": 0,
+        "pending_review": 0,
+        "accepted_matches": 0,
+        "token_usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
+    }
+    groups_before = len(groups)
+
     cfg = config.get("matching", {}).get("llm", {})
     if not cfg.get("enabled", False):
-        return
+        return stats
 
     out = output_dir(config) / "matches"
     out.mkdir(parents=True, exist_ok=True)
@@ -88,29 +111,66 @@ def apply_llm_supplemental_matches(
     candidates = _build_candidates(config, bank_records, ledger_records, used_bank, used_ledger)
     candidates_path = out / "llm_candidates.csv"
     decisions_path = out / "llm_decisions.csv"
+    stats["candidates_built"] = len(candidates)
     print(f"LLM 辅助匹配: 构建 {len(candidates)} 个候选匹配")
     if not candidates:
         pd.DataFrame().to_csv(decisions_path, index=False, encoding="utf-8-sig")
         _write_candidates(candidates_path, candidates)
         print("LLM 辅助匹配: 无候选匹配，跳过")
-        return
+        return stats
 
     llm_candidates = [candidate for candidate in candidates if not candidate.review_only or candidate.llm_review]
-    print(f"LLM 辅助匹配: llm_candidates={len(llm_candidates)} (review_only={sum(1 for c in candidates if c.review_only and not c.llm_review)})")
+    review_only_count = sum(1 for c in candidates if c.review_only and not c.llm_review)
+    stats["candidates_llm_review"] = len(llm_candidates)
+    print(f"LLM 辅助匹配: llm_candidates={len(llm_candidates)} (review_only={review_only_count})")
     
+    # 根据 deduplicate_candidates 配置决定是否过滤重复候选
+    deduplicate = cfg.get("deduplicate_candidates", True)
+    if deduplicate:
+        bank_id_counts = Counter()
+        ledger_id_counts = Counter()
+        for candidate in llm_candidates:
+            for record in candidate.bank_group:
+                bank_id_counts[record.id] += 1
+            for record in candidate.ledger_group:
+                ledger_id_counts[record.id] += 1
+        
+        filtered_candidates = []
+        for candidate in llm_candidates:
+            bank_ids = [record.id for record in candidate.bank_group]
+            ledger_ids = [record.id for record in candidate.ledger_group]
+            has_dup_bank = any(bank_id_counts[bid] > 1 for bid in bank_ids)
+            has_dup_ledger = any(ledger_id_counts[lid] > 1 for lid in ledger_ids)
+            if not has_dup_bank and not has_dup_ledger:
+                filtered_candidates.append(candidate)
+        
+        filtered_count = len(llm_candidates) - len(filtered_candidates)
+        stats["candidates_filtered_dedup"] = filtered_count
+        if filtered_count > 0:
+            print(f"LLM 辅助匹配: 过滤掉 {filtered_count} 个含有重复记录的候选 (仅保留 duplicate_info='无重复')")
+        llm_candidates = filtered_candidates
+    else:
+        print(f"LLM 辅助匹配: 不去重，所有 {len(llm_candidates)} 个候选送 LLM (deduplicate_candidates=False)")
+    
+    stats["candidates_sent_to_llm"] = len(llm_candidates)
+
     # full_rematch 模式下不使用缓存的决策
     use_cache = cfg.get("reuse_decisions", True) and not full_rematch
     decisions = _load_cached_decisions(decisions_path, llm_candidates) if use_cache else []
+    stats["cached_decisions"] = len(decisions)
     print(f"LLM 辅助匹配: 从缓存加载 {len(decisions)} 个决策 (use_cache={use_cache})")
     
     decided_signatures = {text(item.get("candidate_signature")) for item in decisions}
     missing_candidates = [
         candidate for candidate in llm_candidates if _candidate_signature(candidate) not in decided_signatures
     ]
+    stats["llm_candidates_evaluated"] = len(missing_candidates)
     print(f"LLM 辅助匹配: 需要调用 LLM 的候选={len(missing_candidates)}")
     
     if missing_candidates:
-        new_decisions = _ask_llm(config, missing_candidates)
+        new_decisions, batch_usage = _ask_llm(config, missing_candidates)
+        stats["token_usage"] = dict(batch_usage)
+        stats["llm_api_calls"] = max(1, (len(missing_candidates) + int(cfg.get("batch_size", 8)) - 1) // int(cfg.get("batch_size", 8)))
         _attach_candidate_signatures(new_decisions, missing_candidates)
         decisions.extend(new_decisions)
         _write_decisions(decisions_path, decisions)
@@ -147,7 +207,9 @@ def apply_llm_supplemental_matches(
             date_tol,
             source="manual",
         )
-        if not accepted:
+        if accepted:
+            stats["manual_approved"] += 1
+        else:
             review_rows.append(_review_row(candidate, decision, "blocked_conflict_or_amount_diff", manual))
 
     pending_review: list[tuple[Candidate, dict[str, Any], str, dict[str, Any] | None]] = []
@@ -171,13 +233,16 @@ def apply_llm_supplemental_matches(
             continue
         if not decision:
             pending_review.append((candidate, {}, "needs_review_no_llm_decision", manual_approvals.get(signature)))
+            stats["llm_no_decision"] += 1
             continue
         confidence = _confidence(decision)
         if not _as_bool(decision.get("approve")):
             pending_review.append((candidate, decision, "needs_review_llm_rejected", manual_approvals.get(signature)))
+            stats["llm_rejected"] += 1
             continue
         if confidence < threshold:
             pending_review.append((candidate, decision, "needs_review_low_confidence", manual_approvals.get(signature)))
+            stats["llm_low_confidence"] += 1
             continue
         accepted = _try_accept_candidate(
             config,
@@ -190,7 +255,9 @@ def apply_llm_supplemental_matches(
             date_tol,
             source="llm",
         )
-        if not accepted:
+        if accepted:
+            stats["llm_approved"] += 1
+        else:
             pending_review.append((candidate, decision, "blocked_conflict_or_amount_diff", manual_approvals.get(signature)))
 
     for candidate, decision, status, previous in pending_review:
@@ -200,7 +267,11 @@ def apply_llm_supplemental_matches(
             continue
         review_rows.append(_review_row(candidate, decision, status, previous))
 
+    stats["pending_review"] = len(review_rows)
+    stats["accepted_matches"] = len(groups) - groups_before
+
     _write_manual_review(review_path, review_rows)
+    return stats
 
 
 def _manual_review_hold_ids(config: dict[str, Any], candidates: list[Candidate]) -> tuple[set[str], set[str]]:
@@ -252,7 +323,7 @@ def _build_candidates(
     relaxed_enabled = bool(relaxed_cfg.get("enabled", True))
     relaxed_window_days = int(relaxed_cfg.get("window_days", max(window_days, 90)))
     relaxed_pool_limit = int(relaxed_cfg.get("pool_limit", 32))
-    relaxed_max_size = int(relaxed_cfg.get("max_size", 10))
+    relaxed_max_size = int(relaxed_cfg.get("max_size", 40))
     relaxed_min_amount = int(round(parse_amount(relaxed_cfg.get("min_amount", 0)) * 100))
     relaxed_max_nodes = int(relaxed_cfg.get("max_search_nodes", 200000))
     manual_enum_cfg = cfg.get("manual_amount_enumeration", {}) or {}
@@ -329,7 +400,7 @@ def _build_candidates(
                 ),
                 reverse=True,
             )[:22]
-            subset = _find_subset(subset_pool, ledger.amount_cents, amount_tol, max_size=10)
+            subset = _find_subset(subset_pool, ledger.amount_cents, amount_tol, max_size=40)
             if len(subset) > 1:
                 candidate = Candidate(
                     candidate_id=f"C{len(candidates) + 1:05d}",
@@ -618,7 +689,6 @@ def _manual_amount_candidates_for_ledger(
     same_flow = bool(cfg.get("same_flow", True))
     pool_limit = int(cfg.get("pool_limit", 120))
     max_size = int(cfg.get("max_size", 40))
-    max_results = int(cfg.get("max_results_per_ledger", 5))
     start = ledger.trans_date - timedelta(days=window_days)
     end = ledger.trans_date + timedelta(days=window_days)
 
@@ -637,28 +707,25 @@ def _manual_amount_candidates_for_ledger(
         pool.append(bank)
 
     pool = _rank_manual_time_pool(ledger, pool, pool_limit)
-    subsets = _find_time_window_amount_subsets(
+    subset = _find_subset(
         pool,
-        ledger,
         ledger.amount_cents,
         amount_tol,
         max_size=max_size,
-        max_results=max_results,
+        max_nodes=int(cfg.get("max_search_nodes", 200000)),
     )
     candidates: list[Candidate] = []
-    for offset, subset in enumerate(subsets):
-        if len(subset) < 2:
-            continue
+    if subset and len(subset) >= 2:
         candidates.append(
             Candidate(
-                candidate_id=f"C{start_index + offset:05d}",
+                candidate_id=f"C{start_index:05d}",
                 match_type="manual_time_window_many_to_one",
                 bank_group=subset,
                 ledger_group=[ledger],
                 period=(min(bank.trans_date for bank in subset), max(bank.trans_date for bank in subset)),
                 heuristic_score=_manual_window_score(subset, ledger),
                 review_only=True,
-                review_reason="Python 按银行流水时间顺序发现连续流水窗口金额与序时账金额一致，需人工判断是否为补登/汇总入账。",
+                review_reason="Python 发现多笔银行流水金额合计与序时账金额一致，需人工判断是否为补登/汇总入账。",
             )
         )
     return candidates
@@ -1439,10 +1506,11 @@ def _confidence(decision: dict[str, Any]) -> float:
         return 0.0
 
 
-def _ask_llm(config: dict[str, Any], candidates: list[Candidate]) -> list[dict[str, Any]]:
+def _ask_llm(config: dict[str, Any], candidates: list[Candidate]) -> tuple[list[dict[str, Any]], dict[str, int]]:
     cfg = config.get("matching", {}).get("llm", {})
     batch_size = int(cfg.get("batch_size", 8))
     decisions: list[dict[str, Any]] = []
+    total_usage: dict[str, int] = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
     for start in range(0, len(candidates), batch_size):
         batch = candidates[start : start + batch_size]
         payload = {
@@ -1466,9 +1534,12 @@ def _ask_llm(config: dict[str, Any], candidates: list[Candidate]) -> list[dict[s
         result, usage = run_match_decision_agent(config, payload, SYSTEM_PROMPT)
         batch_decisions = [item.model_dump() for item in result.decisions]
         decisions.extend(batch_decisions)
-        # 记录 LLM token 用量并推送到前端
         _record_match_llm_usage(usage)
-    return decisions
+        if usage:
+            total_usage["prompt_tokens"] += usage.get("prompt_tokens", 0)
+            total_usage["completion_tokens"] += usage.get("completion_tokens", 0)
+            total_usage["total_tokens"] += usage.get("total_tokens", 0)
+    return decisions, total_usage
 
 
 def _as_bool(value: object) -> bool:
@@ -1537,6 +1608,10 @@ def _review_row(
 
 
 def _write_manual_review(path: Path, rows: list[dict[str, Any]]) -> None:
+    # 备份已有文件，防止每次 match 运行覆盖人工标注结果
+    if path.exists() and path.stat().st_size > 0:
+        backup = path.with_name(f"{path.stem}_backup_{datetime.now():%Y%m%d_%H%M%S}{path.suffix}")
+        path.rename(backup)
     pd.DataFrame(rows).to_csv(path, index=False, encoding="utf-8-sig")
 
 
