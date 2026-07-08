@@ -70,7 +70,7 @@ def _apply_parser_to_config(cfg: dict, parser: str) -> None:
                        → 不去重，所有候选送 LLM（适合复杂/重叠候选场景）
       - "llm_step_once" → 同 llm_step，但仅将无重复的单一候选送 LLM（简单样本，节省 token）
       - "llm_init" → 跳过缓存检查，重新调 LLM 生成解析器
-                       → 匹配时忽略所有已匹配记录，完全重新匹配
+                       → 规则匹配始终执行，LLM 不复用决策缓存
                        → 去重，仅保留无重复候选
       - "script"         → 使用硬编码脚本解析，不启用 LLM 辅助匹配
       - 其他具体解析器名  → 直接使用（如 icbc_historydetail, xinjiyuan_bank_ledger）
@@ -82,15 +82,14 @@ def _apply_parser_to_config(cfg: dict, parser: str) -> None:
     cfg.setdefault("llm", {})["enabled"] = is_llm
     cfg.setdefault("matching", {}).setdefault("llm", {})
     cfg["matching"]["llm"]["enabled"] = is_llm
-    # llm_regenerate / llm_init → 完全重新匹配；其他 LLM parser → 仅匹配未匹配记录
-    cfg["matching"]["llm"]["full_rematch"] = (parser in ("llm_init"))
 
     # llm_step_once / llm_regenerate / llm_init → 去重，仅保留无重复候选（简单样本）
     # llm_step_all / llm / llm_step → 不去重，所有候选送 LLM（全面匹配）
     cfg["matching"]["llm"]["deduplicate_candidates"] = (parser in ("llm_init", "llm_step_once"))
 
-    # llm_init 可复用之前的 LLM 决策缓存；llm_step_once / llm_step_all 每次重新调用 LLM
-    # （因为 step 模式与 init 模式的候选集不同，跨模式复用缓存会导致 LLM 不被调用）
+    # reuse_decisions: 控制是否复用 llm_decisions.csv 缓存
+    # llm_step_once / llm_step_all → 复用缓存（节省 LLM 调用）
+    # 其他 parser → 不复用，每次重新调用 LLM
     cfg["matching"]["llm"]["reuse_decisions"] = (parser in ("llm_step_once", "llm_step_all"))
     
     # llm_regenerate / llm_init: 设置强制重新生成标志，ensure_* 函数跳过缓存

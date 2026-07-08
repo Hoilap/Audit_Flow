@@ -93,20 +93,9 @@ def apply_llm_supplemental_matches(
     out = output_dir(config) / "matches"
     out.mkdir(parents=True, exist_ok=True)
 
-    # 检查是否为完全重新匹配模式
-    full_rematch = cfg.get("full_rematch", False)
-
-    # 统计记录
-    if full_rematch:
-        print(f"LLM 完全重新匹配: 银行流水 {len(bank_records)} 条, 序时账 {len(ledger_records)} 条")
-        # full_rematch 模式下清空已有匹配结果
-        groups.clear()
-        used_bank.clear()
-        used_ledger.clear()
-    else:
-        remaining_bank = [r for r in bank_records if r.id not in used_bank]
-        remaining_ledger = [r for r in ledger_records if r.id not in used_ledger]
-        print(f"LLM 辅助匹配: 未匹配银行流水 {len(remaining_bank)} 条, 未匹配序时账 {len(remaining_ledger)} 条")
+    remaining_bank = [r for r in bank_records if r.id not in used_bank]
+    remaining_ledger = [r for r in ledger_records if r.id not in used_ledger]
+    print(f"LLM 辅助匹配: 未匹配银行流水 {len(remaining_bank)} 条, 未匹配序时账 {len(remaining_ledger)} 条")
 
     candidates = _build_candidates(config, bank_records, ledger_records, used_bank, used_ledger)
     candidates_path = out / "llm_candidates.csv"
@@ -154,8 +143,8 @@ def apply_llm_supplemental_matches(
     
     stats["candidates_sent_to_llm"] = len(llm_candidates)
 
-    # full_rematch 模式下不使用缓存的决策
-    use_cache = cfg.get("reuse_decisions", True) and not full_rematch
+    # reuse_decisions 控制是否复用 llm_decisions.csv 缓存
+    use_cache = cfg.get("reuse_decisions", True)
     decisions = _load_cached_decisions(decisions_path, llm_candidates) if use_cache else []
     stats["cached_decisions"] = len(decisions)
     print(f"LLM 辅助匹配: 从缓存加载 {len(decisions)} 个决策 (use_cache={use_cache})")
@@ -333,16 +322,10 @@ def _build_candidates(
     monthly_balance_cfg = cfg.get("monthly_balance_enumeration", {}) or {}
     monthly_balance_enabled = bool(monthly_balance_cfg.get("enabled", True))
 
-    # full_rematch 模式下使用所有记录，否则只使用未匹配记录
-    full_rematch = cfg.get("full_rematch", False)
-    if full_rematch:
-        remaining_bank = list(bank_records)
-        remaining_ledger = list(ledger_records)
-        print(f"LLM full_rematch: 使用全部 {len(remaining_bank)} 条银行流水和 {len(remaining_ledger)} 条序时账")
-    else:
-        remaining_bank = [record for record in bank_records if record.id not in used_bank]
-        remaining_ledger = [record for record in ledger_records if record.id not in used_ledger]
-        print(f"LLM 辅助匹配: 使用 {len(remaining_bank)} 条未匹配银行流水和 {len(remaining_ledger)} 条未匹配序时账")
+    # 始终只对未匹配记录构建 LLM 候选（规则匹配已消耗的记录不参与）
+    remaining_bank = [record for record in bank_records if record.id not in used_bank]
+    remaining_ledger = [record for record in ledger_records if record.id not in used_ledger]
+    print(f"LLM 辅助匹配: 使用 {len(remaining_bank)} 条未匹配银行流水和 {len(remaining_ledger)} 条未匹配序时账")
     candidates: list[Candidate] = []
     seen: dict[tuple[tuple[str, ...], tuple[str, ...]], int] = {}
 

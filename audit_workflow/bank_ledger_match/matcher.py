@@ -83,105 +83,98 @@ def match_transactions(
         "cleanup": 0,
     }
 
-    # 检查是否为完全重新匹配模式（llm_regenerate）
-    llm_cfg = config.get("matching", {}).get("llm", {})
-    full_rematch = llm_cfg.get("enabled", False) and llm_cfg.get("full_rematch", False)
-    if full_rematch:
-        print("完全重新匹配模式 (llm_init)：跳过规则匹配，仅使用 LLM 进行匹配")
+    # Pass 0: 手续费聚合预匹配
+    heuristic_stats["fee_aggregation"] = _fee_aggregation_match(bank_records, ledger_records, used_bank, used_ledger, amount_tol, config, groups)
 
-    if not full_rematch:
-        # Pass 0: 手续费聚合预匹配
-        heuristic_stats["fee_aggregation"] = _fee_aggregation_match(bank_records, ledger_records, used_bank, used_ledger, amount_tol, config, groups)
+    # Pass 0.5: 跨账号调拨匹配
+    heuristic_stats["cross_account_transfer"] = _cross_account_transfer_match(bank_records, ledger_records, used_bank, used_ledger, amount_tol, config, groups)
 
-        # Pass 0.5: 跨账号调拨匹配
-        heuristic_stats["cross_account_transfer"] = _cross_account_transfer_match(bank_records, ledger_records, used_bank, used_ledger, amount_tol, config, groups)
-
-        _before_p1 = len(groups)
-        pair_candidates: list[tuple[float, Record, Record]] = []
-        for bank in bank_records:
-            for ledger in ledger_records:
-                if not _candidate_ok(bank, ledger, amount_tol, one_to_one_date_tol, config):
-                    continue
-                score = _pair_score(bank, ledger, amount_tol, one_to_one_date_tol)
-                if score >= one_to_one_min:
-                    pair_candidates.append((score, bank, ledger))
-        pair_candidates.sort(key=lambda x: x[0], reverse=True)
-
-        for score, bank, ledger in pair_candidates:
-            if bank.id in used_bank or ledger.id in used_ledger:
-                continue
-            groups.append(_make_group(config, "one_to_one", [bank], [ledger], score, len(groups) + 1))
-            used_bank.add(bank.id)
-            used_ledger.add(ledger.id)
-        heuristic_stats["one_to_one"] = len(groups) - _before_p1
-
-        # Pass 2: 1:N matching (one bank → many ledger)
-        _before_p2 = len(groups)
-        for bank in bank_records:
-            if bank.id in used_bank:
-                continue
-            candidates = [
-                ledger
-                for ledger in ledger_records
-                if ledger.id not in used_ledger
-                and _candidate_ok(
-                    bank,
-                    ledger,
-                    amount_tol=max(amount_tol, bank.amount_cents),
-                    date_tol=group_date_tol,
-                    config=config,
-                    ignore_amount=True,
-                )
-            ]
-            candidates = _rank_group_candidates(bank, candidates, amount_tol, group_date_tol)[:pool_limit]
-            subset = _find_subset(candidates, bank.amount_cents, amount_tol, group_max_size)
-            if subset:
-                score = _group_score([bank], subset, amount_tol, group_date_tol)
-                groups.append(_make_group(config, "one_to_many", [bank], subset, score, len(groups) + 1))
-                used_bank.add(bank.id)
-                used_ledger.update(item.id for item in subset)
-        heuristic_stats["one_to_many"] = len(groups) - _before_p2
-
-        # Pass 3: N:1 matching (many bank → one ledger)
-        _before_p3 = len(groups)
+    _before_p1 = len(groups)
+    pair_candidates: list[tuple[float, Record, Record]] = []
+    for bank in bank_records:
         for ledger in ledger_records:
-            if ledger.id in used_ledger:
+            if not _candidate_ok(bank, ledger, amount_tol, one_to_one_date_tol, config):
                 continue
-            candidates = [
-                bank
-                for bank in bank_records
-                if bank.id not in used_bank
-                and _candidate_ok(
-                    bank,
-                    ledger,
-                    amount_tol=max(amount_tol, ledger.amount_cents),
-                    date_tol=group_date_tol,
-                    config=config,
-                    ignore_amount=True,
-                )
-            ]
-            candidates = _rank_group_candidates(ledger, candidates, amount_tol, group_date_tol)[:pool_limit]
-            subset = _find_subset(candidates, ledger.amount_cents, amount_tol, group_max_size)
-            if subset:
-                score = _group_score(subset, [ledger], amount_tol, group_date_tol)
-                groups.append(_make_group(config, "many_to_one", subset, [ledger], score, len(groups) + 1))
-                used_bank.update(item.id for item in subset)
-                used_ledger.add(ledger.id)
-        heuristic_stats["many_to_one"] = len(groups) - _before_p3
+            score = _pair_score(bank, ledger, amount_tol, one_to_one_date_tol)
+            if score >= one_to_one_min:
+                pair_candidates.append((score, bank, ledger))
+    pair_candidates.sort(key=lambda x: x[0], reverse=True)
 
-        _before_p4 = len(groups)
-        for group in _daily_many_to_many(bank_records, ledger_records, used_bank, used_ledger, amount_tol, config):
-            bank_group, ledger_group = group
-            score = _group_score(bank_group, ledger_group, amount_tol, group_date_tol)
-            groups.append(_make_group(config, "many_to_many", bank_group, ledger_group, score, len(groups) + 1))
-            used_bank.update(item.id for item in bank_group)
-            used_ledger.update(item.id for item in ledger_group)
-        heuristic_stats["many_to_many"] = len(groups) - _before_p4
+    for score, bank, ledger in pair_candidates:
+        if bank.id in used_bank or ledger.id in used_ledger:
+            continue
+        groups.append(_make_group(config, "one_to_one", [bank], [ledger], score, len(groups) + 1))
+        used_bank.add(bank.id)
+        used_ledger.add(ledger.id)
+    heuristic_stats["one_to_one"] = len(groups) - _before_p1
 
-        # Pass 4: 清理残余 — 对少量未匹配记录使用宽松规则匹配
-        heuristic_stats["cleanup"] = _cleanup_small_unmatched(bank_records, ledger_records, used_bank, used_ledger, amount_tol, config, groups)
+    # Pass 2: 1:N matching (one bank → many ledger)
+    _before_p2 = len(groups)
+    for bank in bank_records:
+        if bank.id in used_bank:
+            continue
+        candidates = [
+            ledger
+            for ledger in ledger_records
+            if ledger.id not in used_ledger
+            and _candidate_ok(
+                bank,
+                ledger,
+                amount_tol=max(amount_tol, bank.amount_cents),
+                date_tol=group_date_tol,
+                config=config,
+                ignore_amount=True,
+            )
+        ]
+        candidates = _rank_group_candidates(bank, candidates, amount_tol, group_date_tol)[:pool_limit]
+        subset = _find_subset(candidates, bank.amount_cents, amount_tol, group_max_size)
+        if subset:
+            score = _group_score([bank], subset, amount_tol, group_date_tol)
+            groups.append(_make_group(config, "one_to_many", [bank], subset, score, len(groups) + 1))
+            used_bank.add(bank.id)
+            used_ledger.update(item.id for item in subset)
+    heuristic_stats["one_to_many"] = len(groups) - _before_p2
 
-        print(f"规则匹配完成: {len(groups)} 条匹配, 未匹配银行流水 {len(bank_records) - len(used_bank)} 条, 未匹配序时账 {len(ledger_records) - len(used_ledger)} 条")
+    # Pass 3: N:1 matching (many bank → one ledger)
+    _before_p3 = len(groups)
+    for ledger in ledger_records:
+        if ledger.id in used_ledger:
+            continue
+        candidates = [
+            bank
+            for bank in bank_records
+            if bank.id not in used_bank
+            and _candidate_ok(
+                bank,
+                ledger,
+                amount_tol=max(amount_tol, ledger.amount_cents),
+                date_tol=group_date_tol,
+                config=config,
+                ignore_amount=True,
+            )
+        ]
+        candidates = _rank_group_candidates(ledger, candidates, amount_tol, group_date_tol)[:pool_limit]
+        subset = _find_subset(candidates, ledger.amount_cents, amount_tol, group_max_size)
+        if subset:
+            score = _group_score(subset, [ledger], amount_tol, group_date_tol)
+            groups.append(_make_group(config, "many_to_one", subset, [ledger], score, len(groups) + 1))
+            used_bank.update(item.id for item in subset)
+            used_ledger.add(ledger.id)
+    heuristic_stats["many_to_one"] = len(groups) - _before_p3
+
+    _before_p4 = len(groups)
+    for group in _daily_many_to_many(bank_records, ledger_records, used_bank, used_ledger, amount_tol, config):
+        bank_group, ledger_group = group
+        score = _group_score(bank_group, ledger_group, amount_tol, group_date_tol)
+        groups.append(_make_group(config, "many_to_many", bank_group, ledger_group, score, len(groups) + 1))
+        used_bank.update(item.id for item in bank_group)
+        used_ledger.update(item.id for item in ledger_group)
+    heuristic_stats["many_to_many"] = len(groups) - _before_p4
+
+    # Pass 4: 清理残余 — 对少量未匹配记录使用宽松规则匹配
+    heuristic_stats["cleanup"] = _cleanup_small_unmatched(bank_records, ledger_records, used_bank, used_ledger, amount_tol, config, groups)
+
+    print(f"规则匹配完成: {len(groups)} 条匹配, 未匹配银行流水 {len(bank_records) - len(used_bank)} 条, 未匹配序时账 {len(ledger_records) - len(used_ledger)} 条")
 
     # LLM 辅助匹配（由前端 parser 参数控制）
     llm_cfg = config.get("matching", {}).get("llm", {})
@@ -189,10 +182,7 @@ def match_transactions(
     if llm_cfg.get("enabled", False):
         from .llm_matcher import apply_llm_supplemental_matches
 
-        if full_rematch:
-            print("LLM 完全重新匹配模式: 对所有记录进行 LLM 匹配...")
-        else:
-            print(f"LLM 辅助匹配已启用，对未匹配记录进行匹配...")
+        print(f"LLM 辅助匹配已启用，对未匹配记录进行匹配...")
         llm_stats = apply_llm_supplemental_matches(config, bank_records, ledger_records, used_bank, used_ledger, groups)
         print(f"LLM 辅助匹配完成，当前共 {len(groups)} 条匹配")
 
