@@ -565,10 +565,10 @@ export async function saveConfig(customerName, taskName, content) {
  * 并将当前 default provider 设为选中项。
  */
 export async function syncLlmConfig() {
+  const modelSelect = $('#model-select')
   try {
     const result = await api.getLlmConfig()
     if (result.ok && result.config) {
-      const modelSelect = $('#model-select')
       if (modelSelect) {
         const providers = result.config.providers || []
         const defaultName = result.config.default || ''
@@ -586,9 +586,14 @@ export async function syncLlmConfig() {
         const currentProvider = providers.find(p => p.name === defaultName)
         updateStatusModel(currentProvider ? currentProvider.model : 'unknown')
       }
+    } else {
+      if (modelSelect) modelSelect.innerHTML = '<option value="">加载失败，点击刷新重试</option>'
+      updateStatusModel('error')
     }
   } catch (error) {
     console.error('Failed to sync LLM config:', error)
+    if (modelSelect) modelSelect.innerHTML = '<option value="">加载失败，点击刷新重试</option>'
+    updateStatusModel('error')
   }
 }
 

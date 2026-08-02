@@ -198,7 +198,7 @@ h3 { font-size: 14px; }
 .upload-row input[type="text"] { height: 32px; padding: 0 10px; min-width: 220px; }
 .evidence { border-left: 1px solid var(--border); background: var(--surface); display: flex; flex-direction: column; max-width: 380px; }
 .evidence-header { padding: 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-.evidence-body { padding: 12px; overflow-y: auto; display: grid; gap: 12px; }
+.evidence-body { padding: 12px; overflow-y: auto; overflow-x: hidden; display: grid; gap: 12px; }
 .panel-section { display: grid; gap: 8px; }
 .panel-section-header { display: flex; justify-content: space-between; align-items: center; cursor: default; }
 .section-toggle { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 10px; padding: 2px 4px; line-height: 1; border-radius: 3px; transition: background .15s; }
@@ -387,7 +387,11 @@ h3 { font-size: 14px; }
   color: var(--text-muted);
   margin-left: auto;
   margin-right: 8px;
-  white-space: nowrap;
+  white-space: normal;
+  word-break: break-all;
+  max-width: 120px;
+  text-align: right;
+  flex-shrink: 0;
 }
 
 .review-time-missing {
@@ -411,7 +415,7 @@ h3 { font-size: 14px; }
 
 .review-file-item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
 }
 
@@ -652,14 +656,16 @@ button.danger:hover {
 .file-scroll-list {
   max-height: 260px;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 .review-file-item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   padding: 6px 8px;
   border-radius: 4px;
   cursor: default;
+  overflow: hidden;
 }
 .review-file-item:hover {
   background: var(--surface-muted);

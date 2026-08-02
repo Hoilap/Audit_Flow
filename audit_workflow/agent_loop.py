@@ -241,13 +241,16 @@ AGENT_SYSTEM_PROMPT = """\
 
 ## 强制规则
 1. **必须使用工具**：收到用户请求后，第一步必须调用 scan_files 扫描目录，不要只说"让我扫描一下"而不调用工具。
-2. 用 read_file 查看文件内容和数据结构，再编写处理代码。
-3. 用 execute_code 执行 Python 代码。代码执行出错时，分析错误并修正后重试。
-4. 生成的输出文件必须保存到 outputs/ 目录下。
+2. **禁止扫描根目录**：永远不要调用 scan_files(".") 或 scan_files("")，这会导致文件数过多、上下文溢出。始终扫描具体的子目录，如 inputs/{客户名}/{任务名}/ 或 outputs/{客户名}/{任务名}/。
+3. 用 read_file 查看文件内容和数据结构，再编写处理代码。
+4. 用 execute_code 执行 Python 代码。代码执行出错时，分析错误并修正后重试。
+5. 生成的输出文件必须保存到 outputs/ 目录下。
 
 ## 项目目录结构
 - inputs/{客户名}/{任务名}/ — 输入数据文件（Excel、CSV 等）
 - outputs/{客户名}/{任务名}/ — 输出结果文件
+- config/ — 配置文件
+- desktop/ — 前端代码
 
 ## 代码编写规范
 - 使用 pandas 处理表格数据，Excel 用 openpyxl 引擎
@@ -262,9 +265,19 @@ AGENT_SYSTEM_PROMPT = """\
 """
 
 
+# scan_files 排除的目录名（防止扫描 .venv 等超大噪音目录）
+_SCAN_EXCLUDED_DIR_NAMES = frozenset({
+    ".venv", "venv", "node_modules", "__pycache__", ".git",
+    "generated_parsers", ".qoderworkcn",
+})
+_SCAN_MAX_FILES = 500  # 单次扫描返回的最大文件数
+
+
 def tool_scan_files(directory: str = "inputs") -> str:
     """扫描指定目录下的所有文件，返回 JSON 格式的文件列表。
     包含文件名、路径、大小、扩展名和修改时间。
+    自动排除 .venv/node_modules/__pycache__/.git 等目录。
+    单次最多返回 500 个文件，超出部分截断。
 
     Args:
         directory: 要扫描的子目录，相对于项目根目录。默认为 'inputs'。
@@ -274,6 +287,16 @@ def tool_scan_files(directory: str = "inputs") -> str:
     project_root = _current_project_root
     target = os.path.join(project_root, directory)
 
+    # 硬保护：禁止扫描项目根目录本身（防止上下文溢出）
+    resolved = os.path.normpath(target)
+    root_resolved = os.path.normpath(project_root)
+    if resolved == root_resolved:
+        logger.warning("[tool] scan_files: 拒绝扫描项目根目录")
+        return json.dumps({
+            "error": "禁止扫描项目根目录，文件数过多会导致上下文溢出。请指定具体子目录，如 inputs/{客户名}/{任务名}/",
+            "files": [],
+        }, ensure_ascii=False)
+
     if not os.path.isdir(target):
         logger.warning("[tool] scan_files: 目录不存在: %s", target)
         return json.dumps(
@@ -282,7 +305,10 @@ def tool_scan_files(directory: str = "inputs") -> str:
         )
 
     files = []
-    for dirpath, _, filenames in os.walk(target):
+    truncated = False
+    for dirpath, dirnames, filenames in os.walk(target):
+        # 原地修改 dirnames 以跳过排除目录（os.walk 支持此用法）
+        dirnames[:] = [d for d in dirnames if d not in _SCAN_EXCLUDED_DIR_NAMES]
         for fname in filenames:
             fpath = os.path.join(dirpath, fname)
             rel = os.path.relpath(fpath, project_root).replace("\\", "/")
@@ -296,12 +322,26 @@ def tool_scan_files(directory: str = "inputs") -> str:
                 })
             except OSError:
                 files.append({"path": rel, "size": -1, "error": "stat failed"})
+            if len(files) >= _SCAN_MAX_FILES:
+                truncated = True
+                break
+        if truncated:
+            break
 
-    logger.info("[tool] scan_files: 找到 %d 个文件 (目录: %s)", len(files), directory)
-    return json.dumps(
-        {"directory": directory, "file_count": len(files), "files": files},
-        ensure_ascii=False,
-    )
+    result: dict[str, Any] = {
+        "directory": directory,
+        "file_count": len(files),
+        "files": files,
+    }
+    if truncated:
+        result["warning"] = (
+            f"文件数超过上限 {_SCAN_MAX_FILES}，结果已截断。"
+            f"请缩小扫描范围（指定更具体的子目录）。"
+        )
+
+    logger.info("[tool] scan_files: 找到 %d 个文件 (目录: %s, 截断: %s)",
+                len(files), directory, truncated)
+    return json.dumps(result, ensure_ascii=False)
 
 
 def tool_read_file(file_path: str, max_lines: int = 100) -> str:

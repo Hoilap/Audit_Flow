@@ -274,28 +274,65 @@ def _identify_files_local(
         # 银行账号（从数据预览中提取）
         account_no = _extract_account_no_from_preview(f.get("excel_preview"))
 
-        # ── 生成 ID ──
+        # ── 生成 ID + 条目 ──
         type_short = "bank" if ftype == "bank_statement" else ftype
-        if bank_name:
-            bank_short = _guess_bank_short(bank_name)
-            short_id = f"{bank_short}_{type_short}_{year}"
-        else:
-            short_id = f"unknown_{type_short}_{year}_{len(results)}"
 
-        entry = {
-            "id": short_id,
-            "type": ftype,
-            "path": f["path"],
-            "name": f["name"],
-            "bank_name": bank_name,
-            "account_no": account_no,
-            "date_from": f"{year}-01-01",
-            "date_to": f"{year}-12-31",
-            "sheet": "",
-            "confidence": 0.9,
-            "notes": f"目录分类: {sub_dir}/",
-        }
-        results.append(entry)
+        # bank/ledger 文件展开为 per-sheet 条目（与 LLM 路径一致）
+        if ftype in ("bank_statement", "ledger"):
+            preview = f.get("excel_preview", {}) or {}
+            sheet_names = list((preview.get("sheets", {}) or {}).keys())
+
+            if not sheet_names:
+                sheet_names = [""]  # 无 sheet 信息时退化为单条目
+
+            for sn in sheet_names:
+                if bank_name and sn:
+                    bank_short = _guess_bank_short(bank_name)
+                    short_id = f"{bank_short}_{type_short}_{year}_{sn}"
+                elif sn:
+                    short_id = f"unknown_{type_short}_{year}_{len(results)}_{sn}"
+                elif bank_name:
+                    bank_short = _guess_bank_short(bank_name)
+                    short_id = f"{bank_short}_{type_short}_{year}"
+                else:
+                    short_id = f"unknown_{type_short}_{year}_{len(results)}"
+
+                entry = {
+                    "id": short_id,
+                    "type": ftype,
+                    "path": f["path"],
+                    "name": f["name"],
+                    "bank_name": bank_name,
+                    "account_no": account_no,
+                    "date_from": f"{year}-01-01",
+                    "date_to": f"{year}-12-31",
+                    "sheet": sn,
+                    "confidence": 0.9,
+                    "notes": f"目录分类: {sub_dir}/",
+                }
+                results.append(entry)
+        else:
+            # working_paper 等非目标文件保持 per-file 条目
+            if bank_name:
+                bank_short = _guess_bank_short(bank_name)
+                short_id = f"{bank_short}_{type_short}_{year}"
+            else:
+                short_id = f"unknown_{type_short}_{year}_{len(results)}"
+
+            entry = {
+                "id": short_id,
+                "type": ftype,
+                "path": f["path"],
+                "name": f["name"],
+                "bank_name": bank_name,
+                "account_no": account_no,
+                "date_from": f"{year}-01-01",
+                "date_to": f"{year}-12-31",
+                "sheet": "",
+                "confidence": 0.9,
+                "notes": f"目录分类: {sub_dir}/",
+            }
+            results.append(entry)
 
     # ── 按 (目录 + 银行) 做账号回填 ──
     # 同一子目录中、同一银行的文件通常属于同一账号，
@@ -388,7 +425,7 @@ async def identify_files_with_llm_async(
     """目录分类 + LLM 按工作表元数据提取。
 
     1. 文件类型由子目录决定（同 script 模式）
-    2. 为每个工作表构建数据样本，LLM 判断是否相关并提取元数据
+    2. 为每个工作表构建数据样本，LLM 判断是否相关并提取银行名称、账号、日期范围等元数据
     3. 仅保留 LLM 判定为相关的工作表，sheet 字段填充实际工作表名
     4. LLM 提取失败时异常直接向上抛出（不兜底）
 
@@ -402,8 +439,8 @@ async def identify_files_with_llm_async(
     class WorksheetMetadata(BaseModel):
         file_index: int = Field(description="文件序号")
         sheet_name: str = Field(default="", description="工作表名称")
-        relevant: bool = Field(default=False, description="该工作表是否与审计核查相关")
-        bank_name: str = Field(default="", description="银行全称")
+        relevant: bool = Field(default=True, description="该工作表是否包含实际交易流水或账目明细。汇总页、目录页、说明页、空白表、封面、图表等设为 false")
+        bank_name: str = Field(default="", description="银行或来源名称")
         account_no: str = Field(default="", description="银行账号")
         date_from: str = Field(default="", description="起始日期 YYYY-MM-DD")
         date_to: str = Field(default="", description="结束日期 YYYY-MM-DD")
@@ -418,8 +455,8 @@ async def identify_files_with_llm_async(
     if not llm_config.get("enabled", True):
         return results, warnings, {}
 
-    # ── Step 2: 为 bank/ledger 文件的每个工作表构建样本 ──
-    # target_entries 记录需要 LLM 分析的 (result_index, entry)
+    # ── Step 2: 为 bank/ledger 的每个工作表构建样本 ──
+    # _identify_files_local 已将 bank/ledger 展开为 per-sheet 条目
     target_entries = [
         (i, r) for i, r in enumerate(results)
         if r["type"] in ("bank_statement", "ledger")
@@ -428,53 +465,42 @@ async def identify_files_with_llm_async(
     if not target_entries:
         return results, warnings, {}
 
-    # 收集每个文件的 sheet 名称（从 excel_preview 中获取）
-    file_sheet_names: dict[str, list[str]] = {}
-    for _idx, (_ri, entry) in enumerate(target_entries):
-        fpath = entry["path"]
-        if fpath not in file_sheet_names:
-            file_info = next((f for f in files if f["path"] == fpath), None)
-            preview = file_info.get("excel_preview", {}) if file_info else {}
-            sheet_data = preview.get("sheets", {})
-            file_sheet_names[fpath] = list(sheet_data.keys())
-
-    # 为每个工作表构建描述（一个 desc 对应一个工作表）
+    # 为每个 per-sheet 条目构建描述
     sheet_desc_list: list[dict[str, Any]] = []
     for idx, (result_idx, entry) in enumerate(target_entries):
         fpath = entry["path"]
-        sheet_names = file_sheet_names.get(fpath, [])
+        sheet_name = entry["sheet"]
 
-        for sheet_name in sheet_names:
-            desc: dict[str, Any] = {
-                "序号": idx,
-                "文件名": entry["name"],
-                "文件类型": entry["type"],
-                "工作表": sheet_name,
-            }
+        desc: dict[str, Any] = {
+            "序号": idx,
+            "文件名": entry["name"],
+            "文件类型": entry["type"],
+            "工作表": sheet_name,
+        }
 
-            # 尝试从 preview 取该 sheet 的前几行
-            file_info = next((f for f in files if f["path"] == fpath), None)
-            preview = file_info.get("excel_preview", {}) if file_info else {}
-            sheet_info = preview.get("sheets", {}).get(sheet_name, {})
-            preview_rows = sheet_info.get("preview_rows", [])
+        # 尝试从 preview 取该 sheet 的前几行
+        file_info = next((f for f in files if f["path"] == fpath), None)
+        preview = file_info.get("excel_preview", {}) if file_info else {}
+        sheet_info = preview.get("sheets", {}).get(sheet_name, {})
+        preview_rows = sheet_info.get("preview_rows", [])
 
-            if preview_rows:
-                desc["数据样本"] = preview_rows[:3]
-            else:
-                # preview 不可用，回退到读文件
-                try:
-                    df = read_excel_for_sample(fpath, sheet=sheet_name, nrows=20)
-                    sample = build_smart_sample(df, data_rows=6)
-                    desc["数据样本"] = sample[:8]
-                except Exception as exc:
-                    desc["error"] = f"无法读取样本: {exc}"
+        if preview_rows:
+            desc["数据样本"] = preview_rows[:3]
+        elif sheet_name:
+            # preview 不可用，回退到读文件
+            try:
+                df = read_excel_for_sample(fpath, sheet=sheet_name, nrows=20)
+                sample = build_smart_sample(df, data_rows=6)
+                desc["数据样本"] = sample[:8]
+            except Exception as exc:
+                desc["error"] = f"无法读取样本: {exc}"
 
-            sheet_desc_list.append(desc)
+        sheet_desc_list.append(desc)
 
     prompt_data = {
         "项目信息": {"审计年度": project_info.get("audit_year", 2022)} if project_info else {},
         "工作表列表": sheet_desc_list,
-        "要求": "请逐个分析以上工作表，判断是否与审计核查相关（relevant），并从相关工作表中提取银行名称、账号、日期范围等元数据。",
+        "要求": "请逐个分析以上工作表，判断是否包含实际交易流水或账目明细（relevant），并从相关工作表中提取银行名称、账号、日期范围等元数据。不相关的工作表（空表、封面、汇总页等）relevant 设为 false。",
     }
     prompt = json.dumps(prompt_data, ensure_ascii=False, indent=2)
 
@@ -488,11 +514,10 @@ async def identify_files_with_llm_async(
 
     # ── Step 4: 按工作表合并 LLM 结果，仅保留 relevant=True ──
     # 构建 (file_index, sheet_name) → result entry 的查找表
+    # target_entries 已是 per-sheet 条目，直接用 entry["sheet"] 作键
     entry_lookup: dict[tuple[int, str], dict[str, Any]] = {}
     for idx, (result_idx, entry) in enumerate(target_entries):
-        fpath = entry["path"]
-        for sn in file_sheet_names.get(fpath, []):
-            entry_lookup[(idx, sn)] = dict(entry)  # 浅拷贝，每个 sheet 独立
+        entry_lookup[(idx, entry["sheet"])] = dict(entry)  # 浅拷贝，隔离 LLM 修改
 
     relevant_results: list[dict[str, Any]] = []
     skipped_sheets: list[str] = []
@@ -501,6 +526,7 @@ async def identify_files_with_llm_async(
         lookup_key = (meta.file_index, meta.sheet_name)
         base_entry = entry_lookup.get(lookup_key)
 
+        # LLM 判定不相关的工作表直接排除
         if not meta.relevant:
             if base_entry:
                 skipped_sheets.append(f"{base_entry['name']}[{meta.sheet_name}]")
@@ -537,7 +563,7 @@ async def identify_files_with_llm_async(
 
         relevant_results.append(base_entry)
 
-    # 记录被 LLM 跳过的工作表
+    # 记录被 LLM 排除的不相关工作表
     if skipped_sheets:
         skip_msg = f"以下工作表被 LLM 判定为不相关，已排除: {', '.join(skipped_sheets)}"
         warnings.append(skip_msg)

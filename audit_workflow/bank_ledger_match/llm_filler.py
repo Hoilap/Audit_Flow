@@ -209,8 +209,8 @@ def _inspect_template(template: Path) -> str:
         ws = wb[sheet_name]
         lines.append(f"\n### Sheet: {sheet_name} (rows={ws.max_row}, cols={ws.max_column})")
 
-        for row in ws.iter_rows(min_row=1, max_row=min(ws.max_row, 70), max_col=16, values_only=False):
-            r = row[0].row
+        for r_idx, row in enumerate(ws.iter_rows(min_row=1, max_row=min(ws.max_row, 70), max_col=16, values_only=False), start=1):
+            r = r_idx
             non_empty = []
             for c in row:
                 if c.value is not None:

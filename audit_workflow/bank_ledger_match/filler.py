@@ -330,10 +330,10 @@ def _detect_wp02_sections(ws) -> list[dict[str, Any]]:
     sections: list[dict[str, Any]] = []
     month_rows: list[int] = []
 
-    for row in ws.iter_rows(min_row=1, max_row=ws.max_row, min_col=1, max_col=3):
+    for r_idx, row in enumerate(ws.iter_rows(min_row=1, max_row=ws.max_row, min_col=1, max_col=3), start=1):
         b_val = str(row[1].value or "").strip()
         if b_val == "月份":
-            month_rows.append(row[0].row)
+            month_rows.append(r_idx)
 
     for idx, mr in enumerate(month_rows):
         data_start = mr + 2  # skip 期初

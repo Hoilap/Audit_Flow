@@ -267,7 +267,7 @@ async function withDisabled(selector, action) {
 }
 
 async function refreshAll() {
-  await Promise.allSettled([refreshFiles(), refreshLog()])
+  await Promise.allSettled([refreshFiles(), refreshLog(), syncLlmConfig(), refreshTokens()])
 }
 
 async function refreshProjectTable() {
