@@ -514,8 +514,12 @@ def parse_generated_bank(config: dict[str, Any], item: dict[str, Any]) -> pd.Dat
             df[col] = ""
     df["source_id"] = item["id"]
     df["source_file"] = Path(item["path"]).name
-    df["bank_name"] = item.get("bank_name", df.get("bank_name", ""))
-    df["account_no"] = item.get("account_no", df.get("account_no", ""))
+    # 配置值非空时优先采用；为空时保留解析器从数据中提取的值。
+    # 注意：.get(key, default) 只在键缺失时返回 default，空字符串会误清空解析器结果。
+    if item.get("bank_name"):
+        df["bank_name"] = item["bank_name"]
+    if item.get("account_no"):
+        df["account_no"] = item["account_no"]
     # 覆写 LLM 解析器生成的 txn_id，使用 {source_id}_{source_file}_{source_sheet}_{row_no}
     # 确保跨多个 source file/sheet 时 ID 唯一，防止 bank_by_id dict 键碰撞导致记录幽灵消耗
     df["txn_id"] = df.apply(
@@ -630,8 +634,12 @@ def parse_generated_ledger(config: dict[str, Any], item: dict[str, Any]) -> pd.D
             df[col] = ""
     df["source_id"] = item["id"]
     df["source_file"] = Path(item["path"]).name
-    df["bank_name"] = item.get("bank_name", df.get("bank_name", ""))
-    df["account_no"] = item.get("account_no", df.get("account_no", ""))
+    # 配置值非空时优先采用；为空时保留解析器填充的原始银行信息（Phase 1 宁多勿缺规则）。
+    # 注意：.get(key, default) 只在键缺失时返回 default，空字符串会误清空解析器结果。
+    if item.get("bank_name"):
+        df["bank_name"] = item["bank_name"]
+    if item.get("account_no"):
+        df["account_no"] = item["account_no"]
     # 覆写 LLM 解析器生成的 entry_id，使用 {source_id}_{source_file}_{source_sheet}_{row_no}
     # 与 parse_generated_bank 保持一致的唯一 ID 策略
     df["entry_id"] = df.apply(

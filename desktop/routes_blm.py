@@ -26,6 +26,7 @@ from .common import (
 )
 from audit_workflow.bank_ledger_match import pipeline as blm_pipeline
 from audit_workflow.bank_ledger_match import file_detector
+from audit_workflow.bank_ledger_match.llm_cleaner import normalize_ledger_columns
 
 router = APIRouter()
 
@@ -495,6 +496,10 @@ def workflow_bank_ledger_match_clean_ledger(
         warnings = cfg.get("_cleaning", {}).get("warnings", [])
         if warnings:
             resp["warnings"] = warnings
+        # ── Phase 2: 列格式检查 + LLM 替换 ──
+        normalization = normalize_ledger_columns(cfg, ledger_csv)
+        if normalization:
+            resp["normalization"] = normalization
         return resp
     except Exception as e:
         logger.error("Clean Ledger 失败: customer=%s, task=%s, parser=%s, error=%s\n%s", customer_name, task_name, parser, e, traceback.format_exc())

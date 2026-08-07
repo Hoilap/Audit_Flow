@@ -150,6 +150,30 @@ export async function runStep(stepIndex = state.activeStepIndex) {
         body: `使用解析器「${parser}」清洗序时账完成。`,
         result,
       })
+      // ── 列格式检查 + LLM 规范化结果 ──
+      if (result.normalization) {
+        const norm = result.normalization
+        if (norm.skipped) {
+          addMessage({
+            title: '✓ 列格式检查（通过）',
+            body: norm.reason,
+          })
+        } else if (norm.normalized_columns > 0) {
+          const lines = norm.details.map(d =>
+            `  ${d.column}: ${d.bad_count} 个不规范值 → ${d.mapped} 条映射，替换了 ${d.replaced_rows} 行`
+          )
+          addMessage({
+            title: `🔧 列规范化完成（${norm.normalized_columns} 列，${norm.replacements} 行）`,
+            body: `已检测并修正不规范的数据格式：\n${lines.join('\n')}`,
+          })
+        } else {
+          addMessage({
+            title: '⚠ 列规范化未成功',
+            body: norm.reason || '检测到格式不规范的列，但 LLM 未能生成替换映射。',
+            failed: true,
+          })
+        }
+      }
       // 数据质量警告
       if (result.warnings && result.warnings.length > 0) {
         const lines = result.warnings.map(w =>

@@ -29,6 +29,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, AsyncIterable
 
+from audit_workflow.process_utils import run_safe
+
 logger = logging.getLogger(__name__)
 
 # ── 延迟导入 notify_frontend，避免循环引用 ──
@@ -410,12 +412,12 @@ def tool_execute_code(code: str, timeout: int = 30) -> str:
         logger.warning("[tool] execute_code: 保存代码失败: %s", e)
 
     try:
-        proc = subprocess.run(
+        proc = run_safe(
             [sys.executable, "-c", code],
-            capture_output=True,
-            text=True,
             timeout=timeout,
             cwd=project_root,
+            capture_output=True,
+            text=True,
         )
 
         stdout = proc.stdout or ""
@@ -446,7 +448,7 @@ def tool_execute_code(code: str, timeout: int = 30) -> str:
         return "\n".join(result_parts)
 
     except subprocess.TimeoutExpired:
-        logger.warning("[tool] execute_code: 超时 (%d秒)", timeout)
+        logger.warning("[tool] execute_code: 超时 (%d秒) — 进程树已被 run_safe 清理", timeout)
         return f"错误: 执行超时（{timeout}秒）"
 
 

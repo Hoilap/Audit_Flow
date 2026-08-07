@@ -18,6 +18,7 @@ from .common import (
     _build_llm_target_path,
 )
 from audit_workflow.llm_agent import llm_generate as audit_llm_generate
+from audit_workflow.process_utils import run_safe
 
 router = APIRouter()
 
@@ -183,8 +184,8 @@ def llm_generate_and_run(
         run_result = None
         exec_error_msg = None
         try:
-            proc = subprocess.run(
-                [sys.executable, p], capture_output=True, text=True, timeout=timeout,
+            proc = run_safe(
+                [sys.executable, p], timeout=timeout, capture_output=True, text=True,
             )
             run_result = {
                 "returncode": proc.returncode,
@@ -205,7 +206,7 @@ def llm_generate_and_run(
         except subprocess.TimeoutExpired:
             run_result = {"error": "timeout"}
             exec_error_msg = f"执行超时（>{timeout}s）"
-            logger.warning("LLM 代码执行超时: %s", target_path)
+            logger.warning("LLM 代码执行超时（进程树已由 run_safe 清理）: %s", target_path)
 
         if exec_error_msg is None:
             # 执行成功

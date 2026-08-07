@@ -3,13 +3,15 @@ from __future__ import annotations
 import hashlib
 import importlib
 import importlib.util
+import json
 import logging
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
+from pydantic import create_model, Field
 
-from audit_workflow.llm_agent import llm_generate, resolve_provider
+from audit_workflow.llm_agent import llm_generate, llm_generate_structured, resolve_provider
 from audit_workflow.util import build_smart_sample
 from .config import resolve_path, output_dir
 from .llm_agent import run_bank_parser_agent, run_ledger_parser_agent
@@ -161,9 +163,26 @@ amount、ledger_debit、ledger_credit 必须始终为非负数。资金流向由
   例如：如果 sample_rows[1] 那一行包含列名，则 header=1。
   这样 pandas 会自动用该行作为列名，df 里只包含数据行，无需在代码中写运行时查找表头的逻辑。
 
+多行表头（常见陷阱）：
+  很多序时账有"分组表头 + 明细表头"两行，例如第 N 行只有分组名（"记账凭证"横跨"字/号"两列、
+  "2022年"横跨"月/日"两列），第 N+1 行才是明细列名（月、日、字、号…）。
+  此时必须选择列名更完整的一行（通常是明细表头行，即非空单元格更多的那行）作为 header=N。
+  如果错选了靠前的分组表头行，明细表头行会混入数据，被输出成一条脏记录。
+  同时在脚本循环中加一道保险过滤：如果某行借方/贷方都没有数值金额（均为空或 0），
+  且日期列不是有效日期，则视其为残留表头行或空行，跳过不输出。
+
 列索引映射：
   根据 sample_rows 中表头行的内容，确定每列的含义，然后在代码中硬编码列名或索引。
   例如：df["摘要"]、df["借方金额"]、df["贷方金额"]，或 df.iloc[:, 7] 等。
+
+bank_name 与 account_no 填充规则（重要）：
+  当无法从数据中准确确定银行名称或账号时，不要置空，应尽可能填入原始数据中的信息：
+  1. 优先从科目列（"科目"、"明细科目"、"会计科目"等）中提取银行信息填入对应字段。
+  2. 如果科目列包含完整科目路径（如"银行存款｜工行花城支行3359｜中国工商银行股份有限公司广州花城支行"），
+     将该原始字符串原样填入 account_no 和 bank_name（两列都可以填该字符串，宁多勿缺）。
+  3. 科目列没有银行信息时，使用 config["bank_name"] / config["account_no"] 作为兜底值。
+  4. 这些字段后续会有专门的步骤做规范化（转纯数字账号、标准银行名称），此处保留原始信息即可，
+     不要因为格式"不标准"而置空或截断。
 
 config 参数是扁平字典，字段直接在顶层，没有嵌套：
   config["sheet"]      — 建议的工作表名称或索引（可能是字符串、整数 0、或空字符串）
@@ -448,6 +467,7 @@ def ensure_llm_ledger_parser(config: dict[str, Any], item: dict[str, Any]) -> Pa
         "requirements": [
             "使用 pandas 读取 Excel。必须根据文件扩展名选择引擎：.xls 用 engine='xlrd'，.xlsx/.xlsm 用 engine='openpyxl'。不要写死 engine='openpyxl'，.xls 文件用 openpyxl 会报 'File contains no valid workbook part'。",
             "从 sample_rows 直接判断表头行号，在 pd.read_excel() 中写死 header=N，不要在代码中运行时查找表头。",
+            "多行表头（分组表头+明细表头）时，选列名更完整的一行作为 header=N；并在代码中跳过无数字金额且无有效日期的残留表头行/空行，不要输出为记录。",
             "金额字段要去掉逗号和货币符号，且必须为非负数。遇到负数金额输出 0，不要取绝对值。不要用负号表示方向。",
             "日期输出 ISO 格式 YYYY-MM-DD。",
             "借方金额填入 ledger_debit，贷方金额填入 ledger_credit。",
@@ -458,6 +478,7 @@ def ensure_llm_ledger_parser(config: dict[str, Any], item: dict[str, Any]) -> Pa
             "使用 .join() 拼接时务必先用 str() 转换每个元素，避免 TypeError。",
             "对单元格值使用 in 操作符前必须先用 str() 转换（如 '日期' in str(val)），避免 float(NaN) 导致 TypeError。",
             "有些数据没有属性行，请根据具体数据推断",
+            "无法准确确定 bank_name/account_no 时不要置空：将科目列中的原始银行信息填入（如'银行存款｜工行花城支行3359｜...'原样填入两列），宁多勿缺，后续会自动规范化。",
         ],
     }
     extra = config.get("_user_requirement", "")
@@ -642,3 +663,198 @@ def _track_usage(usage: dict | None) -> None:
         token_tracker.record(usage)
     except (ImportError, RuntimeError):
         pass
+
+
+# ============================================================
+# Phase 2: 列格式检查 + LLM 生成替换映射
+# ============================================================
+
+_NORMALIZE_SYSTEM_PROMPT = """\
+你是审计数据清洗助手。下面给出了序时账清洗后某一列的唯一原始值列表、该列的预期格式，
+以及 task.yaml 中定义的银行账号参考列表（银行名称 + 账号 + 工作表线索）。
+请为每个需要修正的值生成一个 Python 字典映射：{原始值字符串: 规范化后的值字符串}。
+
+规则：
+1. bank_name 列：值应为银行正式名称（如"中国工商银行股份有限公司广州花城支行"），
+   不是科目路径（如"银行存款｜工行花城支行3359｜..."）
+2. account_no 列：值应为纯数字银行账号（如"6222020200123456789"），
+   不是科目路径。可参考银行账号参考列表中的账号（根据支行名、账号后四位等线索匹配）
+3. 如果原始值本身就是规范格式，直接保留原值作为映射值
+4. 如果无法规范化某个值，保留原值作为映射值（即不做替换）
+5. 只输出 JSON 格式的映射字典，不要输出其他内容"""
+
+
+def normalize_ledger_columns(cfg: dict[str, Any], ledger_csv) -> dict | None:
+    """Phase 2: 对清洗后的序时账 CSV 进行列格式检查和规范化。
+
+    清洗阶段（Phase 1）可能输出格式不规范的数据（如 account_no 包含科目字符串
+    "银行存款｜工行花城支行3359｜中国工商银行股份有限公司广州花城支行"）。
+    此函数对每一列做格式检查，发现问题的列提取唯一值送给 LLM，
+    让 LLM 生成替换映射（Python dict），然后运行替换。
+
+    Args:
+        cfg: 完整的 pipeline 配置（含 llm）
+        ledger_csv: 清洗后的 ledger CSV 路径
+
+    Returns:
+        规范化结果字典，或 None（CSV 不存在/无需规范化时）
+    """
+    csv_path = Path(str(ledger_csv))
+    if not csv_path.exists() or csv_path.stat().st_size == 0:
+        return None
+
+    df = pd.read_csv(csv_path, dtype=str, encoding="utf-8-sig").fillna("")
+
+    # ── 定义列格式检查规则 ──
+    def _is_bad_account_no(val: str) -> bool:
+        """account_no 应为纯数字，包含非数字字符（除空格外）则不规范"""
+        if not val:
+            return False
+        return not val.replace(" ", "").isdigit()
+
+    def _is_bad_bank_name(val: str) -> bool:
+        """bank_name 不应包含 '｜'、'|'、'银行存款' 等科目路径特征"""
+        if not val:
+            return False
+        return ("｜" in val or "|" in val or "银行存款" in val)
+
+    column_checkers = {
+        "account_no": {
+            "check": _is_bad_account_no,
+            "description": "银行账号，应为纯数字",
+        },
+        "bank_name": {
+            "check": _is_bad_bank_name,
+            "description": "银行名称，应为银行正式名称，不含科目路径",
+        },
+    }
+
+    # ── 检查每列，收集需要规范化的列及其唯一不规范值 ──
+    columns_to_fix: dict[str, list[str]] = {}
+    for col, rule in column_checkers.items():
+        if col not in df.columns:
+            continue
+        bad_values = [
+            v for v in df[col].unique()
+            if v and v.strip() and rule["check"](v)
+        ]
+        if bad_values:
+            columns_to_fix[col] = bad_values
+
+    if not columns_to_fix:
+        return {
+            "normalized_columns": 0,
+            "total_columns_checked": len(column_checkers),
+            "replacements": 0,
+            "details": [],
+            "skipped": True,
+            "reason": "所有列格式正确，无需规范化",
+        }
+
+    # ── 收集 task.yaml 中的银行账号信息作为 LLM 参考 ──
+    bank_reference: list[dict] = []
+    seen_ref: set[str] = set()
+    for bs in cfg.get("inputs", {}).get("bank_statements", []):
+        acct = bs.get("account_no", "")
+        if acct and acct not in seen_ref:
+            seen_ref.add(acct)
+            bank_reference.append({
+                "account_no": acct,
+                "bank_name": bs.get("bank_name", ""),
+                "sheet": bs.get("sheet", ""),
+            })
+
+    # ── 对每个需要修正的列，每 10 个唯一值调用一次 LLM 生成替换映射 ──
+    _MappingOutput = create_model(
+        "ColumnMappingOutput",
+        mapping=(dict[str, str], Field(description="映射字典：{原始值: 规范化值}")),
+    )
+
+    BATCH_SIZE = 10
+    all_mappings: dict[str, dict[str, str]] = {}
+
+    for col, bad_values in columns_to_fix.items():
+        rule = column_checkers[col]
+        col_mapping: dict[str, str] = {}
+        total_calls = 0
+
+        for i in range(0, len(bad_values), BATCH_SIZE):
+            batch = bad_values[i:i + BATCH_SIZE]
+            prompt = (
+                f"列名: {col}\n"
+                f"预期格式: {rule['description']}\n"
+                f"task.yaml 银行账号参考列表（共 {len(bank_reference)} 个）:\n"
+                + json.dumps(bank_reference, ensure_ascii=False)
+                + f"\n唯一原始值（批次 {i // BATCH_SIZE + 1}，共 {len(batch)} 个）:\n"
+                + json.dumps(batch, ensure_ascii=False)
+            )
+
+            try:
+                llm_config = cfg.get("llm", {})
+                result, _usage = llm_generate_structured(
+                    llm_config,
+                    prompt,
+                    _MappingOutput,
+                    _NORMALIZE_SYSTEM_PROMPT,
+                )
+                total_calls += 1
+                if result and result.mapping:
+                    col_mapping.update(result.mapping)
+            except Exception as e:
+                _log.error("列 %s 批次 %d 的 LLM 规范化失败: %s",
+                           col, i // BATCH_SIZE + 1, e, exc_info=True)
+                continue
+
+        if col_mapping:
+            all_mappings[col] = col_mapping
+            _log.info("列 %s: %d 次 LLM 调用，共 %d 条映射",
+                       col, total_calls, len(col_mapping))
+
+    if not all_mappings:
+        return {
+            "normalized_columns": 0,
+            "total_columns_checked": len(column_checkers),
+            "replacements": 0,
+            "details": [
+                {"column": col, "bad_count": len(vals), "mapped": 0,
+                 "reason": "LLM 未返回映射"}
+                for col, vals in columns_to_fix.items()
+            ],
+            "skipped": False,
+            "reason": "LLM 未返回任何映射结果",
+        }
+
+    # ── 运行替换 ──
+    total_replaced = 0
+    details = []
+    for col, mapping in all_mappings.items():
+        replaced_count = 0
+        for old_val, new_val in mapping.items():
+            if old_val == new_val:
+                continue
+            mask = df[col] == old_val
+            cnt = int(mask.sum())
+            if cnt > 0:
+                df.loc[mask, col] = new_val
+                replaced_count += cnt
+        total_replaced += replaced_count
+        details.append({
+            "column": col,
+            "bad_count": len(columns_to_fix.get(col, [])),
+            "mapped": len(mapping),
+            "replaced_rows": replaced_count,
+        })
+
+    if total_replaced > 0:
+        df.to_csv(csv_path, index=False, encoding="utf-8-sig")
+        _log.info("列规范化完成: %d 行已更新, 涉及 %d 列",
+                   total_replaced, len(all_mappings))
+
+    return {
+        "normalized_columns": len(all_mappings),
+        "total_columns_checked": len(column_checkers),
+        "replacements": total_replaced,
+        "details": details,
+        "skipped": False,
+        "reason": f"规范化了 {len(all_mappings)} 列，替换了 {total_replaced} 行",
+    }

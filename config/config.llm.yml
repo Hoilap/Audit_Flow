@@ -15,12 +15,7 @@ llm:
       base_url_env: DASHSCOPE_BASE_URL
       model: qwen3.7-plus
       model_env: DASHSCOPE_MODEL
-    longcat:
-      api_key: ak_2OQ3224sd1yV7Ob8ot6pk3TF8cC3D
-      base_url: https://api.longcat.chat/openai
-      model: LongCat-2.0
-    openai:
-      api_key: aaa
-      api_key_env: OPENAI_API_KEY
-      base_url: https://api.openai.com/v1
-      model: gpt-4o
+    dashscope_3.7_lzd:
+      api_key: REDACTED_DASHSCOPE_LZD_KEY
+      base_url: https://ws-bjyhszolnatf055a.cn-beijing.maas.aliyuncs.com/compatible-mode/v1
+      model: qwen3.7-plus

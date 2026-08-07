@@ -7,11 +7,13 @@
 4. 提供 python -m desktop.api 启动入口
 """
 
+import os
+import sys
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .common import init_db, _migrate_config_files
+from .common import init_db, _migrate_config_files, logger
 
 from .routes_common import router as common_router
 from .routes_blm import router as blm_router
@@ -40,6 +42,7 @@ init_db()
 _migrate_config_files()
 
 if __name__ == "__main__":
+    logger.info("启动服务器: Python=%s, PID=%d, CWD=%s", sys.executable, os.getpid(), os.getcwd())
     uvicorn.run(
         "desktop.api:app",
         host="127.0.0.1",
