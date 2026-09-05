@@ -4813,3 +4813,6 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\DengKaina\\Desktop\\A
 [2026-08-07 13:09:21] INFO    audit_workflow - 开始 Check: customer=佰腾, task=bank_ledger_match
 [2026-08-07 13:09:33] INFO    audit_workflow - 开始 Match: customer=佰腾, task=bank_ledger_match, parser=llm_step_once
 [2026-08-07 13:12:27] INFO    audit_workflow - 开始 Match: customer=佰腾, task=bank_ledger_match, parser=llm_step_all
+[2026-08-07 13:18:12] INFO    audit_workflow - 启动服务器: Python=C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\python.exe, PID=30204, CWD=C:\Users\DengKaina\Desktop\Audit_workflow
+[2026-08-07 13:18:58] INFO    audit_workflow - 启动服务器: Python=C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\python.exe, PID=37584, CWD=C:\Users\DengKaina\Desktop\Audit_workflow
+[2026-08-08 00:40:55] INFO    audit_workflow - 启动服务器: Python=C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\python.exe, PID=30724, CWD=C:\Users\DengKaina\Desktop\Audit_workflow

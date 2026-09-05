@@ -7,3 +7,18 @@ __pycache__/
 inputs/
 outputs/
 projects.db
+
+# 打包产物与构建缓存
+dist/
+desktop/runtime/
+desktop/wheels/
+
+# Node 依赖（npm install 可重建，切勿提交）
+node_modules/
+
+# 运行时日志（开发模式落在项目根）
+audit_workflow.log
+*.log
+
+# 工具产生的临时目录
+.postman/

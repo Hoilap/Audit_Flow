@@ -1,12 +1,90 @@
 {
   "name": "audit-workflow-desktop",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "start-api": "python -m desktop.api"
+    "start-api": "python -m desktop.api",
+    "dist": "electron-builder --win nsis"
   },
   "devDependencies": {
-    "electron": "^25.0.0"
+    "electron": "^25.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.audit.workflow",
+    "productName": "AuditWorkflow",
+    "directories": {
+      "output": "../dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../audit_workflow",
+        "to": "app/audit_workflow",
+        "filter": [
+          "**/*.py",
+          "**/*.md"
+        ]
+      },
+      {
+        "from": "../desktop",
+        "to": "app/desktop",
+        "filter": [
+          "**/*.py"
+        ]
+      },
+      {
+        "from": "../config",
+        "to": "app/config"
+      },
+      {
+        "from": "../requirements.txt",
+        "to": "app/requirements.txt"
+      },
+      {
+        "from": "../.env.example",
+        "to": "app/.env.example"
+      },
+      {
+        "from": "../config.example.llm.yml",
+        "to": "app/config.example.llm.yml"
+      },
+      {
+        "from": "../config.example.matching.yml",
+        "to": "app/config.example.matching.yml"
+      },
+      {
+        "from": "runtime/python",
+        "to": "runtime/python"
+      },
+      {
+        "from": "wheels",
+        "to": "wheels"
+      }
+    ],
+    "asar": true,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "AuditWorkflow"
+    }
   }
 }

@@ -42,18 +42,26 @@ init_db()
 _migrate_config_files()
 
 if __name__ == "__main__":
-    logger.info("启动服务器: Python=%s, PID=%d, CWD=%s", sys.executable, os.getpid(), os.getcwd())
+    # 开发模式（AUDIT_DEV=1）开启热重载；打包后的生产模式必须关闭，
+    # 否则 uvicorn 会额外拉起 watchfiles 监控进程，且依赖源码目录结构。
+    dev_mode = os.environ.get("AUDIT_DEV", "") == "1"
+    logger.info("启动服务器: Python=%s, PID=%d, CWD=%s, mode=%s",
+                sys.executable, os.getpid(), os.getcwd(), "dev" if dev_mode else "prod")
     uvicorn.run(
         "desktop.api:app",
         host="127.0.0.1",
         port=8001,
-        reload=True,
-        reload_dirs=["desktop", "audit_workflow"],
-        reload_excludes=[
-            "outputs/*",
-            "inputs/*",
-            "generated_parsers/*",
-            "config/*",
-            "*.db",
-        ],
+        reload=dev_mode,
+        reload_dirs=["desktop", "audit_workflow"] if dev_mode else None,
+        reload_excludes=(
+            [
+                "outputs/*",
+                "inputs/*",
+                "generated_parsers/*",
+                "config/*",
+                "*.db",
+            ]
+            if dev_mode
+            else None
+        ),
     )

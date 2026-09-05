@@ -3,11 +3,11 @@ export const navItems = [
   ['projects', '□', '项目管理'],
   ['data', '▦', '数据源'],
   ['agent', '◌', 'Agent 工作流'],
-  ['programs', '✓', '审计程序'],
   ['agent-loop', '⊛', 'Agent 对话'],
+  ['programs', '✓', '审计程序'],
+  ['settings', '⚙', '设置'],
   ['workpapers', '▤', '工作底稿'],
   ['reports', '↗', '分析报告'],
-  ['settings', '⚙', '设置'],
 ]
 
 export const workflowTasks = [

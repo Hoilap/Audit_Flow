@@ -20,10 +20,25 @@ from pydantic import BaseModel
 from git import Repo, InvalidGitRepositoryError
 from dotenv import load_dotenv
 
-load_dotenv()
+
+# ---------- 数据根目录 ----------
+# 打包模式下，Electron 会设置 AUDIT_WORKFLOW_DATA_DIR（指向 %APPDATA% 下的可写目录），
+# inputs/outputs/projects.db/.env/日志 等用户数据全部落在该目录；
+# 开发模式下回退到源码项目根（desktop/ 的上级目录），行为与之前完全一致。
+
+def _resolve_data_root() -> str:
+    """解析数据根目录：优先 AUDIT_WORKFLOW_DATA_DIR，否则源码项目根。"""
+    env_dir = os.environ.get("AUDIT_WORKFLOW_DATA_DIR", "").strip()
+    if env_dir:
+        os.makedirs(env_dir, exist_ok=True)
+        return os.path.abspath(env_dir)
+    return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+load_dotenv(os.path.join(_resolve_data_root(), ".env"))
 
 # ---------- Logging configuration ----------
-_log_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_log_dir = _resolve_data_root()
 _log_file = os.path.join(_log_dir, "audit_workflow.log")
 _handler = RotatingFileHandler(_log_file, maxBytes=5 * 1024 * 1024, backupCount=3, encoding="utf-8")
 _handler.setFormatter(logging.Formatter("[%(asctime)s] %(levelname)-7s %(name)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"))
@@ -105,7 +120,7 @@ def notify_frontend(event: str, data: dict) -> None:
 
 
 # ---------- SQLite project database ----------
-DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'projects.db')
+DB_PATH = os.path.join(_resolve_data_root(), 'projects.db')
 
 def get_db() -> sqlite3.Connection:
     conn = sqlite3.connect(DB_PATH)
@@ -172,6 +187,11 @@ def init_db():
         )
         conn.commit()
 
+    # 确保所有项目的 inputs/客户/任务、outputs/客户/任务 目录存在（幂等），
+    # 否则前端输入/输出区扫描不到任何项目目录
+    for row in conn.execute("SELECT customer_name, task_name FROM projects").fetchall():
+        _ensure_project_dirs(row["customer_name"], row["task_name"])
+
     conn.close()
 
 
@@ -224,15 +244,25 @@ def project_row_to_dict(row) -> dict:
 
 
 def _ensure_project_dirs(customer_name: str, task_name: str):
-    """确保 inputs/客户名称/任务名称 和 outputs/客户名称/任务名称 目录存在"""
+    """确保 inputs/客户名称/任务目录名 和 outputs/客户名称/任务目录名 存在（基于数据根目录的绝对路径）。
+
+    任务目录名遵循既有数据约定：中文任务名先经 config/config.task_definitions.yml
+    解析为英文 dir_name（如 序时账银行流水匹配 -> bank_ledger_match），
+    无匹配时回退为原始任务名。
+    """
+    task_dir = _task_def_dir_name(task_name)
     for base in ('inputs', 'outputs'):
-        d = os.path.join(base, customer_name, task_name)
+        d = os.path.join(_resolve_data_root(), base, customer_name, task_dir)
         os.makedirs(d, exist_ok=True)
 
 
 def _project_root() -> str:
-    """返回项目根目录（desktop/ 的上级目录）。"""
-    return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    """返回项目/数据根目录。
+
+    - 打包模式：AUDIT_WORKFLOW_DATA_DIR 指向的用户数据目录（%APPDATA%）。
+    - 开发模式：源码项目根（desktop/ 的上级目录）。
+    """
+    return _resolve_data_root()
 
 
 def _default_llm_yml_path() -> str:
@@ -305,7 +335,7 @@ def _list_project_dirs() -> list:
     result = []
     seen = set()
     for base in ('inputs', 'outputs'):
-        base_path = os.path.join(os.getcwd(), base)
+        base_path = os.path.join(_resolve_data_root(), base)
         if not os.path.isdir(base_path):
             continue
         for customer in os.listdir(base_path):

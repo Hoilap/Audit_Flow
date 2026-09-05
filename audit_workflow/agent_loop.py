@@ -64,8 +64,12 @@ class ConversationMessage:
 # 会话存储（SQLite 持久化）
 # ================================================================
 
+# 打包模式下 __file__ 位于安装目录（resources/app/），而 projects.db 由
+# desktop/common.py 建在用户数据目录（AUDIT_WORKFLOW_DATA_DIR）。若按 __file__
+# 相对定位会连接到安装目录下自动创建的空库 → "no such table: agent_conversations"。
 _DB_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    os.environ.get("AUDIT_WORKFLOW_DATA_DIR", "").strip()
+    or os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
     "projects.db",
 )
 

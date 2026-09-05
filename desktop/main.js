@@ -1,14 +1,41 @@
-const { app, BrowserWindow } = require('electron')
+const { app, BrowserWindow, dialog } = require('electron')
 const path = require('path')
-const { spawn, execSync } = require('child_process')
+const fs = require('fs')
+const { spawn, spawnSync, execSync } = require('child_process')
 
 let backend = null
+let backendStartedAt = 0
 
-/**
- * 清理占用指定端口的进程（Windows 专用）。
- * 通过 netstat 查找 PID，再用 taskkill 终止。
- */
+// ── 运行模式与路径解析 ──────────────────────────────────────────
+// 开发模式：项目根 = desktop/ 的上级目录，Python 用 .venv
+// 打包模式：resources/app 为后端源码，resources/runtime/python 为内置运行时，
+//           用户数据（inputs/outputs/db/config/.env/日志）在 app.getPath('userData')
+
+const IS_PACKAGED = app.isPackaged
+
+const DEV_ROOT = path.join(__dirname, '..')
+const RESOURCES_DIR = IS_PACKAGED ? process.resourcesPath : DEV_ROOT
+const BACKEND_SRC_DIR = path.join(RESOURCES_DIR, IS_PACKAGED ? 'app' : '.')
+const RUNTIME_PYTHON_DIR = path.join(RESOURCES_DIR, 'runtime', 'python')
+const WHEELS_DIR = path.join(RESOURCES_DIR, 'wheels')
+const DATA_DIR = process.env.AUDIT_WORKFLOW_DATA_DIR || (IS_PACKAGED
+  ? app.getPath('userData') // %APPDATA%\audit-workflow-desktop（可写，升级不丢失）
+  : DEV_ROOT)
+
+// ── bootstrap 日志：打包后 GUI 无控制台，安装/启动失败必须落盘才可排查 ──
+function bootstrapLog(msg) {
+  console.log(msg)
+  try {
+    fs.mkdirSync(DATA_DIR, { recursive: true })
+    fs.appendFileSync(path.join(DATA_DIR, 'bootstrap.log'),
+      `[${new Date().toISOString()}] ${msg}\n`)
+  } catch (e) { /* 日志失败不影响主流程 */ }
+}
+
+// ── 清理占用指定端口的进程（Windows 专用）──────────────────────
+
 function killProcessOnPort(port) {
+  if (process.platform !== 'win32') return
   try {
     const stdout = execSync(`netstat -ano | findstr :${port}`, { encoding: 'utf-8' })
     const lines = stdout.trim().split('\n')
@@ -31,24 +58,157 @@ function killProcessOnPort(port) {
   }
 }
 
+// ── Python 解释器定位 ────────────────────────────────────────────
+
+function resolvePython() {
+  // 1) 打包模式：优先使用内置运行时 resources/runtime/python
+  if (IS_PACKAGED) {
+    const bundledPy = process.platform === 'win32'
+      ? path.join(RUNTIME_PYTHON_DIR, 'python.exe')
+      : path.join(RUNTIME_PYTHON_DIR, 'bin', 'python3')
+    if (fs.existsSync(bundledPy)) return bundledPy
+    console.error('[main] 内置 Python 运行时缺失，回退系统 python：', bundledPy)
+    return process.platform === 'win32' ? 'python' : 'python3'
+  }
+  // 2) 开发模式：优先 .venv
+  const venvPy = process.platform === 'win32'
+    ? path.join(DEV_ROOT, '.venv', 'Scripts', 'python.exe')
+    : path.join(DEV_ROOT, '.venv', 'bin', 'python3')
+  return fs.existsSync(venvPy) ? venvPy : (process.platform === 'win32' ? 'python' : 'python3')
+}
+
+// ── 依赖 bootstrap（打包模式，仅首次运行执行）───────────────────
+
+function requirementsHash() {
+  const reqPath = path.join(BACKEND_SRC_DIR, 'requirements.txt')
+  const content = fs.existsSync(reqPath) ? fs.readFileSync(reqPath, 'utf-8') : ''
+  // 简单内容指纹，requirements 变化后会重新安装
+  let h = 0
+  for (let i = 0; i < content.length; i++) {
+    h = ((h << 5) - h + content.charCodeAt(i)) | 0
+  }
+  return String(h)
+}
+
+function installDependencies(py) {
+  const marker = path.join(RUNTIME_PYTHON_DIR, '.deps-installed')
+  const hash = requirementsHash()
+  try {
+    if (fs.existsSync(marker) && fs.readFileSync(marker, 'utf-8').trim() === hash) {
+      console.log('[bootstrap] 依赖已就绪，跳过安装')
+      return true
+    }
+  } catch (e) { /* 读取失败则重新安装 */ }
+
+  bootstrapLog('[bootstrap] 首次运行：正在安装 Python 依赖（离线 wheels），可能需要几分钟...')
+  const reqPath = path.join(BACKEND_SRC_DIR, 'requirements.txt')
+  const args = ['-m', 'pip', 'install', '--no-index', '--find-links', WHEELS_DIR, '-r', reqPath, '--no-warn-script-location']
+  // maxBuffer 调大：pip 输出较多，默认 1MB 可能触发 ENOBUFS 被误判为失败
+  const res = spawnSync(py, args, { encoding: 'utf-8', windowsHide: true, maxBuffer: 32 * 1024 * 1024 })
+  if (res.error || res.status !== 0) {
+    bootstrapLog('[bootstrap] 依赖安装失败：' + (res.error ? res.error.message : ''))
+    bootstrapLog('[bootstrap] pip stdout:\n' + (res.stdout || ''))
+    bootstrapLog('[bootstrap] pip stderr:\n' + (res.stderr || ''))
+    return false
+  }
+  try { fs.writeFileSync(marker, hash) } catch (e) { /* 标记写入失败不影响运行 */ }
+  bootstrapLog('[bootstrap] 依赖安装完成')
+  return true
+}
+
+// ── 数据目录初始化（打包模式：把随包的配置模板种到数据目录）─────
+
+function seedDataDir() {
+  if (!IS_PACKAGED) return
+  fs.mkdirSync(DATA_DIR, { recursive: true })
+
+  // 0) inputs/、outputs/ 根目录：工作流的输入/输出区（公司/任务 两级结构）
+  for (const base of ['inputs', 'outputs']) {
+    fs.mkdirSync(path.join(DATA_DIR, base), { recursive: true })
+  }
+
+  // 1) config/：逐文件补齐（用户改过的配置不会被覆盖）
+  const shippedConfigDir = path.join(BACKEND_SRC_DIR, 'config')
+  const dataConfigDir = path.join(DATA_DIR, 'config')
+  if (fs.existsSync(shippedConfigDir)) {
+    fs.mkdirSync(dataConfigDir, { recursive: true })
+    for (const f of fs.readdirSync(shippedConfigDir)) {
+      const src = path.join(shippedConfigDir, f)
+      const dst = path.join(dataConfigDir, f)
+      if (!fs.existsSync(dst)) {
+        fs.copyFileSync(src, dst)
+        console.log(`[bootstrap] seeded config: ${f}`)
+      }
+    }
+  }
+
+  // 2) .env：从 .env.example 种子（存在则不覆盖）
+  const envExample = path.join(BACKEND_SRC_DIR, '.env.example')
+  const envTarget = path.join(DATA_DIR, '.env')
+  if (fs.existsSync(envExample) && !fs.existsSync(envTarget)) {
+    fs.copyFileSync(envExample, envTarget)
+    console.log('[bootstrap] seeded .env from .env.example')
+  }
+}
+
+// ── 后端启动 ─────────────────────────────────────────────────────
+
 function startBackend() {
   // 启动前先清理端口占用，避免 WinError 10013
   killProcessOnPort(8001)
-  const projectRoot = path.join(__dirname, '..')
 
-  // 优先使用 .venv 的 Python 解释器，确保依赖包（pydantic_ai 等）已安装
-  let py
-  if (process.platform === 'win32') {
-    const venvPy = path.join(projectRoot, '.venv', 'Scripts', 'python.exe')
-    py = require('fs').existsSync(venvPy) ? venvPy : 'python'
-  } else {
-    const venvPy = path.join(projectRoot, '.venv', 'bin', 'python3')
-    py = require('fs').existsSync(venvPy) ? venvPy : 'python3'
-  }
+  seedDataDir()
+  const py = resolvePython()
   console.log(`[main] using Python: ${py}`)
-  backend = spawn(py, ['-m', 'desktop.api'], { cwd: projectRoot })
-  backend.stdout.on('data', (data) => console.log(`[api] ${data}`))
-  backend.stderr.on('data', (data) => console.error(`[api-err] ${data}`))
+  console.log(`[main] backend src: ${BACKEND_SRC_DIR}`)
+  console.log(`[main] data dir:    ${DATA_DIR}`)
+
+  // 依赖安装失败必须终止：否则后端起不来，前端永远卡在加载页，
+  // 且 Ctrl+R 只刷新页面、不会重启后端，用户无法自愈
+  if (IS_PACKAGED && !installDependencies(py)) {
+    const msg = 'Python 依赖安装失败，应用无法启动。\n\n' +
+      `详细原因请查看日志：\n${path.join(DATA_DIR, 'bootstrap.log')}\n\n` +
+      '修复后请完全退出应用（而非刷新页面）再重新打开。'
+    bootstrapLog('[main] ' + msg)
+    dialog.showErrorBox('AuditWorkflow 启动失败', msg)
+    app.quit()
+    return
+  }
+
+  const env = Object.assign({}, process.env, {
+    PYTHONPATH: BACKEND_SRC_DIR,          // 让 python -m desktop.api 从资源目录导入
+    AUDIT_WORKFLOW_DATA_DIR: DATA_DIR,    // 后端把 inputs/outputs/db/config 都放这里
+    AUDIT_DEV: IS_PACKAGED ? '' : '1',
+    PYTHONUNBUFFERED: '1',
+    // 防止用户机器上的 PYTHONHOME/PYTHONPATH 污染内置运行时
+    PYTHONHOME: '',
+  })
+  delete env.PYTHONHOME
+
+  backend = spawn(py, ['-m', 'desktop.api'], { cwd: DATA_DIR, env, windowsHide: true })
+  backendStartedAt = Date.now()
+
+  // 后端 stdout/stderr 写入 backend.log（含 HTTP 500 的 Python traceback），
+  // 否则打包后的 GUI 应用没有控制台，报错全部丢失
+  const logStream = fs.createWriteStream(path.join(DATA_DIR, 'backend.log'), { flags: 'a' })
+  const logLine = (tag, data) => {
+    const text = String(data)
+    logStream.write(`[${new Date().toISOString()}] [${tag}] ${text}`)
+    console.log(`[${tag}] ${text}`)
+  }
+  backend.stdout.on('data', (data) => logLine('api', data))
+  backend.stderr.on('data', (data) => logLine('api-err', data))
+  backend.on('exit', (code) => {
+    logLine('api', `exited with code ${code}\n`)
+    // 启动后 30 秒内就退出 = 启动失败（如缺依赖/端口占用）。
+    // 前端只会一直转圈，刷新也没用，必须弹窗告知用户并指路日志。
+    if (IS_PACKAGED && code !== 0 && Date.now() - backendStartedAt < 30000) {
+      dialog.showErrorBox('AuditWorkflow 后端启动失败',
+        `后端进程已退出（code ${code}），界面将无法响应，刷新页面无法解决。\n\n` +
+        `详细原因请查看日志：\n${path.join(DATA_DIR, 'backend.log')}\n\n` +
+        '修复后请完全退出应用再重新打开。')
+    }
+  })
 }
 
 function createWindow () {
@@ -68,15 +228,35 @@ function createWindow () {
   win.webContents.on('will-navigate', (e) => e.preventDefault())
 }
 
-app.whenReady().then(() => {
-  startBackend()
-  createWindow()
-  app.on('activate', function () {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
-  })
-})
+// ── 单实例锁：防止应用被重复打开 ─────────────────────────────────
+// 第二个实例获取锁失败直接退出；已运行的实例收到 second-instance 事件，
+// 唤起并聚焦已有窗口（后端 8001 端口也只由首个实例占用）。
+const gotSingleInstanceLock = app.requestSingleInstanceLock()
 
-app.on('window-all-closed', function () {
-  if (backend) backend.kill()
-  if (process.platform !== 'darwin') app.quit()
-})
+if (!gotSingleInstanceLock) {
+  app.quit()
+} else {
+  app.on('second-instance', () => {
+    const win = BrowserWindow.getAllWindows()[0]
+    if (win) {
+      if (win.isMinimized()) win.restore()
+      win.focus()
+    }
+  })
+
+  app.whenReady().then(() => {
+    // 先建窗口再启动后端：首次运行安装依赖可能耗时几分钟，
+    // 若先阻塞安装再建窗口，用户看不到任何界面会误以为卡死而强杀，
+    // 导致依赖装到一半、后端永远起不来（刷新页面无法恢复）
+    createWindow()
+    startBackend()
+    app.on('activate', function () {
+      if (BrowserWindow.getAllWindows().length === 0) createWindow()
+    })
+  })
+
+  app.on('window-all-closed', function () {
+    if (backend) backend.kill()
+    if (process.platform !== 'darwin') app.quit()
+  })
+}

@@ -196,7 +196,12 @@ def git_revert(path: str):
 def git_log(limit: int = 20):
     repo = find_repo()
     commits = []
-    for c in list(repo.iter_commits(max_count=limit)):
+    try:
+        commit_iter = list(repo.iter_commits(max_count=limit))
+    except ValueError:
+        # 数据目录的 git 仓库刚初始化、尚无提交记录（新装用户的正常状态）
+        return {"commits": []}
+    for c in commit_iter:
         commits.append({"hexsha": c.hexsha, "message": c.message, "author": str(c.author), "date": c.committed_datetime.isoformat()})
     return {"commits": commits}
 
