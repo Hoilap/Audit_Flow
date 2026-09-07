@@ -1,7 +1,7 @@
 import { api, apiBase, cancelRequest } from './api.js'
 import { activeTask, findWorkflowTaskByName, getProjectBasePath, resolveProjectPath, markStep, state, stepStatus, taskRunKey } from './state.js'
 import { $ } from './dom.js'
-import { addMessage, renderFileError, renderFileTree, renderFiles, renderWorkflowWorkspace, setAgentStatus, startTimer, stopTimer, renderDetectResult, renderConfigConfirm, renderCheckResult, renderProgramsList, renderSheetTasks, renderSettingsProviders, renderReviewFiles } from './ui.js'
+import { addMessage, renderFileError, renderFileTree, renderFiles, renderWorkflowWorkspace, setAgentStatus, startTimer, stopTimer, renderDetectResult, renderConfigConfirm, renderCheckResult, renderProgramsList, renderSheetTasks, renderSettingsProviders, renderReviewFiles, renderDashboardStats } from './ui.js'
 import { openCsvPreview } from './previewModal.js'
 import { openReviewEditor } from './reviewEditor.js'
 import { createModal } from './modal.js'
@@ -424,6 +424,155 @@ export async function uploadFile() {
   }
 }
 
+// ────────── 数据源：拖拽导入 + 目录规范校验 ──────────
+
+/** 绑定数据源页拖拽导入框（启动时调用一次） */
+export function bindDataImportZone() {
+  const zone = $('#data-drop-zone')
+  if (!zone || zone.dataset.bound) return
+  zone.dataset.bound = 'true'
+  const input = $('#data-drop-input')
+
+  // 点击框 → 打开文件资源管理器选择文件（可多选）
+  zone.addEventListener('click', () => input.click())
+  input.addEventListener('change', async () => {
+    const paths = Array.from(input.files).map((f) => f.path).filter(Boolean)
+    input.value = ''
+    if (paths.length) await importPathsToInputs(paths)
+  })
+
+  zone.addEventListener('dragover', (e) => {
+    e.preventDefault()
+    if (!e.dataTransfer.types.includes('Files')) return
+    zone.classList.add('drag-over')
+  })
+  zone.addEventListener('dragleave', (e) => {
+    if (zone.contains(e.relatedTarget)) return
+    zone.classList.remove('drag-over')
+  })
+  zone.addEventListener('drop', async (e) => {
+    e.preventDefault()
+    zone.classList.remove('drag-over')
+    if (!e.dataTransfer.types.includes('Files')) return
+    const paths = Array.from(e.dataTransfer.files).map((f) => f.path).filter(Boolean)
+    if (paths.length) {
+      await importPathsToInputs(paths)
+    } else {
+      setDropZoneText('无法获取文件路径（请在 Electron 中操作）')
+    }
+  })
+
+  // 目标目录变化时，同步更新框内显示的目标路径
+  const destInput = $('#upload-dest')
+  if (destInput) destInput.addEventListener('input', refreshDropZoneDest)
+  const projSel = $('#data-project-select')
+  if (projSel) {
+    // 项目选择联动：showPage 中的监听器先更新 upload-dest，此处延迟刷新显示
+    projSel.addEventListener('change', () => setTimeout(refreshDropZoneDest, 0))
+  }
+  refreshDropZoneDest()
+}
+
+/** 当前拖拽导入的目标目录（与上方目标路径输入框联动） */
+function currentImportDest() {
+  return ($('#upload-dest')?.value || 'inputs/').trim() || 'inputs/'
+}
+
+function refreshDropZoneDest() {
+  const code = $('#data-drop-zone .drop-zone-dest')
+  if (code) code.textContent = currentImportDest()
+}
+
+function setDropZoneText(text) {
+  const el = $('#data-drop-zone .drop-zone-text')
+  if (!el) return
+  el.textContent = text
+  clearTimeout(setDropZoneText._timer)
+  setDropZoneText._timer = setTimeout(() => {
+    el.innerHTML = '拖拽文件或文件夹到此处，或<span class="drop-zone-link">点击选择文件</span>（可多选，导入到 <code class="drop-zone-dest"></code>，导入后按「客户名称/任务英文目录名」规范校验）'
+    refreshDropZoneDest()
+  }, 4000)
+}
+
+/** 将系统路径批量复制到当前目标目录，然后刷新文件树并重新校验目录规范 */
+async function importPathsToInputs(paths) {
+  const dest = currentImportDest()
+  setDropZoneText(`正在导入 ${paths.length} 个项目到 ${dest} ...`)
+  let okCount = 0
+  const importErrors = []
+  for (const p of paths) {
+    try {
+      await api.copyFromPath(p, dest)
+      okCount++
+    } catch (err) {
+      importErrors.push(`${p}: ${err.message}`)
+      logger.error('data-import', `${p}: ${err.message}`)
+    }
+  }
+  setDropZoneText(importErrors.length === 0 ? `已导入 ${okCount} 个项目到 ${dest}` : `导入完成：${okCount} 成功，${importErrors.length} 失败`)
+  await renderFileTree()
+  await validateDataDirs(importErrors)
+}
+
+/** 在系统文件资源管理器中打开 inputs/ 或 outputs/ 目录 */
+export async function openDataDir(base) {
+  try {
+    await api.openInExplorer(base)
+  } catch (err) {
+    logger.error('open-data-dir', `${base}: ${err.message}`)
+    alert(`打开目录失败: ${err.message}`)
+  }
+}
+
+/** 调用后端重新扫描 inputs/ 目录命名规范/与数据库一致性，并在面板上展示结果 */
+export async function validateDataDirs(importErrors = []) {
+  const panel = $('#data-import-issues')
+  if (!panel) return
+  let result
+  try {
+    result = await api.validateInputs()
+  } catch (err) {
+    panel.style.display = ''
+    panel.className = 'import-issues error'
+    panel.textContent = `目录校验失败: ${err.message}`
+    return
+  }
+  const issues = result.issues || []
+  if (issues.length === 0 && importErrors.length === 0) {
+    panel.style.display = 'none'
+    return
+  }
+  panel.style.display = ''
+  panel.className = `import-issues ${issues.some((i) => i.level === 'error') || importErrors.length ? 'error' : 'warning'}`
+  panel.innerHTML = ''
+
+  const head = document.createElement('div')
+  head.className = 'import-issues-head'
+  const title = document.createElement('strong')
+  title.textContent = issues.length ? `目录校验发现 ${issues.length} 个问题` : '导入问题'
+  head.appendChild(title)
+  const closeBtn = document.createElement('button')
+  closeBtn.className = 'import-issues-close'
+  closeBtn.textContent = '✕'
+  closeBtn.title = '关闭'
+  closeBtn.addEventListener('click', () => { panel.style.display = 'none' })
+  head.appendChild(closeBtn)
+  panel.appendChild(head)
+
+  const list = document.createElement('ul')
+  for (const msg of importErrors) {
+    const li = document.createElement('li')
+    li.textContent = `导入失败 — ${msg}`
+    list.appendChild(li)
+  }
+  for (const issue of issues) {
+    const li = document.createElement('li')
+    li.textContent = `${issue.path} — ${issue.message}`
+    list.appendChild(li)
+  }
+  panel.appendChild(list)
+}
+
 export async function commitAll() {
   try {
     const result = await api.gitCommit('AuditFlow evidence update')
@@ -442,6 +591,26 @@ export async function loadProjects() {
     state.projects = data.projects || []
   } catch (error) {
     state.projects = []
+  }
+}
+
+export async function loadDashboardStats() {
+  let stats = null
+  try {
+    stats = await api.dashboardStats()
+  } catch (error) {
+    stats = null
+  }
+  await loadProjects()
+  renderDashboardStats(stats, state.projects)
+}
+
+export async function loadProcedures() {
+  try {
+    const data = await api.listProcedures()
+    state.procedures = data.procedures || []
+  } catch (error) {
+    state.procedures = []
   }
 }
 
@@ -486,7 +655,7 @@ export async function selectProject(projectId) {
   if (id) {
     const project = state.projects.find((p) => p.id === id)
     if (project) {
-      state.customCustomerName = project.customer_name
+      state.customCustomerName = project.customer_short_name
       state.customTaskName = project.task_name
       const wfTask = findWorkflowTaskByName(project.task_name)
       if (wfTask) {

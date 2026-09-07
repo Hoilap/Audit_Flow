@@ -11,8 +11,10 @@ export const state = {
   timer: null,
   chatHidden: false,
   sidebarHidden: false,
-  /** @type {Array<{id:number,task_name:string,customer_name:string,status:string,created_at:string,responsible_person:string,risk:string}>} */
+  /** @type {Array<{id:number,customer_name:string,customer_short_name:string,first_engagement:string,start_date:string,project_code:string,project_name:string,group_audit:string,end_date:string,currency:string,exchange_rate:number,prepared_by:string,prepared_date:string,prepared_completed:boolean,reviewed_by:string,reviewed_date:string,reviewed_completed:boolean,task_name:string,dir_name:string}>} */
   projects: [],
+  /** 审计程序主表（项目代码/项目名称），供任务表单选择 */
+  procedures: [],
   /** 当前在 Agent 页面选中的项目 ID；null 表示自定义模式 */
   activeProjectId: null,
   /** 如果 activeProjectId 为 null，用户手动输入的客户名称 */

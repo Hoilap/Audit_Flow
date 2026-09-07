@@ -238,7 +238,7 @@ function renderProjectSelector() {
   const projects = state.projects || []
   const options = projects.map((p) => {
     const selected = p.id === state.activeProjectId ? 'selected' : ''
-    return `<option value="${p.id}" ${selected}>${escapeHtml(p.customer_name)} — ${escapeHtml(p.task_name)} [${escapeHtml(p.status)}]</option>`
+    return `<option value="${p.id}" ${selected}>${escapeHtml(p.customer_name)} — ${escapeHtml(p.task_name)}</option>`
   }).join('')
 
   const customChecked = state.activeProjectId === null ? 'checked' : ''
@@ -737,17 +737,23 @@ export function renderProjectsTable(projects) {
   const tbody = $('#project-table-body')
   if (!tbody) return
   if (!projects || projects.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="subtle">暂无项目数据</td></tr>'
+    tbody.innerHTML = '<tr><td colspan="13" class="subtle">暂无项目数据</td></tr>'
     return
   }
   tbody.innerHTML = projects.map((p) => `
     <tr>
-      <td>${escapeHtml(p.task_name)}</td>
+      <td>${escapeHtml(p.customer_short_name)}</td>
       <td>${escapeHtml(p.customer_name)}</td>
-      <td><span class="badge">${escapeHtml(p.status)}</span></td>
-      <td>${escapeHtml(p.created_at)}</td>
-      <td>${escapeHtml(p.responsible_person)}</td>
-      <td><span class="badge ${riskClass(p.risk)}">${escapeHtml(p.risk)}</span></td>
+      <td>${escapeHtml(p.project_code)} — ${escapeHtml(p.project_name)}</td>
+      <td>${escapeHtml(p.first_engagement)}</td>
+      <td>${escapeHtml(p.group_audit)}</td>
+      <td>${escapeHtml(p.start_date)}</td>
+      <td>${escapeHtml(p.end_date)}</td>
+      <td>${escapeHtml(p.currency)} / ${escapeHtml(String(p.exchange_rate))}</td>
+      <td>${escapeHtml(p.prepared_by)}${p.prepared_date ? `<br><span class="subtle">${escapeHtml(p.prepared_date)}</span>` : ''}</td>
+      <td>${p.prepared_completed ? '✓' : ''}</td>
+      <td>${escapeHtml(p.reviewed_by)}${p.reviewed_date ? `<br><span class="subtle">${escapeHtml(p.reviewed_date)}</span>` : ''}</td>
+      <td>${p.reviewed_completed ? '✓' : ''}</td>
       <td>
         <button class="edit-project-btn" data-project-id="${p.id}" title="编辑">✎</button>
         <button class="delete-project-btn" data-project-id="${p.id}" title="删除">✕</button>
@@ -766,34 +772,41 @@ export async function showProjectFormModal(project, onSave, onDelete) {
   const { createModal } = await import('./modal.js')
   const isEdit = !!project
 
-  const statusOptions = ['Planning', 'Running', 'Reviewing', 'Completed'].map((s) => {
-    const sel = project && project.status === s ? 'selected' : ''
-    return `<option value="${s}" ${sel}>${s}</option>`
+  // 审计程序下拉（项目代码 — 项目名称），来自审计程序主表
+  const procedures = state.procedures || []
+  const procOptions = procedures.map((pr) => {
+    const sel = project && project.project_code === pr.project_code ? 'selected' : ''
+    return `<option value="${escapeHtml(pr.project_code)}" ${sel}>${escapeHtml(pr.project_code)} — ${escapeHtml(pr.project_name)}</option>`
   }).join('')
-  const riskOptions = ['Low', 'Medium', 'High', 'Critical'].map((r) => {
-    const sel = project && project.risk === r ? 'selected' : ''
-    return `<option value="${r}" ${sel}>${r}</option>`
-  }).join('')
-  const taskOptions = workflowTasks.map((t) => {
-    const sel = project && project.task_name === t.name ? 'selected' : ''
-    return `<option value="${escapeHtml(t.name)}" ${sel}>${escapeHtml(t.name)}</option>`
-  }).join('')
-  // 如果 project.task_name 不在预定义列表中，添加自定义选项
-  const isCustomTask = project && !workflowTasks.some((t) => t.name === project.task_name)
-  const customTaskOption = isCustomTask ? `<option value="${escapeHtml(project.task_name)}" selected>${escapeHtml(project.task_name)} (自定义)</option>` : ''
+  // 编辑时若项目代码不在主表中，补充一个选项保持可保存
+  const orphanOption = project && !procedures.some((pr) => pr.project_code === project.project_code)
+    ? `<option value="${escapeHtml(project.project_code)}" selected>${escapeHtml(project.project_code)} — ${escapeHtml(project.project_name)} (未在主表中)</option>`
+    : ''
 
-  const modal = createModal({ title: isEdit ? '编辑项目' : '新建项目', width: '520px', height: 'auto' })
+  const ynOptions = (current) => ['否', '是'].map((v) =>
+    `<option value="${v}" ${current === v ? 'selected' : ''}>${v}</option>`
+  ).join('')
+
+  const modal = createModal({ title: isEdit ? '编辑项目' : '新建项目', width: '560px', height: 'auto' })
   modal.setBody(`
     <form id="project-form" class="project-form">
-      <label>任务名称
-        <select id="form-task-name" class="search" style="width:100%;">${taskOptions}${customTaskOption}<option value="__custom__">自定义输入...</option></select>
-        <input id="form-task-name-custom" class="search" style="width:100%;margin-top:4px;display:none;" placeholder="输入自定义任务名称" value="${isCustomTask ? escapeHtml(project.task_name) : ''}" />
+      <label>审计程序（项目代码）
+        <select id="form-proc-code" class="search" style="width:100%;">${procOptions}${orphanOption}</select>
       </label>
-      <label>客户名称 <input id="form-customer" class="search" value="${escapeHtml(project?.customer_name || '')}" /></label>
-      <label>项目状态 <select id="form-status">${statusOptions}</select></label>
-      <label>创建时间 <input id="form-created" class="search" type="date" value="${project?.created_at || ''}" /></label>
-      <label>负责人 <input id="form-person" class="search" value="${escapeHtml(project?.responsible_person || '')}" /></label>
-      <label>风险等级 <select id="form-risk">${riskOptions}</select></label>
+      <label>客户名称 <input id="form-customer" class="search" placeholder="如：桂平市金山环保工程有限公司" value="${escapeHtml(project?.customer_name || '')}" /></label>
+      <label>客户简称 <input id="form-customer-short" class="search" placeholder="如：桂平金山（用于文件目录）" value="${escapeHtml(project?.customer_short_name || '')}" /></label>
+      <label>首次承接 <select id="form-first-engagement">${ynOptions(project?.first_engagement || '否')}</select></label>
+      <label>集团审计 <select id="form-group-audit">${ynOptions(project?.group_audit || '是')}</select></label>
+      <label>开始日期 <input id="form-start-date" class="search" type="date" value="${project?.start_date || ''}" /></label>
+      <label>截止日期 <input id="form-end-date" class="search" type="date" value="${project?.end_date || ''}" /></label>
+      <label>货币单位 <input id="form-currency" class="search" value="${escapeHtml(project?.currency || 'CNY')}" /></label>
+      <label>汇率 <input id="form-exchange-rate" class="search" type="number" step="0.0001" min="0" value="${project?.exchange_rate ?? 1.0}" /></label>
+      <label>编制人员 <input id="form-prepared-by" class="search" value="${escapeHtml(project?.prepared_by || '')}" /></label>
+      <label>编制日期 <input id="form-prepared-date" class="search" type="date" value="${project?.prepared_date || ''}" /></label>
+      <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="form-prepared-completed" ${project?.prepared_completed ? 'checked' : ''} /> 完成编制</label>
+      <label>审核人员 <input id="form-reviewed-by" class="search" value="${escapeHtml(project?.reviewed_by || '')}" /></label>
+      <label>审核日期 <input id="form-reviewed-date" class="search" type="date" value="${project?.reviewed_date || ''}" /></label>
+      <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="form-reviewed-completed" ${project?.reviewed_completed ? 'checked' : ''} /> 完成审核</label>
       <div class="form-actions">
         ${isEdit ? '<button type="button" id="form-delete-btn" class="danger">删除项目</button>' : ''}
         <button type="button" id="form-cancel-btn">取消</button>
@@ -802,21 +815,10 @@ export async function showProjectFormModal(project, onSave, onDelete) {
     </form>
   `)
 
-  // 任务名称下拉 → 自定义输入联动
-  modal.getBodyEl().querySelector('#form-task-name').addEventListener('change', (e) => {
-    const customInput = modal.getBodyEl().querySelector('#form-task-name-custom')
-    if (e.target.value === '__custom__') {
-      customInput.style.display = ''
-      customInput.focus()
-    } else {
-      customInput.style.display = 'none'
-    }
-  })
-
   modal.getBodyEl().querySelector('#form-cancel-btn').addEventListener('click', () => modal.close())
   if (isEdit) {
     modal.getBodyEl().querySelector('#form-delete-btn').addEventListener('click', async () => {
-      if (confirm(`确定要删除项目「${project.customer_name} — ${project.task_name}」吗？`)) {
+      if (confirm(`确定要删除项目「${project.customer_short_name} — ${project.project_name}」吗？`)) {
         await onDelete(project.id)
         modal.close()
       }
@@ -826,17 +828,25 @@ export async function showProjectFormModal(project, onSave, onDelete) {
   modal.getBodyEl().querySelector('#project-form').addEventListener('submit', async (e) => {
     e.preventDefault()
     const getVal = (id) => modal.getBodyEl().querySelector(id).value
-    const taskSelect = getVal('#form-task-name')
-    const customTask = modal.getBodyEl().querySelector('#form-task-name-custom').value.trim()
-    const taskName = taskSelect === '__custom__' ? customTask : taskSelect
+    const getChecked = (id) => modal.getBodyEl().querySelector(id).checked
+    const rate = parseFloat(getVal('#form-exchange-rate'))
 
     const payload = {
-      task_name: taskName,
-      customer_name: getVal('#form-customer'),
-      status: getVal('#form-status'),
-      created_at: getVal('#form-created'),
-      responsible_person: getVal('#form-person'),
-      risk: getVal('#form-risk'),
+      project_code: getVal('#form-proc-code'),
+      customer_name: getVal('#form-customer').trim(),
+      customer_short_name: getVal('#form-customer-short').trim(),
+      first_engagement: getVal('#form-first-engagement'),
+      group_audit: getVal('#form-group-audit'),
+      start_date: getVal('#form-start-date'),
+      end_date: getVal('#form-end-date'),
+      currency: getVal('#form-currency').trim() || 'CNY',
+      exchange_rate: Number.isFinite(rate) ? rate : 1.0,
+      prepared_by: getVal('#form-prepared-by').trim(),
+      prepared_date: getVal('#form-prepared-date'),
+      prepared_completed: getChecked('#form-prepared-completed'),
+      reviewed_by: getVal('#form-reviewed-by').trim(),
+      reviewed_date: getVal('#form-reviewed-date'),
+      reviewed_completed: getChecked('#form-reviewed-completed'),
     }
     await onSave(payload)
     modal.close()
@@ -917,10 +927,6 @@ function fileRow(file, source) {
   `
 }
 
-function riskClass(risk) {
-  return risk.toLowerCase() === 'critical' ? 'critical' : risk.toLowerCase() === 'high' ? 'high' : risk.toLowerCase() === 'medium' ? 'medium' : 'low'
-}
-
 function statusLabel(status) {
   if (status === 'completed') return 'Done'
   if (status === 'failed') return 'Failed'
@@ -938,19 +944,62 @@ function normalizePath(file) {
 
 function dashboardPage() {
   return `<section class="page active" id="page-dashboard">
-    <div class="page-header"><div><h1>Dashboard</h1><p class="subtle">今日审计任务、风险预警与 Agent 执行概览</p></div><span class="badge low">系统正常</span></div>
+    <div class="page-header"><div><h1>Dashboard</h1><p class="subtle">项目进度与编制/审核状态概览</p></div><span class="badge low">系统正常</span></div>
     <div class="grid metrics">
-      <div class="card"><div class="card-title">今日任务数</div><div class="card-value">12</div><p class="subtle">3 个已完成</p></div>
-      <div class="card"><div class="card-title">待审核项目</div><div class="card-value">8</div><p class="subtle">含 2 个高风险</p></div>
+      <div class="card"><div class="card-title">项目总数</div><div class="card-value" id="dash-total-projects">–</div><p class="subtle">全部审计项目</p></div>
+      <div class="card"><div class="card-title">已完成编制</div><div class="card-value" id="dash-prepared">–</div><p class="subtle" id="dash-prepared-sub">待编制 –</p></div>
+      <div class="card"><div class="card-title">已完成审核</div><div class="card-value" id="dash-reviewed">–</div><p class="subtle" id="dash-reviewed-sub">待审核 –</p></div>
       <div class="card"><div class="card-title">运行中的 Agent</div><div class="card-value" id="running-agents">0</div><p class="subtle">本地 Python 后端</p></div>
-      <div class="card"><div class="card-title">风险预警数量</div><div class="card-value">16</div><p class="subtle">Critical 2 / High 5</p></div>
     </div>
-    <div class="grid two-col" style="margin-top:12px;"><div class="card"><h2>最近审计项目</h2><table class="table" style="margin-top:8px;"><thead><tr><th>项目名称</th><th>客户</th><th>状态</th><th>风险</th></tr></thead><tbody><tr><td>资金流水专项核查</td><td>桂平金山</td><td><span class="badge">Reviewing</span></td><td><span class="badge high">High</span></td></tr><tr><td>出库表核对</td><td>A 公司</td><td><span class="badge">Planning</span></td><td><span class="badge medium">Medium</span></td></tr></tbody></table></div><div class="card"><h2>风险分布</h2><div class="grid" style="margin-top:12px;"><div><span class="badge low">Low</span> <span class="subtle">24 项</span></div><div><span class="badge medium">Medium</span> <span class="subtle">11 项</span></div><div><span class="badge high">High</span> <span class="subtle">5 项</span></div><div><span class="badge critical">Critical</span> <span class="subtle">2 项</span></div></div></div></div>
+    <div class="grid two-col" style="margin-top:12px;">
+      <div class="card"><h2>最近审计项目</h2><table class="table" style="margin-top:8px;"><thead><tr><th>客户</th><th>审计程序</th><th>编制</th><th>审核</th></tr></thead><tbody id="dash-recent-projects"><tr><td colspan="4" class="subtle">加载中...</td></tr></tbody></table></div>
+      <div class="card"><h2>进度概览</h2><div class="grid" style="margin-top:12px;" id="dash-progress"></div></div>
+    </div>
   </section>`
 }
 
+export function renderDashboardStats(stats, projects) {
+  const setVal = (id, val) => { const el = $(id); if (el) el.textContent = val }
+  if (stats) {
+    setVal('#dash-total-projects', stats.total_projects ?? 0)
+    setVal('#dash-prepared', stats.prepared_completed ?? 0)
+    setVal('#dash-prepared-sub', `待编制 ${stats.pending_prepare ?? 0}`)
+    setVal('#dash-reviewed', stats.reviewed_completed ?? 0)
+    setVal('#dash-reviewed-sub', `待审核 ${stats.pending_review ?? 0}`)
+
+    const progressEl = $('#dash-progress')
+    if (progressEl) {
+      const total = stats.total_projects || 1
+      const pct = (n) => Math.round((n / total) * 100)
+      progressEl.innerHTML = `
+        <div><span class="badge low">已完成编制</span> <span class="subtle">${stats.prepared_completed ?? 0}/${stats.total_projects ?? 0}（${pct(stats.prepared_completed)}%）</span></div>
+        <div><span class="badge">已完成审核</span> <span class="subtle">${stats.reviewed_completed ?? 0}/${stats.total_projects ?? 0}（${pct(stats.reviewed_completed)}%）</span></div>
+        <div><span class="badge high">待编制</span> <span class="subtle">${stats.pending_prepare ?? 0} 项</span></div>
+        <div><span class="badge medium">待审核</span> <span class="subtle">${stats.pending_review ?? 0} 项</span></div>
+      `
+    }
+  }
+
+  const recentEl = $('#dash-recent-projects')
+  if (recentEl) {
+    const list = projects || []
+    if (list.length === 0) {
+      recentEl.innerHTML = '<tr><td colspan="4" class="subtle">暂无项目数据</td></tr>'
+    } else {
+      recentEl.innerHTML = list.slice(0, 8).map((p) => `
+        <tr>
+          <td>${escapeHtml(p.customer_short_name)}</td>
+          <td>${escapeHtml(p.project_name || p.project_code)}</td>
+          <td>${p.prepared_completed ? '✓' : '<span class="badge high">未编制</span>'}</td>
+          <td>${p.reviewed_completed ? '✓' : '<span class="badge medium">未审核</span>'}</td>
+        </tr>
+      `).join('')
+    }
+  }
+}
+
 function projectsPage() {
-  return `<section class="page" id="page-projects"><div class="page-header"><div><h1>项目管理</h1><p class="subtle">按状态、负责人和风险等级管理审计项目</p></div><button id="new-project-btn" class="primary">新建项目</button></div><div class="card"><div class="toolbar" style="margin-bottom:12px;"><input id="project-search" class="search" placeholder="搜索项目、客户或负责人"><select id="project-filter-status"><option value="">全部状态</option><option>Planning</option><option>Running</option><option>Reviewing</option><option>Completed</option></select><select id="project-filter-risk"><option value="">全部风险</option><option>Low</option><option>Medium</option><option>High</option><option>Critical</option></select></div><div id="project-table-container"><table class="table"><thead><tr><th>任务名称</th><th>客户名称</th><th>项目状态</th><th>创建时间</th><th>负责人</th><th>风险等级</th><th>操作</th></tr></thead><tbody id="project-table-body"><tr><td colspan="7" class="subtle">加载中...</td></tr></tbody></table></div></div></section>`
+  return `<section class="page" id="page-projects"><div class="page-header"><div><h1>项目管理</h1><p class="subtle">管理审计项目及其关联的审计程序与经办信息</p></div><button id="new-project-btn" class="primary">新建项目</button></div><div class="card"><div class="toolbar" style="margin-bottom:12px;"><input id="project-search" class="search" placeholder="搜索项目、客户或审计程序"></div><div id="project-table-container"><table class="table"><thead><tr><th>客户简称</th><th>客户名称</th><th>审计程序</th><th>首次承接</th><th>集团审计</th><th>开始日期</th><th>截止日期</th><th>货币/汇率</th><th>编制人员</th><th>完成编制</th><th>审核人员</th><th>完成审核</th><th>操作</th></tr></thead><tbody id="project-table-body"><tr><td colspan="13" class="subtle">加载中...</td></tr></tbody></table></div></div></section>`
 }
 
 function dataPage() {
@@ -963,7 +1012,15 @@ function dataPage() {
       <input type="file" id="upload-file" style="flex:1;min-width:160px;">
       <input type="text" id="upload-dest" value="inputs/" style="width:280px;height:32px;padding:0 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);">
       <button id="upload-btn" class="primary">上传</button>
+      <button id="open-inputs-dir" class="ghost" title="在文件资源管理器中打开 inputs/">📂 inputs</button>
+      <button id="open-outputs-dir" class="ghost" title="在文件资源管理器中打开 outputs/">📂 outputs</button>
     </div>
+    <div id="data-drop-zone" class="drop-zone">
+      <div class="drop-zone-icon">📥</div>
+      <div class="drop-zone-text">拖拽文件或文件夹到此处，或<span class="drop-zone-link">点击选择文件</span>（可多选，导入到 <code class="drop-zone-dest">inputs/</code>，导入后按「客户名称/任务英文目录名」规范校验）</div>
+      <input type="file" id="data-drop-input" multiple style="display:none;">
+    </div>
+    <div id="data-import-issues" class="import-issues" style="display:none;"></div>
     <div class="grid two-col" style="align-items:start;">
       <div class="card" style="padding:10px;">
         <h2 style="margin-bottom:10px;">📁 文件树</h2>
@@ -1047,9 +1104,10 @@ export async function renderFileTree() {
     const currentVal = projSelect.value
     projSelect.innerHTML = '<option value="">-- 选择项目以定位目录 --</option>' +
       projects.map((p) => {
-        const val = `${p.customer_name}/${p.task_name}`
+        // 目录使用 客户简称/项目代码（如 桂平金山/bank_ledger_match）
+        const val = `${p.customer_short_name}/${p.dir_name || p.task_name}`
         const sel = val === currentVal ? 'selected' : ''
-        return `<option value="${escapeHtml(val)}" ${sel}>${escapeHtml(p.customer_name)} — ${escapeHtml(p.task_name)}</option>`
+        return `<option value="${escapeHtml(val)}" ${sel}>${escapeHtml(p.customer_short_name)} — ${escapeHtml(p.task_name)}</option>`
       }).join('')
   }
 

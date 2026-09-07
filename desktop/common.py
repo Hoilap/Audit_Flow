@@ -130,15 +130,33 @@ def get_db() -> sqlite3.Connection:
 
 def init_db():
     conn = get_db()
+    # 旧版 projects 表已废弃（2026-09 结构重构为 审计程序表 + 任务表），直接删除
+    conn.execute("DROP TABLE IF EXISTS projects")
     conn.execute("""
-        CREATE TABLE IF NOT EXISTS projects (
+        CREATE TABLE IF NOT EXISTS audit_procedures (
+            project_code TEXT PRIMARY KEY,
+            project_name TEXT NOT NULL
+        )
+    """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS tasks (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            task_name TEXT NOT NULL,
             customer_name TEXT NOT NULL DEFAULT '',
-            status TEXT NOT NULL DEFAULT 'Planning',
-            created_at TEXT NOT NULL DEFAULT '',
-            responsible_person TEXT NOT NULL DEFAULT '',
-            risk TEXT NOT NULL DEFAULT 'Medium'
+            customer_short_name TEXT NOT NULL DEFAULT '',
+            first_engagement TEXT NOT NULL DEFAULT '否',
+            start_date TEXT NOT NULL DEFAULT '',
+            project_code TEXT NOT NULL,
+            group_audit TEXT NOT NULL DEFAULT '是',
+            end_date TEXT NOT NULL DEFAULT '',
+            currency TEXT NOT NULL DEFAULT 'CNY',
+            exchange_rate REAL NOT NULL DEFAULT 1.0,
+            prepared_by TEXT NOT NULL DEFAULT '',
+            prepared_date TEXT NOT NULL DEFAULT '',
+            prepared_completed INTEGER NOT NULL DEFAULT 0,
+            reviewed_by TEXT NOT NULL DEFAULT '',
+            reviewed_date TEXT NOT NULL DEFAULT '',
+            reviewed_completed INTEGER NOT NULL DEFAULT 0,
+            FOREIGN KEY (project_code) REFERENCES audit_procedures(project_code)
         )
     """)
     conn.execute("""
@@ -174,23 +192,26 @@ def init_db():
             FOREIGN KEY (conversation_id) REFERENCES agent_conversations(id) ON DELETE CASCADE
         )
     """)
-    # seed default projects if empty
-    count = conn.execute("SELECT COUNT(*) FROM projects").fetchone()[0]
-    if count == 0:
-        defaults = [
-            ('序时账银行流水匹配', '桂平金山', 'Reviewing', '2026-06-08', '审计一组', 'High'),
-            ('出库表核对', 'A 公司', 'Planning', '2026-06-13', 'CPA', 'Medium'),
-        ]
-        conn.executemany(
-            "INSERT INTO projects (task_name, customer_name, status, created_at, responsible_person, risk) VALUES (?,?,?,?,?,?)",
-            defaults
-        )
-        conn.commit()
+    # 迁移：为旧库 tasks 表补齐布尔字段（完成编制/完成审核）
+    task_cols = {r["name"] for r in conn.execute("PRAGMA table_info(tasks)").fetchall()}
+    for col in ("prepared_completed", "reviewed_completed"):
+        if col not in task_cols:
+            conn.execute(f"ALTER TABLE tasks ADD COLUMN {col} INTEGER NOT NULL DEFAULT 0")
 
-    # 确保所有项目的 inputs/客户/任务、outputs/客户/任务 目录存在（幂等），
+    # 审计程序主表与 config/config.task_definitions.yml 同步（幂等）：
+    # project_code = 英文目录名，project_name = 中文任务名
+    for td in _load_task_definitions():
+        if td.get("dir_name") and td.get("name"):
+            conn.execute(
+                "INSERT OR IGNORE INTO audit_procedures (project_code, project_name) VALUES (?,?)",
+                (td["dir_name"], td["name"]),
+            )
+    conn.commit()
+
+    # 确保所有任务的 inputs/客户简称/项目代码、outputs/客户简称/项目代码 目录存在（幂等），
     # 否则前端输入/输出区扫描不到任何项目目录
-    for row in conn.execute("SELECT customer_name, task_name FROM projects").fetchall():
-        _ensure_project_dirs(row["customer_name"], row["task_name"])
+    for row in conn.execute("SELECT customer_short_name, project_code FROM tasks").fetchall():
+        _ensure_project_dirs(row["customer_short_name"], row["project_code"])
 
     conn.close()
 
@@ -199,20 +220,38 @@ def init_db():
 
 
 class ProjectCreate(BaseModel):
-    task_name: str
-    customer_name: str = ''
-    status: str = 'Planning'
-    created_at: str = ''
-    responsible_person: str = ''
-    risk: str = 'Medium'
+    customer_name: str = ''           # 客户名称（全称）
+    customer_short_name: str = ''     # 客户简称（用于 inputs/outputs 目录）
+    first_engagement: str = '否'      # 首次承接
+    start_date: str = ''              # 开始日期
+    project_code: str                 # 项目代码（关联 audit_procedures）
+    group_audit: str = '是'           # 集团审计
+    end_date: str = ''                # 截止日期
+    currency: str = 'CNY'             # 货币单位
+    exchange_rate: float = 1.0        # 汇率
+    prepared_by: str = ''             # 编制人员
+    prepared_date: str = ''           # 编制日期
+    prepared_completed: bool = False  # 完成编制
+    reviewed_by: str = ''             # 审核人员
+    reviewed_date: str = ''           # 审核日期
+    reviewed_completed: bool = False  # 完成审核
 
 class ProjectUpdate(BaseModel):
-    task_name: Optional[str] = None
     customer_name: Optional[str] = None
-    status: Optional[str] = None
-    created_at: Optional[str] = None
-    responsible_person: Optional[str] = None
-    risk: Optional[str] = None
+    customer_short_name: Optional[str] = None
+    first_engagement: Optional[str] = None
+    start_date: Optional[str] = None
+    project_code: Optional[str] = None
+    group_audit: Optional[str] = None
+    end_date: Optional[str] = None
+    currency: Optional[str] = None
+    exchange_rate: Optional[float] = None
+    prepared_by: Optional[str] = None
+    prepared_date: Optional[str] = None
+    prepared_completed: Optional[bool] = None
+    reviewed_by: Optional[str] = None
+    reviewed_date: Optional[str] = None
+    reviewed_completed: Optional[bool] = None
 
 
 class WritePayload(BaseModel):
@@ -229,30 +268,47 @@ class AgentChatPayload(BaseModel):
 
 
 def project_row_to_dict(row) -> dict:
+    """tasks JOIN audit_procedures 的行 → API 字典。
+
+    附带兼容字段：task_name（= 项目名称，供工作流匹配）、
+    dir_name（= 项目代码，供目录定位）。
+    """
     return {
         "id": row["id"],
-        "task_name": row["task_name"],
         "customer_name": row["customer_name"],
-        "status": row["status"],
-        "created_at": row["created_at"],
-        "responsible_person": row["responsible_person"],
-        "risk": row["risk"],
+        "customer_short_name": row["customer_short_name"],
+        "first_engagement": row["first_engagement"],
+        "start_date": row["start_date"],
+        "project_code": row["project_code"],
+        "project_name": row["project_name"],
+        "group_audit": row["group_audit"],
+        "end_date": row["end_date"],
+        "currency": row["currency"],
+        "exchange_rate": row["exchange_rate"],
+        "prepared_by": row["prepared_by"],
+        "prepared_date": row["prepared_date"],
+        "prepared_completed": bool(row["prepared_completed"]),
+        "reviewed_by": row["reviewed_by"],
+        "reviewed_date": row["reviewed_date"],
+        "reviewed_completed": bool(row["reviewed_completed"]),
+        # 兼容下游（工作流 / Agent / 文件树）
+        "task_name": row["project_name"],
+        "dir_name": row["project_code"],
     }
 
 
 # ---------- Helper functions ----------
 
 
-def _ensure_project_dirs(customer_name: str, task_name: str):
-    """确保 inputs/客户名称/任务目录名 和 outputs/客户名称/任务目录名 存在（基于数据根目录的绝对路径）。
+def _ensure_project_dirs(customer_short_name: str, project_code: str):
+    """确保 inputs/客户简称/项目代码 和 outputs/客户简称/项目代码 存在（基于数据根目录的绝对路径）。
 
-    任务目录名遵循既有数据约定：中文任务名先经 config/config.task_definitions.yml
-    解析为英文 dir_name（如 序时账银行流水匹配 -> bank_ledger_match），
-    无匹配时回退为原始任务名。
+    项目代码即英文目录名（如 bank_ledger_match）；若传入中文任务名，
+    会经 config/config.task_definitions.yml 解析为对应 dir_name。
     """
-    task_dir = _task_def_dir_name(task_name)
+    task_dir = _task_def_dir_name(project_code)
     for base in ('inputs', 'outputs'):
-        d = os.path.join(_resolve_data_root(), base, customer_name, task_dir)
+        d = os.path.join(_resolve_data_root(), base, customer_short_name, task_dir)
         os.makedirs(d, exist_ok=True)
 
 

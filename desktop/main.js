@@ -1,10 +1,21 @@
-const { app, BrowserWindow, dialog } = require('electron')
+const { app, BrowserWindow, dialog, ipcMain } = require('electron')
 const path = require('path')
 const fs = require('fs')
-const { spawn, spawnSync, execSync } = require('child_process')
+const { spawn, execSync } = require('child_process')
 
 let backend = null
 let backendStartedAt = 0
+let mainWindow = null
+let installProgress = { state: 'idle', progress: 0, message: '' }
+
+function broadcast(channel, payload) {
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (win && !win.isDestroyed()) win.webContents.send(channel, payload)
+  }
+}
+
+// 渲染进程加载晚于主进程时，通过 invoke 主动查询当前安装状态，避免漏掉进度事件
+ipcMain.handle('get-install-status', () => installProgress)
 
 // ── 运行模式与路径解析 ──────────────────────────────────────────
 // 开发模式：项目根 = desktop/ 的上级目录，Python 用 .venv
@@ -34,6 +45,22 @@ function bootstrapLog(msg) {
 
 // ── 清理占用指定端口的进程（Windows 专用）──────────────────────
 
+// 杀掉所有命令行含 desktop.api 的 python 进程（含 uvicorn reload 的孤儿 worker）。
+// 背景：dev 模式 reload=True 时 worker 继承父进程 socket；父进程死后 netstat 把
+// 端口归属到已死 PID，按端口 taskkill 打不中真正存活的 worker，必须按命令行兜底。
+function killOrphanBackends() {
+  if (process.platform !== 'win32') return
+  try {
+    execSync(
+      'powershell -NoProfile -Command "Get-CimInstance Win32_Process -Filter \\"Name=\'python.exe\'\\" | Where-Object { $_.CommandLine -match \'desktop\\.api\' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"',
+      { stdio: 'ignore' }
+    )
+    console.log('[main] killed orphan desktop.api backends')
+  } catch (e) {
+    // 无匹配进程时忽略
+  }
+}
+
 function killProcessOnPort(port) {
   if (process.platform !== 'win32') return
   try {
@@ -47,7 +74,7 @@ function killProcessOnPort(port) {
     }
     for (const pid of pids) {
       try {
-        execSync(`taskkill /F /PID ${pid}`, { stdio: 'ignore' })
+        execSync(`taskkill /F /T /PID ${pid}`, { stdio: 'ignore' })
         console.log(`[main] killed process ${pid} on port ${port}`)
       } catch (e) {
         // 进程可能已退出，忽略
@@ -56,6 +83,8 @@ function killProcessOnPort(port) {
   } catch (e) {
     // netstat 无输出说明端口未被占用，无需处理
   }
+  // 兜底：netstat 归属到已死 PID 时，按命令行清掉残留的 desktop.api worker
+  killOrphanBackends()
 }
 
 // ── Python 解释器定位 ────────────────────────────────────────────
@@ -90,30 +119,46 @@ function requirementsHash() {
   return String(h)
 }
 
-function installDependencies(py) {
-  const marker = path.join(RUNTIME_PYTHON_DIR, '.deps-installed')
-  const hash = requirementsHash()
-  try {
-    if (fs.existsSync(marker) && fs.readFileSync(marker, 'utf-8').trim() === hash) {
-      console.log('[bootstrap] 依赖已就绪，跳过安装')
-      return true
-    }
-  } catch (e) { /* 读取失败则重新安装 */ }
+function installDependencies(py, onState) {
+  return new Promise((resolve) => {
+    const marker = path.join(RUNTIME_PYTHON_DIR, '.deps-installed')
+    const hash = requirementsHash()
+    try {
+      if (fs.existsSync(marker) && fs.readFileSync(marker, 'utf-8').trim() === hash) {
+        console.log('[bootstrap] 依赖已就绪，跳过安装')
+        resolve(true)
+        return
+      }
+    } catch (e) { /* 读取失败则重新安装 */ }
 
-  bootstrapLog('[bootstrap] 首次运行：正在安装 Python 依赖（离线 wheels），可能需要几分钟...')
-  const reqPath = path.join(BACKEND_SRC_DIR, 'requirements.txt')
-  const args = ['-m', 'pip', 'install', '--no-index', '--find-links', WHEELS_DIR, '-r', reqPath, '--no-warn-script-location']
-  // maxBuffer 调大：pip 输出较多，默认 1MB 可能触发 ENOBUFS 被误判为失败
-  const res = spawnSync(py, args, { encoding: 'utf-8', windowsHide: true, maxBuffer: 32 * 1024 * 1024 })
-  if (res.error || res.status !== 0) {
-    bootstrapLog('[bootstrap] 依赖安装失败：' + (res.error ? res.error.message : ''))
-    bootstrapLog('[bootstrap] pip stdout:\n' + (res.stdout || ''))
-    bootstrapLog('[bootstrap] pip stderr:\n' + (res.stderr || ''))
-    return false
-  }
-  try { fs.writeFileSync(marker, hash) } catch (e) { /* 标记写入失败不影响运行 */ }
-  bootstrapLog('[bootstrap] 依赖安装完成')
-  return true
+    bootstrapLog('[bootstrap] 首次运行：正在安装 Python 依赖（离线 wheels），可能需要几分钟...')
+    const reqPath = path.join(BACKEND_SRC_DIR, 'requirements.txt')
+    const args = ['-m', 'pip', 'install', '--no-index', '--find-links', WHEELS_DIR, '-r', reqPath, '--no-warn-script-location']
+    // 异步 spawn：避免阻塞主线程导致窗口假死，装依赖期间界面保持响应并显示进度
+    const child = spawn(py, args, { windowsHide: true })
+    if (onState) onState('installing')
+    let stdout = ''
+    let stderr = ''
+    child.stdout.on('data', (d) => { stdout += String(d) })
+    child.stderr.on('data', (d) => { stderr += String(d) })
+    child.on('error', (err) => {
+      bootstrapLog('[bootstrap] 依赖安装失败：' + err.message)
+      resolve(false)
+    })
+    child.on('close', (code) => {
+      if (code !== 0) {
+        bootstrapLog('[bootstrap] 依赖安装失败：exit code ' + code)
+        bootstrapLog('[bootstrap] pip stdout:\n' + stdout)
+        bootstrapLog('[bootstrap] pip stderr:\n' + stderr)
+        resolve(false)
+        return
+      }
+      try { fs.writeFileSync(marker, hash) } catch (e) { /* 标记写入失败不影响运行 */ }
+      bootstrapLog('[bootstrap] 依赖安装完成')
+      if (onState) onState('done')
+      resolve(true)
+    })
+  })
 }
 
 // ── 数据目录初始化（打包模式：把随包的配置模板种到数据目录）─────
@@ -153,7 +198,7 @@ function seedDataDir() {
 
 // ── 后端启动 ─────────────────────────────────────────────────────
 
-function startBackend() {
+async function startBackend() {
   // 启动前先清理端口占用，避免 WinError 10013
   killProcessOnPort(8001)
 
@@ -165,14 +210,22 @@ function startBackend() {
 
   // 依赖安装失败必须终止：否则后端起不来，前端永远卡在加载页，
   // 且 Ctrl+R 只刷新页面、不会重启后端，用户无法自愈
-  if (IS_PACKAGED && !installDependencies(py)) {
-    const msg = 'Python 依赖安装失败，应用无法启动。\n\n' +
-      `详细原因请查看日志：\n${path.join(DATA_DIR, 'bootstrap.log')}\n\n` +
-      '修复后请完全退出应用（而非刷新页面）再重新打开。'
-    bootstrapLog('[main] ' + msg)
-    dialog.showErrorBox('AuditWorkflow 启动失败', msg)
-    app.quit()
-    return
+  if (IS_PACKAGED) {
+    const ok = await installDependencies(py, (state) => {
+      installProgress = { state, progress: state === 'done' ? 100 : 0, message: state === 'installing' ? '正在安装 Python 依赖...' : '' }
+      broadcast('dependency-install-progress', installProgress)
+    })
+    if (!ok) {
+      installProgress = { state: 'failed', progress: 0, message: '依赖安装失败' }
+      broadcast('dependency-install-progress', installProgress)
+      const msg = 'Python 依赖安装失败，应用无法启动。\n\n' +
+        `详细原因请查看日志：\n${path.join(DATA_DIR, 'bootstrap.log')}\n\n` +
+        '修复后请完全退出应用（而非刷新页面）再重新打开。'
+      bootstrapLog('[main] ' + msg)
+      dialog.showErrorBox('AuditWorkflow 启动失败', msg)
+      app.quit()
+      return
+    }
   }
 
   const env = Object.assign({}, process.env, {
@@ -222,6 +275,7 @@ function createWindow () {
     }
   })
 
+  mainWindow = win
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'))
 
   // Prevent accidental navigation from file drops or link clicks
@@ -256,7 +310,17 @@ if (!gotSingleInstanceLock) {
   })
 
   app.on('window-all-closed', function () {
-    if (backend) backend.kill()
+    if (backend) {
+      // Windows 上 backend.kill() 只终止直接子进程；dev 模式 uvicorn reload 的
+      // worker 孙子进程会存活并继续持有 8001，必须用 taskkill /T 杀整棵进程树
+      if (process.platform === 'win32') {
+        try {
+          execSync(`taskkill /F /T /PID ${backend.pid}`, { stdio: 'ignore' })
+        } catch (e) { /* 进程可能已退出 */ }
+      } else {
+        backend.kill()
+      }
+    }
     if (process.platform !== 'darwin') app.quit()
   })
 }

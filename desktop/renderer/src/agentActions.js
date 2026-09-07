@@ -653,7 +653,7 @@ function renderAgentCustomerDatalist() {
   const datalist = $('#agent-customer-list')
   if (!datalist) return
   const customers = [...new Set(
-    state.agentProjectOptions.map(p => p.customer_name).filter(Boolean)
+    state.agentProjectOptions.map(p => p.customer_short_name).filter(Boolean)
   )]
   datalist.innerHTML = customers.map(c => `<option value="${escapeHtml(c)}">`).join('')
 }
@@ -671,7 +671,7 @@ function renderAgentTaskDatalist(customerName) {
   const options = [...defDirNames]
   // DB 中该客户下不属于预定义任务的自定义条目
   state.agentProjectOptions
-    .filter(p => p.customer_name === customerName && p.task_name)
+    .filter(p => p.customer_short_name === customerName && p.task_name)
     .forEach(p => {
       // 优先用 dir_name（来自 LEFT JOIN），其次用 task_name
       const tn = p.dir_name || p.task_name

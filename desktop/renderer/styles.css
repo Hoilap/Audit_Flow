@@ -1458,3 +1458,59 @@ button.danger:hover {
 .step-requirement-bar textarea:focus {
   border-color: var(--primary);
 }
+
+/* ── 数据源页：拖拽导入框 ── */
+#data-drop-zone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 20px;
+  cursor: pointer;
+  text-align: center;
+  color: var(--text-soft);
+  transition: border-color 0.15s, background 0.15s;
+}
+#data-drop-zone:hover {
+  border-color: var(--primary, #2563eb);
+}
+#data-drop-zone.drag-over {
+  border-color: var(--primary, #2563eb);
+  background: color-mix(in srgb, var(--primary, #2563eb) 8%, var(--surface));
+}
+#data-drop-zone .drop-zone-icon { font-size: 22px; }
+#data-drop-zone .drop-zone-text { font-size: 13px; }
+#data-drop-zone .drop-zone-link { color: var(--primary, #2563eb); text-decoration: underline; }
+
+/* ── 数据源页：导入/校验问题面板 ── */
+.import-issues {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid;
+  font-size: 13px;
+}
+.import-issues.error {
+  border-color: color-mix(in srgb, var(--danger) 50%, var(--border));
+  background: color-mix(in srgb, var(--danger) 8%, var(--surface));
+}
+.import-issues.warning {
+  border-color: color-mix(in srgb, #d97706 50%, var(--border));
+  background: color-mix(in srgb, #d97706 8%, var(--surface));
+}
+.import-issues-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.import-issues-close {
+  border: 0;
+  background: transparent;
+  color: var(--text-soft);
+  cursor: pointer;
+  padding: 0 4px;
+}
+.import-issues ul { margin: 0; padding-left: 18px; }
+.import-issues li { margin: 3px 0; word-break: break-all; }

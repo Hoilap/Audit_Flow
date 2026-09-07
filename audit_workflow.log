@@ -4816,3 +4816,43 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\DengKaina\\Desktop\\A
 [2026-08-07 13:18:12] INFO    audit_workflow - 启动服务器: Python=C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\python.exe, PID=30204, CWD=C:\Users\DengKaina\Desktop\Audit_workflow
 [2026-08-07 13:18:58] INFO    audit_workflow - 启动服务器: Python=C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\python.exe, PID=37584, CWD=C:\Users\DengKaina\Desktop\Audit_workflow
 [2026-08-08 00:40:55] INFO    audit_workflow - 启动服务器: Python=C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\python.exe, PID=30724, CWD=C:\Users\DengKaina\Desktop\Audit_workflow
+[2026-09-05 21:21:10] INFO    audit_workflow - 启动服务器: Python=C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\python.exe, PID=5596, CWD=C:\Users\DengKaina\Desktop\Audit_workflow, mode=dev
+[2026-09-05 22:15:12] INFO    audit_workflow - 启动服务器: Python=C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\python.exe, PID=24036, CWD=C:\Users\DengKaina\Desktop\Audit_workflow, mode=dev
+[2026-09-05 22:19:21] INFO    audit_workflow - 校验 inputs/ 目录: 3 个问题
+[2026-09-05 22:29:15] INFO    audit_workflow - 校验 inputs/ 目录: 3 个问题
+[2026-09-05 22:29:26] INFO    audit_workflow - 校验 inputs/ 目录: 3 个问题
+[2026-09-05 22:53:19] INFO    audit_workflow - 校验 inputs/ 目录: 3 个问题
+[2026-09-05 22:53:27] INFO    audit_workflow - 复制文件: C:\Users\DengKaina\Desktop\百腾序时账new3应该是对的 -删除.xlsx -> inputs\百腾序时账new3应该是对的 -删除.xlsx
+[2026-09-05 22:53:28] INFO    audit_workflow - 校验 inputs/ 目录: 4 个问题
+[2026-09-05 22:53:46] INFO    audit_workflow - 复制文件: C:\Users\DengKaina\Desktop\百腾序时账new3应该是对的 -删除.xlsx -> inputs\百腾序时账new3应该是对的 -删除.xlsx
+[2026-09-05 22:53:46] INFO    audit_workflow - 校验 inputs/ 目录: 4 个问题
+[2026-09-05 23:29:11] INFO    audit_workflow - 启动服务器: Python=C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\python.exe, PID=21004, CWD=C:\Users\DengKaina\Desktop\Audit_workflow, mode=dev
+[2026-09-05 23:29:16] INFO    audit_workflow - 校验 inputs/ 目录: 4 个问题
+[2026-09-05 23:29:39] INFO    audit_workflow - 复制文件: C:\Users\DengKaina\Desktop\百腾序时账new3应该是对的 -删除.xlsx -> inputs\桂平金山\bank_ledger_match\百腾序时账new3应该是对的 -删除.xlsx
+[2026-09-05 23:29:40] INFO    audit_workflow - 校验 inputs/ 目录: 4 个问题
+[2026-09-05 23:30:28] INFO    audit_workflow - 复制文件: C:\Users\DengKaina\Downloads\2606.26935v1 (2).pdf -> inputs\桂平金山\bank_ledger_match\2606.26935v1 (2).pdf
+[2026-09-05 23:30:29] INFO    audit_workflow - 校验 inputs/ 目录: 3 个问题
+[2026-09-06 00:00:53] INFO    audit_workflow - 创建项目: customer=桂平市金山环保工程有限公司(桂平金山), procedure=bank_ledger_match
+[2026-09-06 00:00:53] INFO    audit_workflow - 创建项目: customer=(), procedure=not_exist
+[2026-09-06 00:00:53] INFO    audit_workflow - 删除项目: id=1
+[2026-09-06 00:16:45] INFO    audit_workflow - 启动服务器: Python=C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\python.exe, PID=9496, CWD=C:\Users\DengKaina\Desktop\Audit_workflow, mode=dev
+[2026-09-06 00:17:08] INFO    audit_workflow - 启动服务器: Python=C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\python.exe, PID=33400, CWD=C:\Users\DengKaina\Desktop\Audit_workflow, mode=dev
+[2026-09-06 00:26:23] INFO    audit_workflow - 启动服务器: Python=C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\python.exe, PID=32876, CWD=C:\Users\DengKaina\Desktop\Audit_workflow, mode=dev
+[2026-09-06 00:37:28] INFO    audit_workflow - 启动服务器: Python=C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\python.exe, PID=28956, CWD=C:\Users\DengKaina\Desktop\Audit_workflow, mode=dev
+[2026-09-06 00:46:24] INFO    audit_workflow - 启动服务器: Python=C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\python.exe, PID=34116, CWD=C:\Users\DengKaina\Desktop\Audit_workflow, mode=prod
+[2026-09-06 15:35:27] INFO    audit_workflow - 启动服务器: Python=C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\python.exe, PID=42332, CWD=C:\Users\DengKaina\Desktop\Audit_workflow, mode=dev
+[2026-09-06 15:36:48] INFO    audit_workflow - 启动服务器: Python=C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\python.exe, PID=16968, CWD=C:\Users\DengKaina\Desktop\Audit_workflow, mode=dev
+[2026-09-06 15:39:18] INFO    audit_workflow - 启动服务器: Python=C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\python.exe, PID=46132, CWD=C:\Users\DengKaina\Desktop\Audit_workflow, mode=dev
+[2026-09-06 15:47:30] INFO    audit_workflow - 启动服务器: Python=C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\python.exe, PID=47860, CWD=C:\Users\DengKaina\Desktop\Audit_workflow, mode=dev
+[2026-09-06 15:48:49] INFO    audit_workflow - 创建项目: customer=桂平市金山环保工程有限公司(桂平金山), procedure=bank_ledger_match
+[2026-09-06 15:49:23] INFO    audit_workflow - 校验 inputs/ 目录: 6 个问题
+[2026-09-06 15:49:49] INFO    audit_workflow - 校验 inputs/ 目录: 6 个问题
+[2026-09-06 16:11:48] INFO    audit_workflow - 启动服务器: Python=C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\python.exe, PID=40612, CWD=C:\Users\DengKaina\Desktop\Audit_workflow, mode=dev
+[2026-09-06 16:12:10] INFO    audit_workflow - 校验 inputs/ 目录: 6 个问题
+[2026-09-06 19:34:37] INFO    audit_workflow - 校验 inputs/ 目录: 6 个问题
+[2026-09-06 19:38:13] INFO    audit_workflow - 校验 inputs/ 目录: 6 个问题
+[2026-09-06 19:38:18] INFO    audit_workflow - 校验 inputs/ 目录: 6 个问题
+[2026-09-06 19:42:48] INFO    audit_workflow - 校验 inputs/ 目录: 6 个问题
+[2026-09-07 15:54:13] INFO    audit_workflow - 启动服务器: Python=C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\python.exe, PID=37908, CWD=C:\Users\DengKaina\Desktop\Audit_workflow, mode=dev
+[2026-09-07 15:54:27] INFO    audit_workflow - 校验 inputs/ 目录: 6 个问题
+[2026-09-07 17:54:04] INFO    audit_workflow - 启动服务器: Python=C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\python.exe, PID=7216, CWD=C:\Users\DengKaina\Desktop\Audit_workflow, mode=dev

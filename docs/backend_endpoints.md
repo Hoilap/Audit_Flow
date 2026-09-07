@@ -599,29 +599,3 @@ curl -X POST -F "customer_name=ABC" \
 python scripts/test_osm_pipeline.py --customer ABC
 python scripts/test_osm_pipeline.py --customer ABC match     # 只测匹配步骤
 ```
-
-## 数据库表结构
-
-### projects 表
-| 列 | 类型 | 说明 |
-|----|------|------|
-| id | INTEGER | 主键 |
-| task_name | TEXT | 任务名称 |
-| customer_name | TEXT | 客户名称 |
-| status | TEXT | 状态 (Planning/Reviewing/Completed) |
-| created_at | TEXT | 创建日期 |
-| responsible_person | TEXT | 负责人 |
-| risk | TEXT | 风险等级 |
-
-### task_configs 表（新增）
-| 列 | 类型 | 说明 |
-|----|------|------|
-| id | INTEGER | 主键 |
-| customer_name | TEXT | 客户名称 |
-| task_name | TEXT | 任务名称 |
-| task_yml_path | TEXT | task.yml 文件路径 |
-| llm_yml_path | TEXT | llm.yml 文件路径 |
-| created_at | TEXT | 创建时间 |
-| updated_at | TEXT | 更新时间 |
-
-UNIQUE(customer_name, task_name) — 每个公司+任务对应唯一一条 yml 路径映射。

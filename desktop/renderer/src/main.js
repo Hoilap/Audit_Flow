@@ -2,7 +2,7 @@ import { workflowTasks } from './config.js'
 import { findWorkflowTaskByName, state, taskRunKey } from './state.js'
 import { $, $$ } from './dom.js'
 import { renderEvidencePanel, renderShell, renderWorkflowWorkspace, setAgentStatus, showPage } from './ui.js'
-import { cancelRunningStep, commitAll, createProject, deleteProject, loadProjects, loadTaskDefinitions, loadProgramReadmes, previewFile, refreshFiles, refreshLog, refreshTokens, runAllSteps, runNextStep, runStep, selectProject, setupEventSource, toggleCustomMode, updateCustomCustomerName, updateCustomTaskName, updateDetectMethod, updateMatchMethod, updateProject, uploadFile, syncLlmConfig, updateLlmModel, loadSettingsProviders, saveLlmProviders, revealProviderKey, addLlmProvider, deleteLlmProvider } from './actions.js'
+import { cancelRunningStep, commitAll, createProject, deleteProject, loadProjects, loadProcedures, loadTaskDefinitions, loadProgramReadmes, loadDashboardStats, previewFile, refreshFiles, refreshLog, refreshTokens, runAllSteps, runNextStep, runStep, selectProject, setupEventSource, toggleCustomMode, updateCustomCustomerName, updateCustomTaskName, updateDetectMethod, updateMatchMethod, updateProject, uploadFile, syncLlmConfig, updateLlmModel, loadSettingsProviders, saveLlmProviders, revealProviderKey, addLlmProvider, deleteLlmProvider, bindDataImportZone, validateDataDirs } from './actions.js'
 import { openReviewEditor } from './reviewEditor.js'
 import { renderProjectsTable, showProjectFormModal } from './ui.js'
 
@@ -11,10 +11,18 @@ function bindEvents() {
     const navButton = event.target.closest('[data-page]')
     if (navButton) {
       showPage(navButton.dataset.page)
+      // 切换到 Dashboard 页面时刷新统计
+      if (navButton.dataset.page === 'dashboard') {
+        await loadDashboardStats()
+      }
       // 切换到项目管理页面时刷新表格
       if (navButton.dataset.page === 'projects') {
         await loadProjects()
         refreshProjectTable()
+      }
+      // 切换到数据源页面时重新扫描目录规范
+      if (navButton.dataset.page === 'data') {
+        validateDataDirs()
       }
       // 切换到 Agent 工作流页面时刷新项目选择器
       if (navButton.dataset.page === 'agent') {
@@ -184,6 +192,8 @@ function bindEvents() {
   $('#run-all-steps').addEventListener('click', () => withDisabled('#run-all-steps', runAllSteps))
   $('#stop-task').addEventListener('click', cancelRunningStep)
   $('#upload-btn').addEventListener('click', () => withDisabled('#upload-btn', uploadFile))
+  $('#open-inputs-dir').addEventListener('click', () => openDataDir('inputs'))
+  $('#open-outputs-dir').addEventListener('click', () => openDataDir('outputs'))
   $('#commit-all').addEventListener('click', () => withDisabled('#commit-all', commitAll))
 
   // ────────── Agent 对话面板事件 ──────────
@@ -247,12 +257,9 @@ function bindEvents() {
     }
   })
 
-  // 搜索/过滤
+  // 搜索
   document.addEventListener('input', (event) => {
     if (event.target.id === 'project-search') refreshProjectTable()
-  })
-  document.addEventListener('change', (event) => {
-    if (event.target.id === 'project-filter-status' || event.target.id === 'project-filter-risk') refreshProjectTable()
   })
 }
 
@@ -272,18 +279,17 @@ async function refreshAll() {
 
 async function refreshProjectTable() {
   const search = ($('#project-search')?.value || '').toLowerCase()
-  const statusFilter = $('#project-filter-status')?.value || ''
-  const riskFilter = $('#project-filter-risk')?.value || ''
   let filtered = state.projects || []
   if (search) {
     filtered = filtered.filter((p) =>
-      p.task_name.toLowerCase().includes(search) ||
-      p.customer_name.toLowerCase().includes(search) ||
-      p.responsible_person.toLowerCase().includes(search)
+      (p.customer_name || '').toLowerCase().includes(search) ||
+      (p.customer_short_name || '').toLowerCase().includes(search) ||
+      (p.project_code || '').toLowerCase().includes(search) ||
+      (p.project_name || '').toLowerCase().includes(search) ||
+      (p.prepared_by || '').toLowerCase().includes(search) ||
+      (p.reviewed_by || '').toLowerCase().includes(search)
     )
   }
-  if (statusFilter) filtered = filtered.filter((p) => p.status === statusFilter)
-  if (riskFilter) filtered = filtered.filter((p) => p.risk === riskFilter)
   renderProjectsTable(filtered)
 }
 
@@ -307,20 +313,41 @@ async function openProjectForm(project) {
   })
 }
 
+// 首次运行装依赖时显示全屏遮罩，避免窗口看似卡死。
+// 主进程广播 dependency-install-progress 事件；渲染进程加载晚于主进程时，
+// 通过 getInstallStatus 主动查询，防止漏掉已开始的安装状态。
+function setupInstallOverlay() {
+  const overlay = $('#install-overlay')
+  if (!overlay || !window.electronAPI) return
+  const show = () => { overlay.style.display = 'flex' }
+  const hide = () => { overlay.style.display = 'none' }
+  window.electronAPI.onDependencyProgress((data) => {
+    if (data && data.state === 'installing') show()
+    else hide()
+  })
+  window.electronAPI.getInstallStatus()
+    .then((status) => { if (status && status.state === 'installing') show() })
+    .catch(() => {})
+}
+
 async function init() {
+  setupInstallOverlay()
   await renderShell()
   bindEvents()
+  bindDataImportZone()   // 数据源页拖拽导入框
   setupEventSource()   // 建立 SSE 连接，实时接收后端事件
   showPage(state.activePage)
   setAgentStatus('Idle', 0)
   $$('.page').forEach((page) => page.classList.toggle('active', page.id === `page-${state.activePage}`))
   // 加载项目数据
   await loadProjects()
+  await loadProcedures()
   await loadTaskDefinitions()
+  await loadDashboardStats()
   if (state.projects.length > 0) {
     state.activeProjectId = state.projects[0].id
     const p = state.projects[0]
-    state.customCustomerName = p.customer_name
+    state.customCustomerName = p.customer_short_name
     state.customTaskName = p.task_name
     const wfTask = findWorkflowTaskByName(p.task_name)
     if (wfTask) {

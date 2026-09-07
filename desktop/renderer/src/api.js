@@ -37,6 +37,14 @@ export const api = {
     return request('/files/copy-from-path', { method: 'POST', body: form })
   },
   deleteFile: (path) => request(`/files/delete?path=${encodeURIComponent(path)}`, { method: 'DELETE' }),
+  /** 校验 inputs/ 目录结构是否符合「客户/任务英文目录名」规范并与数据库一致 */
+  validateInputs: () => request('/files/validate-inputs'),
+  /** 在系统文件资源管理器中打开数据根目录内的路径（如 inputs/ 或 outputs/） */
+  openInExplorer: (path) => {
+    const form = new FormData()
+    form.append('path', path)
+    return request('/files/open-in-explorer', { method: 'POST', body: form })
+  },
   gitLog: () => request('/git/log'),
   gitCommit: (message) => request(`/git/commit?message=${encodeURIComponent(message)}`, { method: 'POST' }),
   workflow: (endpoint, body = null) => {
@@ -118,7 +126,9 @@ export const api = {
   },
 
   // ---------- Project CRUD ----------
+  dashboardStats: () => request('/dashboard/stats'),
   listProjects: () => request('/projects/list'),
+  listProcedures: () => request('/projects/procedures'),
   listProjectDirs: () => request('/projects/dirs'),
   listTaskDefinitions: () => request('/task-definitions'),
   createProject: (payload) => request('/projects/create', {
