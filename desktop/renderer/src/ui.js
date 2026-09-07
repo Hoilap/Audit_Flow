@@ -1585,7 +1585,7 @@ export function renderSettingsProviders() {
 
   container.innerHTML = state.llmProviders.map((p) => {
     const isDefault = p.name === state.llmConfigDefault
-    const defaultBadge = isDefault ? '<span class="badge low" style="margin-left:8px;">默认</span>' : ''
+    const defaultBadge = isDefault ? '<span class="badge low" style="margin-left:8px;">当前</span>' : ''
     const envHint = p.api_key_env ? ` (${escapeHtml(p.api_key_env)})` : ''
     const sourceText = (sourceLabels[p.api_key_source] || p.api_key_source) + envHint
 
@@ -1910,6 +1910,15 @@ export function renderConfigConfirm(yamlContent, customerName, taskName) {
 }
 
 /**
+ * bank_ledger_match 月度汇总的匹配率显示：0..1 → 百分比，空值保持空白。
+ */
+export function formatMonthlyMatchRate(value) {
+  if (value === null || value === undefined || String(value).trim() === '') return ''
+  const rate = Number(value)
+  return Number.isFinite(rate) ? `${(rate * 100).toFixed(1)}%` : ''
+}
+
+/**
  * Step 4 - Check Result: 展示月度流量核查报告
  */
 export function renderCheckResult(result) {
@@ -1919,31 +1928,61 @@ export function renderCheckResult(result) {
   if (!chat) return
 
   const summary = result.summary || {}
-  const mismatches = result.mismatches || []
-  const allRows = result.rows || []
+  const allRows = Array.isArray(result.rows) ? result.rows : []
+  const mismatches = Array.isArray(result.mismatches) ? result.mismatches : []
+  // rows 是完整集合，mismatches 是后端按 status=mismatch 给出的明确子集；不按 match_rate 猜分类。
+  const matchRows = allRows.filter((row) => row.status === 'ok')
+  const unmatchRows = mismatches
 
-  let mismatchTable = ''
-  if (mismatches.length > 0) {
-    mismatchTable = `<div style="margin-top:8px;">
-      <div class="label" style="margin-bottom:4px;color:#e74c3c;">⚠️ 差异明细 (${mismatches.length} 项)</div>
-      <div style="max-height:300px;overflow-y:auto;">
-        <table class="table" style="font-size:12px;">
-          <thead><tr><th>账号</th><th>月份</th><th>方向</th><th>银行笔数</th><th>银行金额</th><th>账务笔数</th><th>账务金额</th><th>差异</th><th>状态</th></tr></thead>
-          <tbody>${mismatches.map((r) => `<tr class="${r.status === 'mismatch' ? 'row-warn' : ''}">
-            <td>${escapeHtml(r.account_no || '')}</td>
-            <td>${escapeHtml(r.month || '')}</td>
-            <td>${escapeHtml(r.flow || '')}</td>
-            <td>${escapeHtml(r.bank_count || '')}</td>
-            <td>${escapeHtml(r.bank_total || '')}</td>
-            <td>${escapeHtml(r.ledger_count || '')}</td>
-            <td>${escapeHtml(r.ledger_total || '')}</td>
-            <td><strong style="color:#e74c3c;">${escapeHtml(r.amount_diff || '')}</strong></td>
-            <td><span class="badge high">${escapeHtml(r.status || 'mismatch')}</span></td>
-          </tr>`).join('')}</tbody>
-        </table>
-      </div>
-    </div>`
+  // bank_count 是 matcher.py 按账号/月/方向统计的银行交易总笔数，作为匹配率权重。
+  // 仅使用同时具有有效 match_rate 和正数 bank_count 的明细；每个方向始终保留一条汇总行。
+  const weightedMatchRate = (flow) => {
+    let weightedRate = 0
+    let totalCount = 0
+    for (const row of matchRows) {
+      if (String(row.flow ?? '').trim().toLowerCase() !== flow) continue
+      if (row.match_rate === null || row.match_rate === undefined || String(row.match_rate).trim() === '') continue
+      const rate = Number(String(row.match_rate).trim())
+      const count = Number(String(row.bank_count ?? '').replace(/,/g, '').trim())
+      if (!Number.isFinite(rate) || !Number.isFinite(count) || count <= 0) continue
+      weightedRate += rate * count
+      totalCount += count
+    }
+    return totalCount > 0 ? weightedRate / totalCount : ''
   }
+  const matchSummaryRows = ['in', 'out'].map((flow) => ({
+    account_no: `${flow.toUpperCase()} 总计`,
+    flow,
+    match_rate: weightedMatchRate(flow),
+    _isSummary: true,
+  }))
+  const matchDisplayRows = [...matchRows, ...matchSummaryRows]
+
+  const commonHeaders = '<th>账号</th><th>月份</th><th>方向</th><th>银行笔数</th><th>银行金额</th><th>账务笔数</th><th>账务金额</th><th>差异</th><th>状态</th>'
+  const renderRows = (rows, showMatchRate) => rows.map((r) => `<tr class="${r.status === 'mismatch' ? 'row-warn' : ''}">
+    <td>${escapeHtml(r.account_no ?? '')}</td>
+    <td>${escapeHtml(r.month ?? '')}</td>
+    <td>${escapeHtml(r.flow ?? '')}</td>
+    <td>${escapeHtml(r.bank_count ?? '')}</td>
+    <td>${escapeHtml(r.bank_total ?? '')}</td>
+    <td>${escapeHtml(r.ledger_count ?? '')}</td>
+    <td>${escapeHtml(r.ledger_total ?? '')}</td>
+    <td>${escapeHtml(r.amount_diff ?? '')}</td>
+    <td><span class="badge ${r.status === 'mismatch' ? 'high' : ''}">${escapeHtml(r.status ?? '')}</span></td>
+    ${showMatchRate ? `<td>${escapeHtml(formatMonthlyMatchRate(r.match_rate))}</td>` : ''}
+  </tr>`).join('')
+  const renderCheckTable = (title, rows, showMatchRate) => `<div style="margin-top:8px;">
+    <div class="label" style="margin-bottom:4px;">${title} (${rows.length} 项)</div>
+    <div style="max-height:300px;overflow-y:auto;">
+      <table class="table" style="font-size:12px;">
+        <thead><tr>${commonHeaders}${showMatchRate ? '<th>匹配率</th>' : ''}</tr></thead>
+        <tbody>${rows.length ? renderRows(rows, showMatchRate) : `<tr><td colspan="${showMatchRate ? 10 : 9}" class="subtle">暂无数据</td></tr>`}</tbody>
+      </table>
+    </div>
+  </div>`
+
+  const matchTable = renderCheckTable('Match', matchDisplayRows, true)
+  const unmatchTable = renderCheckTable('Unmatch', unmatchRows, false)
 
   const block = document.createElement('div')
   block.className = 'message'
@@ -1959,7 +1998,8 @@ export function renderCheckResult(result) {
     ${result.all_ok
       ? '<p style="color:#27ae60;font-weight:bold;">✅ 所有月份/账户的银行流水与序时账流入流出一致，数据完备！</p>'
       : '<p style="color:#e74c3c;font-weight:bold;">⚠️ 存在不一致项，请检查原始数据是否有遗漏或错误。</p>'}
-    ${mismatchTable}
+    ${matchTable}
+    ${unmatchTable}
     </div>
   `
   chat.appendChild(block)

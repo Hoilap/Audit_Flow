@@ -235,6 +235,8 @@ def _write_monthly_flow_check(
 
     bank_lookup = _monthly_summary_lookup(bank_summary, "bank")
     ledger_lookup = _monthly_summary_lookup(ledger_summary, "ledger")
+    matches_path = out / "matches.csv"
+    match_rates = _monthly_flow_match_rates(bank_df, matches_path) if matches_path.exists() else None
     rows = []
     for account_no, month, flow in keys:
         key = (account_no, month, flow)
@@ -252,6 +254,7 @@ def _write_monthly_flow_check(
                 "ledger_total": round(ledger_total / 100, 2),
                 "amount_diff": round(diff / 100, 2),
                 "status": "ok" if abs(diff) <= amount_tol else "mismatch",
+                "match_rate": "" if match_rates is None else match_rates.get(key, 0.0),
             }
         )
 
@@ -267,6 +270,7 @@ def _write_monthly_flow_check(
             "ledger_total",
             "amount_diff",
             "status",
+            "match_rate",
         ],
     )
     path = _safe_to_csv(report, out / "monthly_flow_check.csv")
@@ -302,6 +306,39 @@ def _monthly_flow_summary(df: pd.DataFrame, side: str) -> pd.DataFrame:
         for (account_no, month, flow), values in sorted(totals.items())
     ]
     return pd.DataFrame(rows, columns=columns)
+
+
+def _monthly_flow_match_rates(
+    bank_df: pd.DataFrame, matches_path: Path
+) -> dict[tuple[str, str, str], float]:
+    """Return matched unique bank transaction ratios by account, month, and flow."""
+    all_ids: dict[tuple[str, str, str], set[str]] = {}
+    id_to_key: dict[str, tuple[str, str, str]] = {}
+    if "txn_id" in bank_df:
+        for _, row in bank_df.iterrows():
+            txn_id = text(row.get("txn_id"))
+            trans_date = parse_date(row.get("transaction_date"))
+            flow = text(row.get("flow")).lower()
+            if not txn_id or not trans_date or flow not in {"in", "out"}:
+                continue
+            key = (_digits(row.get("account_no")), f"{trans_date.year:04d}-{trans_date.month:02d}", flow)
+            all_ids.setdefault(key, set()).add(txn_id)
+            id_to_key[txn_id] = key
+
+    matched_ids: dict[tuple[str, str, str], set[str]] = {}
+    matches_df = _load_csv(matches_path)
+    if "bank_txn_ids" in matches_df:
+        for value in matches_df["bank_txn_ids"]:
+            for txn_id in {text(item) for item in text(value).split("|") if text(item)}:
+                key = id_to_key.get(txn_id)
+                if key is not None:
+                    matched_ids.setdefault(key, set()).add(txn_id)
+
+    return {
+        key: min(1.0, len(matched_ids.get(key, set())) / len(txn_ids))
+        for key, txn_ids in all_ids.items()
+        if txn_ids
+    }
 
 
 def _monthly_summary_lookup(summary: pd.DataFrame, side: str) -> dict[tuple[str, str, str], tuple[int, int]]:

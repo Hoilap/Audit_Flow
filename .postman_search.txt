@@ -1,0 +1,1249 @@
+﻿C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\approver.py:9:from .matcher import Record, _group_score, _groups_same_month_flow_account, _make_group, _safe_to_csv
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\approver.py:54:if not _groups_same_month_flow_account(bank_group, ledger_group, config):
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\approver.py:55:review_df.loc[idx, "status"] = "blocked_cross_month_or_flow_account"
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\cleaners.py:36:"account_no",
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\cleaners.py:43:"counterparty_account",
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\cleaners.py:57:"account_no",
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\cleaners.py:84:- account_no: 账号为空（无法按账户维度匹配）
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\cleaners.py:152:if "account_no" in df.columns:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\cleaners.py:153:bad_mask = df["account_no"].isna() | (
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\cleaners.py:154:df["account_no"].astype(str).str.strip() == ""
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\cleaners.py:159:"field": "account_no",
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\cleaners.py:323:direction = text(safe_get(row, 3))
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\cleaners.py:325:if not trans_date or amount == 0 or direction not in {"借", "贷"}:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\cleaners.py:327:flow = "out" if direction == "借" else "in"
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\cleaners.py:341:"account_no": item.get("account_no", ""),
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\cleaners.py:348:"counterparty_account": text(safe_get(row, 1)),
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\cleaners.py:365:account_no = text(safe_get(row, 0))
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\cleaners.py:366:if not account_no or not any(ch.isdigit() for ch in account_no):
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\cleaners.py:372:month = safe_get(row, 2)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\cleaners.py:382:month = safe_get(row, 1)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\cleaners.py:391:trans_date = date_from_parts(year, month, day)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\cleaners.py:409:"account_no": item.get("account_no") or account_no,
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\cleaners.py:521:if item.get("account_no"):
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\cleaners.py:522:df["account_no"] = item["account_no"]
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\cleaners.py:641:if item.get("account_no"):
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\cleaners.py:642:df["account_no"] = item["account_no"]
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\file_detector.py:48:_ACCOUNT_HEADER_KEYWORDS = ("账号", "卡号", "account", "账户号", "acc_no", "accno")
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\file_detector.py:275:account_no = _extract_account_no_from_preview(f.get("excel_preview"))
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\file_detector.py:306:"account_no": account_no,
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\file_detector.py:328:"account_no": account_no,
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\file_detector.py:347:found_account = next((e["account_no"] for e in entries if e["account_no"]), "")
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\file_detector.py:348:if found_account:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\file_detector.py:350:if not e["account_no"]:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\file_detector.py:351:e["account_no"] = found_account
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\file_detector.py:352:e["notes"] += f"（账号从同组文件回填: {found_account}）"
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\file_detector.py:356:if entry["type"] == "bank_statement" and not entry["account_no"]:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\file_detector.py:366:def _extract_account_no_from_preview(excel_preview: dict[str, Any]) -> str:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\file_detector.py:381:if any(kw in cell_lower for kw in _ACCOUNT_HEADER_KEYWORDS):
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\file_detector.py:406:3. **account_no** (str): 银行账号/卡号，通常是纯数字，至少 8 位。
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\file_detector.py:444:account_no: str = Field(default="", description="银行账号")
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\file_detector.py:546:if meta.account_no:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\file_detector.py:547:base_entry["account_no"] = meta.account_no
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\file_detector.py:588:found_account = next((e["account_no"] for e in entries if e["account_no"]), "")
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\file_detector.py:589:if found_account:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\file_detector.py:591:if not e["account_no"]:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\file_detector.py:592:e["account_no"] = found_account
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\file_detector.py:593:e["notes"] += f"（账号从同组文件回填: {found_account}）"
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\file_detector.py:597:if entry["type"] == "bank_statement" and not entry["account_no"]:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\file_detector.py:646:"account_no": item.get("account_no", ""),
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\file_detector.py:670:"strict_account_match": True,
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\file_detector.py:683:output_dir_relative = f"outputs/{project_info.get('name', '')}/{project_info.get('task', 'bank_ledger_match')}"
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\file_detector.py:719:if not item.get("account_no"):
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\file_detector.py:720:missing.append("account_no")
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:56:_ACCOUNT_FONT = Font(name="宋体", bold=True, size=11)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:57:_ACCOUNT_ALIGN = Alignment(horizontal="left", vertical="center")
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:80:"""按 account_no 分组，在纯净 WP-03 模板上从头写入所有账户数据。"""
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:95:# 过滤 & 按 account_no 分组
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:100:by_account = _group_by_account(filtered)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:101:if not by_account:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:112:for account_no, rows in sorted(by_account.items()):
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:117:account_label = f"{bank_name}  {account_no}".strip()
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:120:needed = _wp03_account_rows(len(rows))
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:126:_write_account_row(ws, cursor, account_label)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:151:def _wp03_account_rows(n_data: int) -> int:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:152:"""计算一个账户区块需要的总行数：account + subheader + colheader + data + 1(空行)"""
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:171:def _write_account_row(ws, row: int, account_label: str) -> None:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:175:cell.value = f"开户行名称：{account_label}"
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:176:cell.font = _ACCOUNT_FONT
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:177:cell.alignment = _ACCOUNT_ALIGN
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:268:def _group_by_account(df: pd.DataFrame) -> dict[str, pd.DataFrame]:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:269:"""按 account_no 分组。若无 account_no 列，统一放入 '' 组。"""
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:270:if "account_no" not in df.columns:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:273:for key, group in df.groupby("account_no"):
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:279:"""自动检测 WP-02 中所有账户区块，按 account_no 分组填入月度汇总。"""
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:295:# 按 account_no 分组
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:296:bank_groups = _group_by_account(bank)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:297:ledger_groups = _group_by_account(ledger)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:298:all_accounts = sorted(set(list(bank_groups.keys()) + list(ledger_groups.keys())))
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:300:if not all_accounts:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:308:for i, account_no in enumerate(all_accounts):
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:309:bank_df = bank_groups.get(account_no, pd.DataFrame())
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:310:ledger_df = ledger_groups.get(account_no, pd.DataFrame())
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:315:inserted = _fill_one_wp02_section(ws, section, bank_df, ledger_df, bank_name, account_no)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:325:_create_and_fill_wp02_section(ws, sections[-1], bank_df, ledger_df, bank_name, account_no)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:331:month_rows: list[int] = []
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:336:month_rows.append(r_idx)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:338:for idx, mr in enumerate(month_rows):
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:359:bank_name: str, account_no: str,
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:365:for month in range(1, 13):
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:366:row_no = section["data_start"] + month - 1
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:370:_set(ws, "D", row_no, account_no)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:371:_set(ws, "E", row_no, _monthly_sum(ledger, "ledger_debit", month))
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:372:_set(ws, "F", row_no, _monthly_sum(bank, "bank_credit", month))
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:373:_set(ws, "H", row_no, _monthly_sum(ledger, "ledger_credit", month))
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:374:_set(ws, "I", row_no, _monthly_sum(bank, "bank_debit", month))
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:382:bank_name: str, account_no: str,
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:423:months = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"]
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:424:for mi, m in enumerate(months):
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:432:_fill_one_wp02_section(ws, new_section, bank, ledger, bank_name, account_no)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:515:def _monthly_sum(df: pd.DataFrame, col: str, month: int) -> float:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\filler.py:521:if trans_date and trans_date.month == month:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_cleaner.py:105:txn_id, source_id, source_file, source_sheet, row_no, bank_name, account_no,
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_cleaner.py:107:counterparty_account, summary, description, balance, raw_text。
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_cleaner.py:132:config["account_no"] — 银行账号
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_cleaner.py:146:entry_id, source_id, source_file, source_sheet, row_no, bank_name, account_no,
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_cleaner.py:178:bank_name 与 account_no 填充规则（重要）：
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_cleaner.py:182:将该原始字符串原样填入 account_no 和 bank_name（两列都可以填该字符串，宁多勿缺）。
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_cleaner.py:183:3. 科目列没有银行信息时，使用 config["bank_name"] / config["account_no"] 作为兜底值。
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_cleaner.py:190:config["account_no"] — 银行账号
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_cleaner.py:287:"account_no": item.get("account_no", ""),
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_cleaner.py:465:"account_no": item.get("account_no", ""),
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_cleaner.py:481:"无法准确确定 bank_name/account_no 时不要置空：将科目列中的原始银行信息填入（如'银行存款｜工行花城支行3359｜...'原样填入两列），宁多勿缺，后续会自动规范化。",
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_cleaner.py:680:2. account_no 列：值应为纯数字银行账号（如"6222020200123456789"），
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_cleaner.py:690:清洗阶段（Phase 1）可能输出格式不规范的数据（如 account_no 包含科目字符串
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_cleaner.py:709:def _is_bad_account_no(val: str) -> bool:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_cleaner.py:710:"""account_no 应为纯数字，包含非数字字符（除空格外）则不规范"""
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_cleaner.py:722:"account_no": {
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_cleaner.py:723:"check": _is_bad_account_no,
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_cleaner.py:758:acct = bs.get("account_no", "")
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_cleaner.py:762:"account_no": acct,
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_filler.py:152:"2. WP-03 表：按 account_no 分组，每组填入对应账户的数据",
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_filler.py:154:"4. WP-02 表：按 account_no 分组，每月汇总银行流水和序时账的借/贷方金额",
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_filler.py:162:"bank_date, ledger_date, bank_name, account_no, counterparty_name, bank_summary, ledger_summary, voucher_no, bank_debit, bank_credit, ledger_debit, ledger_credit, amount, flow",
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_filler.py:170:"bank_name, account_no, transaction_date, flow, amount, bank_debit, bank_credit, counterparty_name, summary",
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_filler.py:178:"bank_name, account_no, transaction_date, flow, amount, ledger_debit, ledger_credit, voucher_no, summary, counterparty_name",
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_filler.py:193:"- 如果模板中有多个账户区块，自动检测并按 account_no 填入",
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:4:from calendar import monthrange
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:277:"manual_monthly_balance_many_to_many",
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:322:monthly_balance_cfg = cfg.get("monthly_balance_enumeration", {}) or {}
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:323:monthly_balance_enabled = bool(monthly_balance_cfg.get("enabled", True))
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:341:if _same_flow_and_account(bank, ledger, config)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:404:if _same_flow_and_account(bank, ledger, config)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:449:if monthly_balance_enabled:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:450:for candidate in _monthly_balance_candidates(
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:455:monthly_balance_cfg,
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:479:if not _candidate_same_month_flow_account(candidate, config):
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:513:"manual_monthly_balance_many_to_many": 50,
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:538:def _candidate_same_month_flow_account(candidate: Candidate, config: dict[str, Any]) -> bool:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:539:from .matcher import _groups_same_month_flow_account
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:541:return _groups_same_month_flow_account(candidate.bank_group, candidate.ledger_group, config)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:544:def _same_flow_and_account(bank: Any, ledger: Any, config: dict[str, Any]) -> bool:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:545:if not _same_month(bank, ledger):
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:549:if not config.get("matching", {}).get("strict_account_match", True):
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:551:b_acc = _digits(bank.row.get("account_no"))
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:552:l_acc = _digits(ledger.row.get("account_no"))
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:556:def _same_month(left: Any, right: Any) -> bool:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:557:return left.trans_date.year == right.trans_date.year and left.trans_date.month == right.trans_date.month
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:616:month_match = re.search(r"(?:(\d{4})年)?(\d{1,2})\s*月(?:份)?", summary)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:617:if month_match:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:618:y = int(month_match.group(1) or year)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:619:m = int(month_match.group(2))
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:620:return date(y, m, 1), date(y, m, monthrange(y, m)[1])
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:622:start = date(year, ledger.trans_date.month, 1)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:623:end = date(year, ledger.trans_date.month, monthrange(year, ledger.trans_date.month)[1])
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:680:if not _same_month(bank, ledger):
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:682:if not _same_account(bank, ledger, config):
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:735:_digits(record.row.get("account_no")),
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:744:_digits(record.row.get("account_no")),
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:810:month = f"{record.trans_date.year:04d}-{record.trans_date.month:02d}"
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:812:return (_digits(record.row.get("account_no")), month, flow)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:815:def _window_account_key(records: list[Any]) -> str:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:817:account = _digits(record.row.get("account_no"))
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:818:if account:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:819:return account
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:882:def _monthly_balance_candidates(
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:901:bank_by_key = _records_by_month_key(remaining_bank, bank_pool_limit)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:902:ledger_by_key = _records_by_month_key(remaining_ledger, ledger_pool_limit)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:915:for ledger_subset in _monthly_ledger_subsets(ledger_records, max_ledger_subset_size, max_ledger_subsets):
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:917:bank_subsets = _monthly_amount_subsets(
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:929:candidate = _make_monthly_balance_candidate(
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:951:full_candidate = _make_monthly_balance_candidate(
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:964:bucket_candidates.sort(key=lambda candidate: _monthly_balance_priority(candidate), reverse=True)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:975:def _records_by_month_key(records: list[Any], limit: int) -> dict[tuple[str, str, str], list[Any]]:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:978:account = _digits(record.row.get("account_no"))
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:979:month = f"{record.trans_date.year:04d}-{record.trans_date.month:02d}"
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:983:buckets.setdefault((account, month, flow), []).append(record)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:992:def _monthly_ledger_subsets(records: list[Any], max_size: int, max_results: int) -> list[list[Any]]:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:1007:return _sort_monthly_ledger_subsets(results)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:1016:return _sort_monthly_ledger_subsets(results)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:1019:def _sort_monthly_ledger_subsets(subsets: list[list[Any]]) -> list[list[Any]]:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:1032:def _monthly_amount_subsets(
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:1042:records = _rank_monthly_bank_pool(records, ledger_subset)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:1075:results.sort(key=lambda subset: _monthly_subset_priority(subset, ledger_subset), reverse=True)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:1079:def _rank_monthly_bank_pool(records: list[Any], ledger_subset: list[Any]) -> list[Any]:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:1095:def _make_monthly_balance_candidate(
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:1103:account, month, flow = key
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:1110:f"Python 月度平衡枚举：账号 {account or '(空)'} {month} {flow} 的未匹配残余总额相等，"
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:1119:match_type="manual_monthly_balance_many_to_many",
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:1123:heuristic_score=_monthly_balance_score(bank_group, ledger_group),
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:1130:def _monthly_balance_priority(candidate: Candidate) -> tuple[float, float, float, float, float]:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:1132:_monthly_balance_score(candidate.bank_group, candidate.ledger_group),
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:1140:def _monthly_subset_priority(bank_group: list[Any], ledger_group: list[Any]) -> tuple[float, float, float, float]:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:1153:def _monthly_balance_score(bank_group: list[Any], ledger_group: list[Any]) -> float:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:1172:def _same_account(bank: Any, ledger: Any, config: dict[str, Any]) -> bool:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:1173:if not config.get("matching", {}).get("strict_account_match", True):
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:1175:b_acc = _digits(bank.row.get("account_no"))
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:1176:l_acc = _digits(ledger.row.get("account_no"))
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:1457:if not _candidate_same_month_flow_account(candidate, config):
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\llm_matcher.py:1661:"account_no": row.get("account_no"),
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:25:def write_monthly_flow_check(config: dict[str, Any]) -> Path:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:26:"""从当前 clean 数据重新生成 monthly_flow_check.csv（供 check 端点调用）。"""
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:34:return _write_monthly_flow_check(bank_df, ledger_df, config, out)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:45:_write_monthly_flow_check(bank_df, ledger_df, config, out)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:78:"cross_account_transfer": 0,
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:90:heuristic_stats["cross_account_transfer"] = _cross_account_transfer_match(bank_records, ledger_records, used_bank, used_ledger, amount_tol, config, groups)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:224:def _write_monthly_flow_check(
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:228:amount_tol = amount_to_cents(cfg.get("monthly_flow_check_tolerance", cfg.get("amount_tolerance", 0.01)))
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:229:bank_summary = _monthly_flow_summary(bank_df, "bank")
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:230:ledger_summary = _monthly_flow_summary(ledger_df, "ledger")
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:232:set(zip(bank_summary["account_no"], bank_summary["month"], bank_summary["flow"]))
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:233:| set(zip(ledger_summary["account_no"], ledger_summary["month"], ledger_summary["flow"]))
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:236:bank_lookup = _monthly_summary_lookup(bank_summary, "bank")
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:237:ledger_lookup = _monthly_summary_lookup(ledger_summary, "ledger")
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:239:for account_no, month, flow in keys:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:240:key = (account_no, month, flow)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:246:"account_no": account_no,
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:247:"month": month,
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:261:"account_no",
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:262:"month",
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:272:path = _safe_to_csv(report, out / "monthly_flow_check.csv")
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:273:_print_monthly_flow_warnings(report, path)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:277:def _monthly_flow_summary(df: pd.DataFrame, side: str) -> pd.DataFrame:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:278:columns = ["account_no", "month", "flow", f"{side}_count", f"{side}_total_cents"]
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:288:account_no = _digits(row.get("account_no"))
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:289:key = (account_no, f"{trans_date.year:04d}-{trans_date.month:02d}", flow)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:296:"account_no": account_no,
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:297:"month": month,
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:302:for (account_no, month, flow), values in sorted(totals.items())
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:307:def _monthly_summary_lookup(summary: pd.DataFrame, side: str) -> dict[tuple[str, str, str], tuple[int, int]]:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:312:key = (text(row.get("account_no")), text(row.get("month")), text(row.get("flow")))
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:320:def _print_monthly_flow_warnings(report: pd.DataFrame, path: Path) -> None:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:330:f"{row['month']} {row['flow']} "
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:331:f"账号 {row['account_no'] or '(空)'}: "
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:408:ledger_acc = _digits(ledger.row.get("account_no"))
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:415:and b.trans_date.month == ledger.trans_date.month
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:416:and _digits(b.row.get("account_no")) == ledger_acc
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:467:ledger_acc = _digits(ledger.row.get("account_no"))
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:474:and b.trans_date.month == ledger.trans_date.month
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:475:and _digits(b.row.get("account_no")) == ledger_acc
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:523:def _cross_account_transfer_match(
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:548:ledger_acc = _digits(ledger.row.get("account_no"))
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:561:if bank.trans_date.year != ledger.trans_date.year or bank.trans_date.month != ledger.trans_date.month:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:574:# 优先跨账号候选（不同account_no），避免false match
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:575:cross = [c for c in candidates if _digits(c.row.get("account_no")) != ledger_acc]
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:576:same = [c for c in candidates if _digits(c.row.get("account_no")) == ledger_acc]
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:599:config, "cross_account_transfer", bank_group, ledger_group, score, serial,
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:618:if not _same_month_flow_account(bank, ledger, config):
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:627:def _same_month_flow_account(bank: Record, ledger: Record, config: dict[str, Any]) -> bool:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:628:if bank.trans_date.year != ledger.trans_date.year or bank.trans_date.month != ledger.trans_date.month:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:632:if config.get("matching", {}).get("strict_account_match", True):
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:633:b_acc = _digits(bank.row.get("account_no"))
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:634:l_acc = _digits(ledger.row.get("account_no"))
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:640:def _groups_same_month_flow_account(
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:649:if not _same_month_flow_account(bank, ledger, config):
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:779:keys.add((record.trans_date, text(record.row.get("flow")), _digits(record.row.get("account_no"))))
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:780:for trans_date, flow, account in sorted(keys):
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:787:and (not account or _digits(r.row.get("account_no")) == account)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:795:and (not config.get("matching", {}).get("strict_account_match", True) or not account or _digits(r.row.get("account_no")) == account)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:837:_digits(rec.row.get("account_no")),
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:838:f"{rec.trans_date.year:04d}-{rec.trans_date.month:02d}",
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\matcher.py:937:"account_no": join_unique([item.row.get("account_no") for item in bank_group + ledger_group]),
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\pipeline.py:11:from .matcher import match_to_csv, write_monthly_flow_check
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\pipeline.py:31:"""基于当前 clean 数据重新生成 monthly_flow_check.csv。"""
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\pipeline.py:32:return write_monthly_flow_check(config)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\readme.md:1:# Bank_ledger_match (5017)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\readme.md:25:A["POST /workflow/bank_ledger_match/match"] --> B["_build_full_config() 合并 llm.yml + matching.yml + task.yml"]
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\readme.md:65:P0_S --> P05_S["_cross_account_transfer_match()\n匹配同名不同账号之间的转账\n匹配类型: cross_account_transfer"]
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\readme.md:124:S7["⑦ monthly_balance: 月度分桶全枚举"]
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\readme.md:163:O4 --> O9["monthly_flow_check.csv"]
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\readme.md:192:D2 -->|不一致| D3[提前打印警告并写 monthly_flow_check.csv]
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\readme.md:249:direction TB
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\readme.md:263:direction TB
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\readme.md:272:direction TB
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\readme.md:280:direction TB
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\readme.md:288:direction TB
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\readme.md:332:- 月度总数匹配  `matches/monthly_flow_check.csv`
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\utils.py:84:def date_from_parts(year: object, month: object, day: object) -> date | None:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\bank_ledger_match\utils.py:86:m = parse_int(month)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\config.py:3:Follows the same pattern as bank_ledger_match.config but simplified
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\llm_cleaner.py:102:脚本必须定义 def clean(path: str, month: str, source_file: str) -> list[dict]。
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\llm_cleaner.py:104:- month: 月份键（如 "2022-01"），由调用方传入，直接写入每条记录
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\llm_cleaner.py:114:4. month 和 source_file 直接使用传入参数，不要自行推断。
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\llm_cleaner.py:120:脚本必须定义 def clean(path: str, sheet_name: str, source_file: str, month: str, sheet_type: str) -> list[dict]。
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\llm_cleaner.py:124:- month: 月份键（如 "2022-04"），由调用方传入
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\llm_cleaner.py:142:5. source_file 和 month 直接使用传入参数。
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\llm_cleaner.py:236:"month 和 source_file 由参数传入，直接写入每条记录",
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\llm_cleaner.py:313:"source_file 和 month 由参数传入",
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\matcher.py:7:3. Generate matched/unmatched reports and monthly summaries
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\matcher.py:12:The matching is purely by ID (not by amount scoring like bank_ledger_match),
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\matcher.py:52:'monthly_summary': Path to monthly match summary CSV
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\matcher.py:96:# ── 4. Monthly summary ────────────────────────────────────
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\matcher.py:97:monthly_path = _write_monthly_summary(
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\matcher.py:122:"monthly_summary": monthly_path,
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\matcher.py:338:# ── Internal: Monthly Summary ────────────────────────────────
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\matcher.py:340:def _write_monthly_summary(
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\matcher.py:346:"""Generate a monthly match summary and write to CSV."""
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\matcher.py:349:# Determine month column — prefer the one with actual data
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\matcher.py:350:month_col = None
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\matcher.py:351:for col in ("month_settlement", "month_outbound", "month", "_month"):
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\matcher.py:353:month_col = col
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\matcher.py:355:if month_col is None and "month" in unmatched_outbound_df.columns:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\matcher.py:356:month_col = "month"
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\matcher.py:358:# Build summary per month from matched data
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\matcher.py:359:if month_col and not matched_df.empty:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\matcher.py:360:for month, group in matched_df.groupby(month_col):
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\matcher.py:362:"month": month,
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\matcher.py:374:# Add unmatched counts per month
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\matcher.py:375:if not unmatched_outbound_df.empty and "month" in unmatched_outbound_df.columns:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\matcher.py:376:for month, group in unmatched_outbound_df.groupby("month"):
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\matcher.py:377:existing = next((r for r in rows if r["month"] == month), None)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\matcher.py:382:"month": month,
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\matcher.py:388:if not unmatched_settlement_df.empty and "month" in unmatched_settlement_df.columns:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\matcher.py:389:for month, group in unmatched_settlement_df.groupby("month"):
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\matcher.py:390:existing = next((r for r in rows if r["month"] == month), None)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\matcher.py:395:"month": month,
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\matcher.py:402:rows = [{"month": "N/A", "matched_count": 0, "unmatched_outbound": 0, "unmatched_settlement": 0}]
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\matcher.py:404:summary_df = pd.DataFrame(rows).sort_values("month").reset_index(drop=True)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\matcher.py:408:"month": "TOTAL",
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\matcher.py:419:path = match_dir / "monthly_match_summary.csv"
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\outbound_cleaner.py:3:Reads monthly revenue report Excel files (sellout/refund/return reports),
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\outbound_cleaner.py:100:"month",             # Month key
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\outbound_cleaner.py:116:"month",
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\outbound_cleaner.py:136:"month",
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\outbound_cleaner.py:304:month = _extract_month_from_filename(xlsx_path.name)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\outbound_cleaner.py:305:logger.info("Processing: %s (month=%s)", xlsx_path.name, month)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\outbound_cleaner.py:319:"month": month,
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\outbound_cleaner.py:340:df["month"] = month
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\outbound_cleaner.py:530:def _extract_month_from_filename(filename: str) -> str:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\outbound_cleaner.py:531:"""Extract month key from filename like 'Health FSS 4月收入报告.xlsx' → '2022-04'."""
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\outbound_cleaner.py:533:# Try Chinese month pattern: "4月", "10月"
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\outbound_cleaner.py:536:month = int(m.group(1))
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\outbound_cleaner.py:538:return f"2022-{month:02d}"
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\outbound_cleaner.py:608:month = _extract_month_from_filename(xlsx_path.name)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\outbound_cleaner.py:609:logger.info("[LLM] Processing: %s (month=%s)", xlsx_path.name, month)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\outbound_cleaner.py:623:"month": month,
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\outbound_cleaner.py:657:str(xlsx_path), sheet_name, xlsx_path.name, month, stype,
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\outbound_cleaner.py:672:str(xlsx_path), sheet_name, xlsx_path.name, month, stype,
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\outbound_cleaner.py:690:"month": month,
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\outbound_cleaner.py:718:df["month"] = month
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\outbound_cleaner.py:730:"month": month,
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\outbound_cleaner.py:743:"month": month,
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\outbound_cleaner.py:759:"month": month,
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\pipeline.py:106:(settlement_all_csv_path, monthly_summary_csv_path)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\settlement_cleaner.py:3:Reads raw settlement CSV files (one per settlement date, organized by month),
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\settlement_cleaner.py:5:monthly summaries.
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\settlement_cleaner.py:17:from .utils import extract_month_key, parse_amount, safe_write_csv
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\settlement_cleaner.py:38:"month",                # Month key (e.g., "2022-01")
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\settlement_cleaner.py:69:"month",
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\settlement_cleaner.py:82:5. Generate monthly summary
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\settlement_cleaner.py:86:(settlement_csv_path, monthly_summary_path)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\settlement_cleaner.py:110:month_key = extract_month_key(str(csv_path))
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\settlement_cleaner.py:117:df["month"] = month_key
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\settlement_cleaner.py:129:"month": month_key,
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\settlement_cleaner.py:137:"month": month_key,
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\settlement_cleaner.py:155:# Generate monthly summary
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\settlement_cleaner.py:156:summary = _generate_monthly_summary(all_txn)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\settlement_cleaner.py:157:summary_path = clean_dir / "settlement_monthly_summary.csv"
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\settlement_cleaner.py:159:logger.info("Monthly summary: %d months", len(summary))
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\settlement_cleaner.py:265:def _generate_monthly_summary(all_txn: pd.DataFrame) -> pd.DataFrame:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\settlement_cleaner.py:266:"""Generate monthly summary statistics from transaction-level settlement data."""
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\settlement_cleaner.py:290:summary = all_txn.groupby("month").apply(_agg, include_groups=False).reset_index()
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\settlement_cleaner.py:296:summary = pd.concat([summary[["month"]], detail], axis=1)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\settlement_cleaner.py:298:# Sort by month
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\settlement_cleaner.py:299:summary = summary.sort_values("month").reset_index(drop=True)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\settlement_cleaner.py:303:"month": "TOTAL",
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\settlement_cleaner.py:330:(settlement_all_csv_path, monthly_summary_csv_path)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\settlement_cleaner.py:361:month_key = extract_month_key(str(csv_path))
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\settlement_cleaner.py:380:script_path, str(csv_path), month_key, csv_path.name
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\settlement_cleaner.py:402:df["month"] = month_key
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\settlement_cleaner.py:409:df["month"] = month_key
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\settlement_cleaner.py:416:"month": month_key,
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\settlement_cleaner.py:424:"month": month_key,
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\settlement_cleaner.py:442:# Generate monthly summary
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\settlement_cleaner.py:443:summary = _generate_monthly_summary(all_txn)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\settlement_cleaner.py:444:summary_path = clean_dir / "settlement_monthly_summary.csv"
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\settlement_cleaner.py:446:logger.info("[LLM] Monthly summary: %d months", len(summary))
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\utils.py:71:def extract_month_key(file_path: str) -> str:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\utils.py:72:"""Extract a month key like '2022-01' from a file path.
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\utils.py:82:month, year = int(m.group(1)), int(m.group(2))
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\utils.py:84:return f"{full_year:04d}-{month:02d}"
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\utils.py:91:# Match bare month number (e.g. "12" for December)
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\utils.py:94:month = int(m3.group(1))
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\utils.py:95:if 1 <= month <= 12:
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\outbound_settlement_match\utils.py:96:return f"2022-{month:02d}"  # Default year
+C:\Users\DengKaina\Desktop\Audit_workflow\audit_workflow\llm_agent.py:1:"""通用 LLM Agent 模块 —— 可被 bank_ledger_match、desktop/api.py 等所有模块复用。"""
+C:\Users\DengKaina\Desktop\Audit_workflow\config\config.blm.detect.yaml:45:strict_account_match: true
+C:\Users\DengKaina\Desktop\Audit_workflow\config\config.matching.yml:31:monthly_balance_enumeration:
+C:\Users\DengKaina\Desktop\Audit_workflow\config\config.task_definitions.yml:17:dir_name: bank_ledger_match
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\renderer\src\actions.js:60:const taskName = state.customTaskName || 'bank_ledger_match'
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\renderer\src\actions.js:61:const taskDirName = (findWorkflowTaskByName(taskName) || {}).dirName || 'bank_ledger_match'
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\renderer\src\actions.js:345:`启发式: 1:1=${h.one_to_one || 0}, 1:N=${h.one_to_many || 0}, N:1=${h.many_to_one || 0}, N:M=${h.many_to_many || 0}, 手续费聚合=${h.fee_aggregation || 0}, 调拨=${h.cross_account_transfer || 0}。` +
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\renderer\src\actions.js:1036:<div style="display:flex;flex-direction:column;gap:12px;padding:8px 0;">
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\renderer\src\api.js:91:return request('/workflow/bank_ledger_match/clean_bank', { method: 'POST', body: form })
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\renderer\src\api.js:100:return request('/workflow/bank_ledger_match/clean_ledger', { method: 'POST', body: form })
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\renderer\src\api.js:107:return request('/workflow/bank_ledger_match/check', { method: 'POST', body: form })
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\renderer\src\api.js:116:return request('/workflow/bank_ledger_match/match', { method: 'POST', body: form })
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\renderer\src\api.js:125:return request('/workflow/bank_ledger_match/fill', { method: 'POST', body: form })
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\renderer\src\config.js:19:dirName: 'bank_ledger_match',
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\renderer\src\config.js:20:prompt: '请在数据源页面将银行流水和序时账文件上传到 inputs/{客户名}/bank_ledger_match/ 目录下，然后从 Detect 步骤开始执行。',
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\renderer\src\config.js:57:endpoint: '/workflow/bank_ledger_match/clean_bank',
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\renderer\src\config.js:73:endpoint: '/workflow/bank_ledger_match/clean_ledger',
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\renderer\src\config.js:87:description: '检查 monthly_flow_check.csv，确认银行流水和序时账数据是否完备、月度流入流出是否一致',
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\renderer\src\config.js:88:endpoint: '/workflow/bank_ledger_match/check',
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\renderer\src\config.js:89:outputs: ['matches/monthly_flow_check.csv'],
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\renderer\src\config.js:97:endpoint: '/workflow/bank_ledger_match/match',
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\renderer\src\config.js:105:endpoint: '/workflow/bank_ledger_match/verify',
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\renderer\src\config.js:113:endpoint: '/workflow/bank_ledger_match/fill',
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\renderer\src\config.js:140:outputs: ['clean/settlement.csv', 'clean/monthly_summary.csv'],
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\renderer\src\config.js:156:outputs: ['matches/matched.csv', 'matches/unmatched_outbound.csv', 'matches/unmatched_settlement.csv', 'matches/net_outbound.csv', 'matches/monthly_summary.csv'],
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\renderer\src\state.js:94:* @returns {string|null} 如 'outputs/桂平金山/bank_ledger_match/matches/matches.csv'
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\renderer\src\ui.js:488:year: 'numeric', month: '2-digit', day: '2-digit',
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\renderer\src\ui.js:1107:// 目录使用 客户简称/项目代码（如 桂平金山/bank_ledger_match）
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\renderer\src\ui.js:1662:if (!i.account_no) missingFields.push('银行账号')
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\renderer\src\ui.js:1668:const acctCell = i.account_no
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\renderer\src\ui.js:1669:? escapeHtml(i.account_no)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\renderer\src\ui.js:1933:<td>${escapeHtml(r.account_no || '')}</td>
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\renderer\src\ui.js:1934:<td>${escapeHtml(r.month || '')}</td>
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\renderer\app.js:234:form.append('dest', $('#upload-dest').value || 'inputs/bank_ledger_match/')
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\asyncio\transports.py:149:"""Interface representing a bidirectional transport.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\email\charset.py:153:# Convenience function for encoding strings, taking into account
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\email\header.py:194:splitting the first line to a shorter value (to account for the field
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\email\header.py:220:# Take the separating colon and space into account.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\email\utils.py:136:taking daylight savings time into account.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\email\utils.py:143:# 2822 requires that day and month names be the English abbreviations.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\email\_header_value_parser.py:3011:# accounting for the possibly-needed spaces and semicolons we'll be adding.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\email\_parseaddr.py:23:_monthnames = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul',
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\email\_parseaddr.py:48:Accounts for military timezones.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\email\_parseaddr.py:101:if mm not in _monthnames:
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\email\_parseaddr.py:103:if mm not in _monthnames:
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\email\_parseaddr.py:105:mm = _monthnames.index(mm) + 1
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\encodings\cp874.py:225:'\u0e11'   #  0xB1 -> THAI CHARACTER THO NANGMONTHO
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\encodings\iso8859_11.py:225:'\u0e11'   #  0xB1 -> THAI CHARACTER THO NANGMONTHO
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\encodings\tis_620.py:225:'\u0e11'   #  0xB1 -> THAI CHARACTER THO NANGMONTHO
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\http\client.py:1099:# files to be taken into account.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\http\cookiejar.py:82:year, month, mday, hour, min, sec = tt[:6]
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\http\cookiejar.py:83:if ((year >= EPOCH_YEAR) and (1 <= month <= 12) and (1 <= mday <= 31) and
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\http\cookiejar.py:90:MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\http\cookiejar.py:92:MONTHS_LOWER = [month.lower() for month in MONTHS]
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\http\cookiejar.py:111:dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\http\cookiejar.py:129:DAYS[dt.weekday()], dt.day, MONTHS[dt.month-1],
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\http\cookiejar.py:155:# translate month name to number
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\http\cookiejar.py:156:# month numbers start with 1 (January)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\http\cookiejar.py:158:mon = MONTHS_LOWER.index(mon.lower())+1
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\http\cookiejar.py:215:(\w+)              # month
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\http\cookiejar.py:265:mon = MONTHS_LOWER.index(g[1].lower()) + 1
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\http\cookiejar.py:292:(\d\d?)              # numerical month
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\http\cookies.py:242:_monthname = [None,
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\http\cookies.py:246:def _getdate(future=0, weekdayname=_weekdayname, monthname=_monthname):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\http\cookies.py:249:year, month, day, hh, mm, ss, wd, y, z = gmtime(now + future)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\http\cookies.py:251:(weekdayname[wd], day, monthname[month], year, hh, mm, ss)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\http\server.py:68:# |        Mon: Month (calendar name)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\http\server.py:614:year, month, day, hh, mm, ss, x, y, z = time.localtime(now)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\http\server.py:616:day, self.monthname[month], year, hh, mm, ss)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\http\server.py:621:monthname = [None,
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\http\__init__.py:43:def is_redirection(self):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\http\__init__.py:75:# redirection
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\idlelib\editor.py:1426:from the current line.  This takes into account if the current line
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\idlelib\format.py:137:# XXX Should take double space after period (etc.) into account
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\idlelib\redirector.py:28:'''Initialize attributes and setup redirection.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\idlelib\redirector.py:54:"Unregister operations and revert redirection created by .__init__."
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\idlelib\search.py:86:of the pattern.  Next is relative based on direction.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\idlelib\searchbase.py:161:frame = self.make_frame("Direction")[0]
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\idlelib\searchengine.py:113:depending on the direction setting and ok, with ok meaning that
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\idlelib\zoomheight.py:98:# Adjust the maximum window height to account for the different
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\importlib\resources\readers.py:75:groups = itertools.groupby(sorted(children, key=by_name), key=by_name)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\multiprocessing\synchronize.py:283:# to take account of timeouts since last notify*() we subtract
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\pydoc_data\topics.py:12401:'   (“Separator, space”), or its bidirectional class is one '
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\re\_compiler.py:755:# map in either direction
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_internal\commands\install.py:600:"pip's dependency resolver does not currently take into account "
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_internal\locations\base.py:15:# FIXME doesn't account for venv linked to global site-packages
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_internal\locations\_sysconfig.py:19:# functions try to answer that with some heuristics while accounting for ad-hoc
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_internal\locations\_sysconfig.py:38:This does not account for ``pip install --prefix`` (also means we're not
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_internal\models\installation_report.py:52:# should also take into account options such as --python-version or
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_internal\network\auth.py:249:# cache will be cleared and keyring disabled, take that into account
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_internal\network\auth.py:250:# if you want to remove this indirection.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_internal\network\auth.py:406:# This accounts for the situation in which the user has specified
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_internal\network\session.py:105:# method doesn't provide definitive information in either direction.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_internal\resolution\legacy\resolver.py:336:or reinstall it, taking into account all the relevant user options.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_internal\resolution\resolvelib\factory.py:550:# taking into account any non-transient constraints on the associated base. This
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_internal\utils\datetime.py:7:def today_is_later_than(year: int, month: int, day: int) -> bool:
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_internal\utils\datetime.py:9:given = datetime.date(year, month, day)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_internal\exceptions.py:15:from itertools import chain, groupby, repeat
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_internal\exceptions.py:433:for cls, errors_of_cls in groupby(self.errors, lambda e: e.__class__):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\chardet\hebrewprober.py:58:# The dominant difference between these charsets is their directionality.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\chardet\hebrewprober.py:59:# "Visual" directionality means that the text is ordered as if the renderer is
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\chardet\hebrewprober.py:69:# "Logical" directionality means the text is ordered "naturally" according to
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\chardet\hebrewprober.py:75:# what little evidence I could find, it seems that its general directionality
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\distlib\database.py:759:this distribution, and takes into account any paths selected by the
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\distlib\util.py:951:# urlopen might fail if it runs into redirections,
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\idna\core.py:18:""" Exception when bidirectional requirements are not satisfied """
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\idna\core.py:65:direction = unicodedata.bidirectional(cp)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\idna\core.py:66:if direction == '':
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\idna\core.py:68:raise IDNABidiError('Unknown directionality in label {} at position {}'.format(repr(label), idx))
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\idna\core.py:69:if direction in ['R', 'AL', 'AN']:
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\idna\core.py:75:direction = unicodedata.bidirectional(label[0])
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\idna\core.py:76:if direction in ['R', 'AL']:
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\idna\core.py:78:elif direction == 'L':
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\idna\core.py:81:raise IDNABidiError('First codepoint in label {} must be directionality L, R or AL'.format(repr(label)))
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\idna\core.py:86:direction = unicodedata.bidirectional(cp)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\idna\core.py:90:if not direction in ['R', 'AL', 'AN', 'EN', 'ES', 'CS', 'ET', 'ON', 'BN', 'NSM']:
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\idna\core.py:91:raise IDNABidiError('Invalid direction for codepoint at position {} in a right-to-left label'.format(idx))
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\idna\core.py:93:if direction in ['R', 'AL', 'EN', 'AN']:
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\idna\core.py:95:elif direction != 'NSM':
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\idna\core.py:98:if direction in ['AN', 'EN']:
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\idna\core.py:100:number_type = direction
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\idna\core.py:102:if number_type != direction:
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\idna\core.py:106:if not direction in ['L', 'EN', 'ES', 'CS', 'ET', 'ON', 'BN', 'NSM']:
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\idna\core.py:107:raise IDNABidiError('Invalid direction for codepoint at position {} in a left-to-right label'.format(idx))
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\idna\core.py:109:if direction in ['L', 'EN']:
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\idna\core.py:111:elif direction != 'NSM':
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\idna\core.py:115:raise IDNABidiError('Label ends with illegal codepoint directionality')
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\pkg_resources\__init__.py:1252:Perhaps your account does not have write access to this directory?
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\pygments\formatters\svg.py:69:Starting offset in X direction, defaults to ``0``.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\pygments\formatters\svg.py:72:Starting offset in Y direction, defaults to the font size if it is given
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\pygments\regexopt.py:15:from itertools import groupby
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\pygments\regexopt.py:78:for group in groupby(strings, lambda s: s[0] == first[0])) \
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\pyparsing\common.py:307:r"(?P<year>\d{4})(?:-(?P<month>\d\d)(?:-(?P<day>\d\d))?)?"
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\pyparsing\common.py:312:r"(?P<year>\d{4})-(?P<month>\d\d)-(?P<day>\d\d)[T ](?P<hour>\d\d):(?P<minute>\d\d)(:(?P<second>\d\d(\.\d*)?)?)?(?P<tz>Z|[+-]\d\d:?\d\d)?"
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\pyparsing\core.py:431:date_str = integer("year") + '/' + integer("month") + '/' + integer("day")
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\pyparsing\core.py:438:date_str = integer("year") + '/' + integer("month") + '/' + integer("day")
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\pyparsing\core.py:575:+ integer.set_results_name("month") + '/'
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\pyparsing\core.py:579:date_str = integer("year") + '/' + integer("month") + '/' + integer("day")
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\pyparsing\core.py:671:year, month, day = toks[::2]
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\pyparsing\core.py:673:date(year, month, day)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\pyparsing\core.py:3031:date = Regex(r'(?P<year>\d{4})-(?P<month>\d\d?)-(?P<day>\d\d?)')
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\pyparsing\results.py:46:+ integer.set_results_name("month") + '/'
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\pyparsing\results.py:50:#             + integer("month") + '/'
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\pyparsing\results.py:60:test("result['month']")
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\pyparsing\results.py:62:test("'month' in result")
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\pyparsing\results.py:70:result['month'] -> '12'
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\pyparsing\results.py:72:'month' in result -> True
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\pyparsing\results.py:76:- month: '12'
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\pyparsing\results.py:348:date_str = integer("year") + '/' + integer("month") + '/' + integer("day")
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\pyparsing\results.py:525:date_str = integer("year") + '/' + integer("month") + '/' + integer("day")
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\pyparsing\results.py:528:print(type(result), repr(result)) # -> <class 'pyparsing.ParseResults'> (['12', '/', '31', '/', '1999'], {'day': [('1999', 4)], 'year': [('12', 0)], 'month': [('31', 2)]})
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\pyparsing\results.py:531:print(type(result_dict), repr(result_dict)) # -> <class 'dict'> {'day': '1999', 'year': '12', 'month': '31'}
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\pyparsing\results.py:536:print(json.dumps(result.as_dict())) # -> {"month": "31", "day": "1999", "year": "12"}
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\pyparsing\results.py:639:date_str = integer("year") + '/' + integer("month") + '/' + integer("day")
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\pyparsing\results.py:648:- month: '12'
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\pyparsing\util.py:212:for _, chars in itertools.groupby(s, key=is_consecutive):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\requests\api.py:36::param allow_redirects: (optional) Boolean. Enable/disable GET/OPTIONS/POST/PUT/PATCH/DELETE/HEAD redirection. Defaults to ``True``.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\requests\sessions.py:62:"""Determines appropriate setting for a given request, taking into account
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\requests\sessions.py:198:# Handle redirection without scheme (see: RFC 1808 Section 4)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\requests\status_codes.py:40:# Redirection.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\resolvelib\resolvers.py:415:# All criteria are accounted for. Nothing more to pin, we are done!
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\rich\highlighter.py:153:# Calendar month (e.g. 2008-08). The hyphen is required
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\rich\highlighter.py:154:r"^(?P<year>[0-9]{4})-(?P<month>1[0-2]|0[1-9])$",
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\rich\highlighter.py:156:r"^(?P<date>(?P<year>[0-9]{4})(?P<month>1[0-2]|0[1-9])(?P<day>3[01]|0[1-9]|[12][0-9]))$",
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\rich\highlighter.py:185:r"^(?P<date>(?P<year>[0-9]{4})(?P<hyphen>-)?(?P<month>1[0-2]|0[1-9])(?(hyphen)-)(?P<day>3[01]|0[1-9]|[12][0-9])) (?P<time>(?P<hour>2[0-3]|[01][0-9])(?(hyphen):)(?P<minute>[0-5][0-9])(?(hyphen):)(?P<second>[0-5][0-9]))$",
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\rich\highlighter.py:191:r"^(?P<date>(?P<year>-?(?:[1-9][0-9]*)?[0-9]{4})-(?P<month>1[0-2]|0[1-9])-(?P<day>3[01]|0[1-9]|[12][0-9]))(?P<timezone>Z|[+-](?:2[0-3]|[01][0-9]):[0-5][0-9])?$",
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\rich\highlighter.py:197:r"^(?P<date>(?P<year>-?(?:[1-9][0-9]*)?[0-9]{4})-(?P<month>1[0-2]|0[1-9])-(?P<day>3[01]|0[1-9]|[12][0-9]))T(?P<time>(?P<hour>2[0-3]|[01][0-9]):(?P<minute>[0-5][0-9]):(?P<second>[0-5][0-9])(?P<ms>\.[0-9]+)?)(?P<timezone>Z|[+-](?:2[0-3]|[01][0-9]):[0-5][0-9])?$",
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\rich\live.py:45:redirect_stdout (bool, optional): Enable redirection of stdout, so ``print`` may be used. Defaults to True.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\rich\live.py:46:redirect_stderr (bool, optional): Enable redirection of stderr. Defaults to True.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\rich\live.py:124:# If refresh fails, we want to stop the redirection of sys.stderr,
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\rich\progress.py:1059:redirect_stdout: (bool, optional): Enable redirection of stdout, so ``print`` may be used. Defaults to True.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\rich\progress.py:1060:redirect_stderr: (bool, optional): Enable redirection of stderr. Defaults to True.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\rich\syntax.py:238:A value of None in the tuple indicates the range is open in that direction.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\rich\_emoji_codes.py:148:"japanese_monthly_amount_button": "🈷",
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\rich\_fileno.py:7:"""Get fileno() from a file, accounting for poorly implemented file-like objects.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\rich\_win32_console.py:637:term.write_text("The red arrow shows the cursor location, and direction of erase")
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\rich\_win32_console.py:647:term.write_text("The red arrow shows the cursor location, and direction of erase")
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\tomli\_re.py:60:month_str,
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\tomli\_re.py:71:year, month, day = int(year_str), int(month_str), int(day_str)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\tomli\_re.py:73:return date(year, month, day)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\tomli\_re.py:84:return datetime(year, month, day, hour, minute, sec, micros, tzinfo=tz)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\urllib3\util\retry.py:169:If ``total`` is not set, it's a good idea to set this to 0 to account
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pip\_vendor\urllib3\connection.py:70:# (ie test_recent_date is failing) update it to ~6 months before the current date.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pkg_resources\_vendor\more_itertools\more.py:13:groupby,
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pkg_resources\_vendor\more_itertools\more.py:72:'groupby_transform',
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pkg_resources\_vendor\more_itertools\more.py:1932:See also :func:`groupby_transform`, which can be used with this function
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pkg_resources\_vendor\more_itertools\more.py:1947:def groupby_transform(iterable, keyfunc=None, valuefunc=None, reducefunc=None):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pkg_resources\_vendor\more_itertools\more.py:1948:"""An extension of :func:`itertools.groupby` that can apply transformations
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pkg_resources\_vendor\more_itertools\more.py:1960:>>> list(groupby_transform(iterable, keyfunc, valuefunc, reducefunc))
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pkg_resources\_vendor\more_itertools\more.py:1965::func:`groupby_transform` is useful when grouping elements of an iterable
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pkg_resources\_vendor\more_itertools\more.py:1974:>>> grouper = groupby_transform(iterable, itemgetter(0), itemgetter(1))
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pkg_resources\_vendor\more_itertools\more.py:1983:ret = groupby(iterable, keyfunc)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pkg_resources\_vendor\more_itertools\more.py:2542:"""Yield groups of consecutive items using :func:`itertools.groupby`.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pkg_resources\_vendor\more_itertools\more.py:2583:for k, g in groupby(
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pkg_resources\_vendor\more_itertools\more.py:2838:return ((k, ilen(g)) for k, g in groupby(iterable))
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pkg_resources\_vendor\more_itertools\more.py:4226:groupby(iterable, key),
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pkg_resources\_vendor\more_itertools\more.py:4377:# o is the array of "directions"
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pkg_resources\_vendor\more_itertools\recipes.py:23:groupby,
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pkg_resources\_vendor\more_itertools\recipes.py:195:g = groupby(iterable)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pkg_resources\_vendor\more_itertools\recipes.py:521:return map(next, map(operator.itemgetter(1), groupby(iterable, key)))
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\pkg_resources\__init__.py:1235:Perhaps your account does not have write access to this directory?
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\setuptools\command\easy_install.py:300:# gets its info from the install command, and takes into account
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\setuptools\command\easy_install.py:540:Perhaps your account does not have write access to this directory?  If the
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\setuptools\command\easy_install.py:542:as the administrator or "root" account.  If you do not have administrative
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\setuptools\command\easy_install.py:1711:# account for '.' being in PYTHONPATH
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\setuptools\_distutils\command\build_clib.py:13:# necessary refactoring to account for the overlap in code between the
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\setuptools\_distutils\bcppcompiler.py:8:# module and using the directions originally published by Gordon Williams.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\setuptools\_vendor\more_itertools\more.py:13:groupby,
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\setuptools\_vendor\more_itertools\more.py:61:'groupby_transform',
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\setuptools\_vendor\more_itertools\more.py:1828:See also :func:`groupby_transform`, which can be used with this function
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\setuptools\_vendor\more_itertools\more.py:1843:def groupby_transform(iterable, keyfunc=None, valuefunc=None, reducefunc=None):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\setuptools\_vendor\more_itertools\more.py:1844:"""An extension of :func:`itertools.groupby` that can apply transformations
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\setuptools\_vendor\more_itertools\more.py:1856:>>> list(groupby_transform(iterable, keyfunc, valuefunc, reducefunc))
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\setuptools\_vendor\more_itertools\more.py:1861::func:`groupby_transform` is useful when grouping elements of an iterable
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\setuptools\_vendor\more_itertools\more.py:1870:>>> grouper = groupby_transform(iterable, itemgetter(0), itemgetter(1))
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\setuptools\_vendor\more_itertools\more.py:1879:ret = groupby(iterable, keyfunc)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\setuptools\_vendor\more_itertools\more.py:2428:"""Yield groups of consecutive items using :func:`itertools.groupby`.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\setuptools\_vendor\more_itertools\more.py:2469:for k, g in groupby(
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\setuptools\_vendor\more_itertools\more.py:2724:return ((k, ilen(g)) for k, g in groupby(iterable))
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\setuptools\_vendor\more_itertools\recipes.py:17:groupby,
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\setuptools\_vendor\more_itertools\recipes.py:168:g = groupby(iterable)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\setuptools\_vendor\more_itertools\recipes.py:431:return map(next, map(operator.itemgetter(1), groupby(iterable, key)))
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\setuptools\_vendor\tomli\_re.py:60:month_str,
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\setuptools\_vendor\tomli\_re.py:71:year, month, day = int(year_str), int(month_str), int(day_str)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\setuptools\_vendor\tomli\_re.py:73:return date(year, month, day)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\setuptools\_vendor\tomli\_re.py:84:return datetime(year, month, day, hour, minute, sec, micros, tzinfo=tz)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\setuptools\installer.py:53:# Take easy_install options into account, but do not override relevant
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\setuptools\msvc.py:255:# This redirection link is maintained by Microsoft.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\site-packages\setuptools\_entry_points.py:82:groups = itertools.groupby(sorted(eps, key=by_group), by_group)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\sqlite3\dbapi2.py:78:year, month, day = map(int, datepart.split(b"-"))
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\sqlite3\dbapi2.py:86:val = datetime.datetime(year, month, day, hours, minutes, seconds, microseconds)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\tkinter\ttk.py:767:direction, menu
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\tkinter\ttk.py:1588:direction: 'above', 'below', 'left', 'right', or 'flush'
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\tkinter\ttk.py:1589:Menubutton direction.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\tkinter\ttk.py:1594:'direction': kwargs.pop('direction', None)}
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\tkinter\__init__.py:2471:given direction
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\tkinter\__init__.py:2477:ipadx=amount - add internal padding in x direction
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\tkinter\__init__.py:2478:ipady=amount - add internal padding in y direction
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\tkinter\__init__.py:2479:padx=amount - add padding in x direction
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\tkinter\__init__.py:2480:pady=amount - add padding in y direction
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\tkinter\__init__.py:2523:anchor=NSEW (or subset) - position anchor according to given direction
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\tkinter\__init__.py:2533:master widget into account
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\tkinter\__init__.py:2571:ipadx=amount - add internal padding in x direction
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\tkinter\__init__.py:2572:ipady=amount - add internal padding in y direction
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\tkinter\__init__.py:2573:padx=amount - add padding in x direction
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\tkinter\__init__.py:2574:pady=amount - add padding in y direction
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\tkinter\__init__.py:3844:def mark_gravity(self, markName, direction=None):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\tkinter\__init__.py:3845:"""Change the gravity of a mark MARKNAME to DIRECTION (LEFT or RIGHT).
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\tkinter\__init__.py:3846:Return the current value if None is given for DIRECTION."""
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\tkinter\__init__.py:3848:(self._w, 'mark', 'gravity', markName, direction))
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\tkinter\__init__.py:4185:but zoom it with a factor of x in the X direction and y in the Y
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\tkinter\__init__.py:4186:direction.  If y is not given, the default value is the same as x.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\tkinter\__init__.py:4607:the X-direction. The value may have any of the forms
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\tkinter\__init__.py:4612:the Y-direction. The value may have any of the forms
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\tomllib\_re.py:60:month_str,
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\tomllib\_re.py:71:year, month, day = int(year_str), int(month_str), int(day_str)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\tomllib\_re.py:73:return date(year, month, day)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\tomllib\_re.py:84:return datetime(year, month, day, hour, minute, sec, micros, tzinfo=tz)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\turtledemo\clock.py:92:m = monat[z.month - 1]
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\turtledemo\round_dance.py:13:pairwise in opposite direction, with one
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\urllib\parse.py:571:# the last item is not a directory, so will not be taken into account
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\urllib\request.py:642:# maximum number of redirections to any single URL
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\urllib\request.py:645:# maximum total number of redirections (regardless of URL) before
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\urllib\request.py:647:max_redirections = 10
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\urllib\request.py:653:redirection response is received.  If a redirection should
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\urllib\request.py:665:# a POST MUST NOT cause a redirection without confirmation
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\urllib\request.py:700:# For security reasons we don't allow redirection to anything other
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\urllib\request.py:706:"%s - Redirection to url '%s' is not allowed" % (msg, newurl),
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\urllib\request.py:733:len(visited) >= self.max_redirections):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\urllib\request.py:2190:# For security reasons, we don't allow redirection to anything other
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\urllib\request.py:2199:" Redirection to url '%s' is not allowed." % newurl,
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\wsgiref\handlers.py:13:# Weekday and month names for HTTP date/time formatting; always English!
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\wsgiref\handlers.py:15:_monthname = [None, # Dummy so we can use 1-based month numbers
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\wsgiref\handlers.py:20:year, month, day, hh, mm, ss, wd, y, z = time.gmtime(timestamp)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\wsgiref\handlers.py:22:_weekdayname[wd], day, _monthname[month], year, hh, mm, ss
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\zipfile\__init__.py:395:self.date_time = date_time      # year, month, day, hour, min, sec
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\zipfile\__init__.py:1143:# seek actual file taking already buffered data into account
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\zipfile\__init__.py:1426:# If Zip64 extension structures are present, account for them
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\zipfile\__init__.py:1470:# Convert date/time code to (year, month, day, hour, min, sec)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\zoneinfo\_zoneinfo.py:546:_DAYS_BEFORE_MONTH = (
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\zoneinfo\_zoneinfo.py:580:def _ymd2ord(cls, year, month, day):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\zoneinfo\_zoneinfo.py:583:+ cls._DAYS_BEFORE_MONTH[month]
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\zoneinfo\_zoneinfo.py:584:+ (month > 2 and calendar.isleap(year))
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\zoneinfo\_zoneinfo.py:591:# We know year and month, we need to convert w, d into day of month
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\zoneinfo\_zoneinfo.py:595:# the range of the month.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\zoneinfo\_zoneinfo.py:596:first_day, days_in_month = calendar.monthrange(year, self.m)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\zoneinfo\_zoneinfo.py:604:# 3. Add 1 because month days are a 1-based index.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\zoneinfo\_zoneinfo.py:605:month_day = (self.d - (first_day + 1)) % 7 + 1
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\zoneinfo\_zoneinfo.py:609:month_day += (self.w - 1) * 7
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\zoneinfo\_zoneinfo.py:611:# month_day will only be > days_in_month if w was 5, and `w` means
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\zoneinfo\_zoneinfo.py:613:# end of the month and if so knock off 1 week.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\zoneinfo\_zoneinfo.py:614:if month_day > days_in_month:
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\zoneinfo\_zoneinfo.py:615:month_day -= 7
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\zoneinfo\_zoneinfo.py:617:ordinal = self._ymd2ord(year, self.m, month_day)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:15:__all__ = ["IllegalMonthError", "IllegalWeekdayError", "setfirstweekday",
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:16:"firstweekday", "isleap", "leapdays", "weekday", "monthrange",
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:17:"monthcalendar", "prmonth", "month", "prcal", "calendar",
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:18:"timegm", "month_name", "month_abbr", "day_name", "day_abbr",
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:21:"Day", "Month", "JANUARY", "FEBRUARY", "MARCH",
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:31:class IllegalMonthError(ValueError):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:32:def __init__(self, month):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:33:self.month = month
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:35:return "bad month number %r; must be 1-12" % self.month
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:57:# Constants for months
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:59:class Month(IntEnum):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:86:# Number of days per month (except for February in leap years)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:89:# This module used to have hard-coded lists of day and month names, as
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:94:class _localized_month:
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:96:_months = [datetime.date(2001, i+1, 1).strftime for i in range(12)]
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:97:_months.insert(0, lambda x: "")
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:103:funcs = self._months[i]
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:136:# Full and abbreviated names of months (1-based arrays!!!)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:137:month_name = _localized_month('%B')
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:138:month_abbr = _localized_month('%b')
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:154:def weekday(year, month, day):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:155:"""Return weekday (0-6 ~ Mon-Sun) for year, month (1-12), day (1-31)."""
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:158:return Day(datetime.date(year, month, day).weekday())
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:161:def monthrange(year, month):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:163:year, month."""
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:164:if not 1 <= month <= 12:
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:165:raise IllegalMonthError(month)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:166:day1 = weekday(year, month, 1)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:167:ndays = mdays[month] + (month == FEBRUARY and isleap(year))
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:171:def _monthlen(year, month):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:172:return mdays[month] + (month == FEBRUARY and isleap(year))
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:175:def _prevmonth(year, month):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:176:if month == 1:
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:179:return year, month-1
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:182:def _nextmonth(year, month):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:183:if month == 12:
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:186:return year, month+1
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:214:def itermonthdates(self, year, month):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:216:Return an iterator for one month. The iterator will yield datetime.date
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:218:dates outside the specified month.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:220:for y, m, d in self.itermonthdays3(year, month):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:223:def itermonthdays(self, year, month):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:225:Like itermonthdates(), but will yield day numbers. For days outside
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:226:the specified month the day number is 0.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:228:day1, ndays = monthrange(year, month)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:235:def itermonthdays2(self, year, month):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:237:Like itermonthdates(), but will yield (day number, weekday number)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:238:tuples. For days outside the specified month the day number is 0.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:240:for i, d in enumerate(self.itermonthdays(year, month), self.firstweekday):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:243:def itermonthdays3(self, year, month):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:245:Like itermonthdates(), but will yield (year, month, day) tuples.  Can be
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:248:day1, ndays = monthrange(year, month)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:251:y, m = _prevmonth(year, month)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:252:end = _monthlen(y, m) + 1
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:256:yield year, month, d
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:257:y, m = _nextmonth(year, month)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:261:def itermonthdays4(self, year, month):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:263:Like itermonthdates(), but will yield (year, month, day, day_of_week) tuples.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:266:for i, (y, m, d) in enumerate(self.itermonthdays3(year, month)):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:269:def monthdatescalendar(self, year, month):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:271:Return a matrix (list of lists) representing a month's calendar.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:274:dates = list(self.itermonthdates(year, month))
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:277:def monthdays2calendar(self, year, month):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:279:Return a matrix representing a month's calendar.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:281:(day number, weekday number) tuples. Day numbers outside this month
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:284:days = list(self.itermonthdays2(year, month))
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:287:def monthdayscalendar(self, year, month):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:289:Return a matrix representing a month's calendar.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:290:Each row represents a week; days outside this month are zero.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:292:days = list(self.itermonthdays(year, month))
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:298:value is a list of month rows. Each month row contains up to width months.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:299:Each month contains between 4 and 6 weeks and each week contains 1-7
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:302:months = [self.monthdatescalendar(year, m) for m in Month]
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:303:return [months[i:i+width] for i in range(0, len(months), width) ]
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:309:(day number, weekday number) tuples. Day numbers outside this month are
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:312:months = [self.monthdays2calendar(year, m) for m in Month]
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:313:return [months[i:i+width] for i in range(0, len(months), width) ]
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:319:Day numbers outside this month are zero.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:321:months = [self.monthdayscalendar(year, m) for m in Month]
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:322:return [months[i:i+width] for i in range(0, len(months), width) ]
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:369:def formatmonthname(self, theyear, themonth, width, withyear=True):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:371:Return a formatted month name.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:373:s = month_name[themonth]
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:378:def prmonth(self, theyear, themonth, w=0, l=0):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:380:Print a month's calendar.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:382:print(self.formatmonth(theyear, themonth, w, l), end='')
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:384:def formatmonth(self, theyear, themonth, w=0, l=0):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:386:Return a month's calendar string (multi-line).
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:390:s = self.formatmonthname(theyear, themonth, 7 * (w + 1) - 1)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:395:for week in self.monthdays2calendar(theyear, themonth):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:414:# months in this row
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:415:months = range(m*i+1, min(m*(i+1)+1, 13))
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:417:names = (self.formatmonthname(theyear, k, colwidth, False)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:418:for k in months)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:421:headers = (header for k in months)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:453:# CSS class for the days before and after current month
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:456:# CSS class for the month's head
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:457:cssclass_month_head = "month"
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:459:# CSS class for the month
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:460:cssclass_month = "month"
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:473:# day outside month
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:499:def formatmonthname(self, theyear, themonth, withyear=True):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:501:Return a month name as a table row.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:504:s = '%s %s' % (month_name[themonth], theyear)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:506:s = '%s' % month_name[themonth]
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:508:self.cssclass_month_head, s)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:510:def formatmonth(self, theyear, themonth, withyear=True):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:512:Return a formatted month as a table.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:517:self.cssclass_month))
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:519:a(self.formatmonthname(theyear, themonth, withyear=withyear))
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:523:for week in self.monthdays2calendar(theyear, themonth):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:543:# months in this row
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:544:months = range(i, min(i+width, 13))
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:546:for m in months:
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:548:a(self.formatmonth(theyear, m, withyear=False))
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:606:month and weekday names in the specified locale.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:619:def formatmonthname(self, theyear, themonth, width, withyear=True):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:621:return super().formatmonthname(theyear, themonth, width, withyear)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:627:month and weekday names in the specified locale.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:639:def formatmonthname(self, theyear, themonth, withyear=True):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:641:return super().formatmonthname(theyear, themonth, withyear)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:653:monthcalendar = c.monthdayscalendar
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:657:prmonth = c.prmonth
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:658:month = c.formatmonth
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:663:# Spacing of month columns for multi-column year calendar
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:685:year, month, day, hour, minute, second = tuple[:6]
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:686:days = datetime.date(year, month, 1).toordinal() - _EPOCH_ORD + day - 1
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:711:help="spacing between months (default 6)"
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:714:"-m", "--months",
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:716:help="months per row (default 3)"
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:726:help="locale to use for month and weekday names"
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:745:"month",
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:747:help="month number (1-12, text only)"
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:770:elif options.month is None:
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:781:if options.month is None:
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:783:optdict["m"] = options.months
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:786:elif options.month is None:
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\calendar.py:789:result = cal.formatmonth(options.year, options.month, **optdict)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\codecs.py:237:# encode input (taking the buffer into account)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\codecs.py:320:# decode input (taking the buffer into account)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\codecs.py:776:In the other direction, data is read from the underlying stream using
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\difflib.py:257:# elements that account for more than 1 + 1% of the total elements, and
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\fnmatch.py:4:fnmatchcase(FILENAME, PATTERN) always takes case in account.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\ftplib.py:537:'''Send new account name.'''
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\ftplib.py:939:print("Could not open account file -- using anonymous login.",
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\ftplib.py:945:# no account for host
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\ftplib.py:946:print("No account -- using anonymous login.", file=sys.stderr)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\heapq.py:341:direction = -1
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\heapq.py:346:direction = 1
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\heapq.py:352:h_append([next(), order * direction, next])
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\heapq.py:376:h_append([key(value), order * direction, value, next])
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\imaplib.py:1425:Months = ' Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split(' ')
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\imaplib.py:1426:Mon2num = {s.encode():n+1 for n, s in enumerate(Months[1:])}
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\imaplib.py:1523:fmt = '"%d-{}-%Y %H:%M:%S %z"'.format(Months[dt.month])
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\inspect.py:2565:# account that the first positional argument
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\ipaddress.py:1447:# takes the extra info into account.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\ipaddress.py:2177:# takes the extra info into account.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\locale.py:215:but takes the current locale into account.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\locale.py:298:"""Convert float to string, taking the locale into account."""
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\netrc.py:120:login = account = password = ''
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\netrc.py:130:self.hosts[entryname] = (login, account, password)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\netrc.py:135:elif tt == 'account':
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\netrc.py:136:account = lexer.get_token()
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\netrc.py:167:"""Return a (user, account, password) tuple for given host."""
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\netrc.py:182:rep += f"\taccount {attrs[1]}\n"
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\nntplib.py:247:month = int(date_str[-4:-2])
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\nntplib.py:255:return datetime.datetime(year, month, day, hours, minutes, seconds)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\nntplib.py:277:date_str = "{0:02d}{1.month:02d}{1.day:02d}".format(y, dt)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\nntplib.py:279:date_str = "{0:04d}{1.month:02d}{1.day:02d}".format(y, dt)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\pickletools.py:1175:2.2.2, mapping to ints 1 and 0.  For compatibility in both directions,
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\pipes.py:26:Directions:
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\plistlib.py:140:_dateParser = re.compile(r"(?P<year>\d\d\d\d)(?:-(?P<month>\d\d)(?:-(?P<day>\d\d)(?:T(?P<hour>\d\d)(?::(?P<minute>\d\d)(?::(?P<second>\d\d))?)?)?)?)?Z", re.ASCII)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\plistlib.py:144:order = ('year', 'month', 'day', 'hour', 'minute', 'second')
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\plistlib.py:157:d.year, d.month, d.day,
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\pstats.py:200:# list the tuple indices and directions for sorting,
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\pstats.py:523:to least significant), and sort direction (ascending or descending) for
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\pstats.py:532:for index, direction in self.comp_select_list:
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\pstats.py:536:return -direction
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\pstats.py:538:return direction
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\secrets.py:2:managing secrets such as account authentication, tokens, and similar.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\smtplib.py:469:# we have to take the old-style auth advertisement into account,
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\ssl.py:593:def msg_cb(conn, direction, version, content_type, msg_type, data):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\ssl.py:598:direction
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\ssl.py:629:def inner(conn, direction, version, content_type, msg_type, data):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\ssl.py:651:return callback(conn, direction, version,
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\ssl.py:1405:Month is one of: Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\ssl.py:1411:months = (
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\ssl.py:1415:time_format = ' %d %H:%M:%S %Y GMT' # NOTE: no month, fixed GMT
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\ssl.py:1417:month_number = months.index(cert_time[:3].title()) + 1
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\ssl.py:1422:# found valid month
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\ssl.py:1426:return timegm((tt[0], month_number) + tt[2:6])
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\statistics.py:137:from itertools import count, groupby, repeat
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\statistics.py:191:for typ, values in groupby(data, type):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\statistics.py:225:for typ, values in groupby(data, type):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\statistics.py:403:for _, g in groupby(val_pos, key=itemgetter(0)):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\statistics.py:1048:the strength and direction of a linear relationship.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\stringprep.py:268:return unicodedata.bidirectional(code) in ("R","AL")
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\stringprep.py:272:return unicodedata.bidirectional(code) == "L"
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\traceback.py:501:# that into account when calculating the length of the line.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\turtle.py:31:the direction it is facing, drawing a line as it moves. Give it the
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\turtle.py:1623:Move the turtle forward by the specified distance, in the direction
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\turtle.py:1646:Move the turtle backward by distance, opposite to the direction the
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\turtle.py:1918:Here are some common directions in degrees:
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\turtle.py:1949:current pen position. Draw the arc in counterclockwise direction
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\turtle.py:1950:if radius is positive, otherwise in clockwise direction. Finally
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\turtle.py:1951:the direction of the turtle is changed by the amount of extent.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\turtle.py:2849:stretch_len is stretchfactor in direction of turtles orientation.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\turtle.py:2883:turtle's heading (direction of movement).
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\turtle.py:2900:"""Rotate the turtleshape to point in the specified direction
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\turtle.py:2904:Rotate the turtleshape to point in the direction specified by angle,
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\turtle.py:2906:heading (direction of movement).
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\turtle.py:2931:Rotate the turtleshape to point in the direction specified by angle,
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\turtle.py:2933:heading (direction of movement).
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\turtle.py:2936:turtle (its direction of movement).
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\turtle.py:2972:but do NOT change the turtle's heading (direction of movement).
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\zipimport.py:644:(d >> 5) & 0xF,     # bits 5..8: month
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:32:# both directions.  Difference:  Dates.py calls January 1 of year 0 day
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:40:_DAYS_IN_MONTH = [-1, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:42:_DAYS_BEFORE_MONTH = [-1]  # -1 is a placeholder for indexing purposes.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:44:for dim in _DAYS_IN_MONTH[1:]:
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:45:_DAYS_BEFORE_MONTH.append(dbm)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:58:def _days_in_month(year, month):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:59:"year, month -> number of days in that month in that year."
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:60:assert 1 <= month <= 12, month
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:61:if month == 2 and _is_leap(year):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:63:return _DAYS_IN_MONTH[month]
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:65:def _days_before_month(year, month):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:66:"year, month -> number of days in year preceding first day of month."
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:67:assert 1 <= month <= 12, 'month must be in 1..12'
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:68:return _DAYS_BEFORE_MONTH[month] + (month > 2 and _is_leap(year))
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:70:def _ymd2ord(year, month, day):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:71:"year, month, day -> ordinal, considering 01-Jan-0001 as day 1."
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:72:assert 1 <= month <= 12, 'month must be in 1..12'
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:73:dim = _days_in_month(year, month)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:76:_days_before_month(year, month) +
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:96:"ordinal -> (year, month, day), considering 01-Jan-0001 as day 1."
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:142:# the month via an estimate that's either exact or one too large.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:145:month = (n + 50) >> 5
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:146:preceding = _DAYS_BEFORE_MONTH[month] + (month > 2 and leapyear)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:148:month -= 1
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:149:preceding -= _DAYS_IN_MONTH[month] + (month == 2 and leapyear)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:151:assert 0 <= n < _days_in_month(year, month)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:153:# Now the year and month are correct, and n is the offset from the
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:154:# start of that month:  we're done!
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:155:return year, month, n+1
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:157:# Month and day names.  For localized versions, see the calendar module.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:158:_MONTHNAMES = [None, "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:165:dnum = _days_before_month(y, m) + d
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:360:month = int(dtstr[pos:pos + 2])
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:368:return [year, month, day]
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:525:def _check_date_fields(year, month, day):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:527:month = _index(month)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:531:if not 1 <= month <= 12:
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:532:raise ValueError('month must be in 1..12', month)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:533:dim = _days_in_month(year, month)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:536:return year, month, day
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:932:year, month, day
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:934:__slots__ = '_year', '_month', '_day', '_hashcode'
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:936:def __new__(cls, year, month=None, day=None):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:941:year, month, day (required, base 1)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:943:if (month is None and
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:960:year, month, day = _check_date_fields(year, month, day)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:963:self._month = month
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:986:January 1 of year 1 is day 1.  Only the year, month and day are
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:1025:self._month,
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:1038:_MONTHNAMES[self._month],
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:1065:return "%04d-%02d-%02d" % (self._year, self._month, self._day)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:1076:def month(self):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:1077:"""month (1-12)"""
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:1078:return self._month
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:1090:return _build_struct_time(self._year, self._month, self._day,
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:1094:"""Return proleptic Gregorian ordinal for the year, month and day.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:1096:January 1 of year 1 is day 1.  Only the year, month and day values
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:1099:return _ymd2ord(self._year, self._month, self._day)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:1101:def replace(self, year=None, month=None, day=None):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:1105:if month is None:
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:1106:month = self._month
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:1109:return type(self)(year, month, day)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:1140:y, m, d = self._year, self._month, self._day
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:1141:y2, m2, d2 = other._year, other._month, other._day
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:1199:today = _ymd2ord(self._year, self._month, self._day)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:1216:return bytes([yhi, ylo, self._month, self._day]),
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:1219:yhi, ylo, self._month, self._day = string
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:1678:"""datetime(year, month, day[, hour[, minute[, second[, microsecond[,tzinfo]]]]])
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:1680:The year, month and day arguments are required. tzinfo may be None, or an
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:1685:def __new__(cls, year, month=None, day=None, hour=0, minute=0, second=0,
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:1700:self.__setstate(year, month)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:1703:year, month, day = _check_date_fields(year, month, day)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:1709:self._month = month
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:1844:return cls(date.year, date.month, date.day,
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:1888:return _build_struct_time(self.year, self.month, self.day,
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:1940:y, m, d = self.year, self.month, self.day
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:1946:return date(self._year, self._month, self._day)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:1957:def replace(self, year=None, month=None, day=None, hour=None,
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:1963:if month is None:
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:1964:month = self.month
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:1979:return type(self)(year, month, day, hour, minute, second,
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:2031:_MONTHNAMES[self._month],
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:2052:s = ("%04d-%02d-%02d%c" % (self._year, self._month, self._day, sep) +
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:2065:L = [self._year, self._month, self._day,  # These are never zero
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:2191:return _cmp((self._year, self._month, self._day,
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:2194:(other._year, other._month, other._day,
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:2203:diff = self - other     # this will take offsets into account
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:2263:days = _ymd2ord(self.year, self.month, self.day)
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:2274:m = self._month
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:2292:self._month = m - 128
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydatetime.py:2295:self._month = m
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydecimal.py:3469:"""Returns the number closest to self, in the direction towards other.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydecimal.py:3472:(excluding self) that is in the direction towards other,
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydecimal.py:4944:"""Returns the number closest to a, in direction towards b.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_pydecimal.py:4947:operand (but not the first operand) that is in the direction
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_strptime.py:36:f_month -- full month names (13-item list; dummy value in [0], which
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_strptime.py:38:a_month -- abbreviated month names (13-item list, dummy value in
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_strptime.py:71:self.__calc_month()
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_strptime.py:88:def __calc_month(self):
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_strptime.py:89:# Set self.f_month and self.a_month using the calendar module.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_strptime.py:90:a_month = [calendar.month_abbr[i].lower() for i in range(13)]
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_strptime.py:91:f_month = [calendar.month_name[i].lower() for i in range(13)]
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_strptime.py:92:self.a_month = a_month
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_strptime.py:93:self.f_month = f_month
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_strptime.py:121:(self.f_month[3], '%B'), (self.a_weekday[2], '%a'),
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_strptime.py:122:(self.a_month[3], '%b'), (self.am_pm[1], '%p'),
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_strptime.py:207:'B': self.__seqToRE(self.locale_time.f_month[1:], 'B'),
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_strptime.py:208:'b': self.__seqToRE(self.locale_time.a_month[1:], 'b'),
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_strptime.py:340:month = day = 1
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_strptime.py:371:month = int(found_dict['m'])
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_strptime.py:373:month = locale_time.f_month.index(found_dict['B'].lower())
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_strptime.py:375:month = locale_time.a_month.index(found_dict['b'].lower())
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_strptime.py:492:if month == 2 and day == 29:
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_strptime.py:508:month = datetime_result.month
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_strptime.py:520:julian = datetime_date(year, month, day).toordinal() - \
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_strptime.py:528:month = datetime_result.month
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_strptime.py:531:weekday = datetime_date(year, month, day).weekday()
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\_strptime.py:541:return (year, month, day,
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\common.py:306:项目代码即英文目录名（如 bank_ledger_match）；若传入中文任务名，
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\routes_blm.py:27:from audit_workflow.bank_ledger_match import pipeline as blm_pipeline
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\routes_blm.py:28:from audit_workflow.bank_ledger_match import file_detector
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\routes_blm.py:29:from audit_workflow.bank_ledger_match.llm_cleaner import normalize_ledger_columns
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\routes_blm.py:119:@router.post("/workflow/bank_ledger_match/match")
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\routes_blm.py:123:task_name: str = Form("bank_ledger_match"),
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\routes_blm.py:146:@router.post("/workflow/bank_ledger_match/approve")
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\routes_blm.py:159:@router.post("/workflow/bank_ledger_match/verify")
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\routes_blm.py:163:task_name: str = Form("bank_ledger_match"),
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\routes_blm.py:201:task_name: str = Form("bank_ledger_match"),
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\routes_blm.py:342:task_name: str = "bank_ledger_match",
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\routes_blm.py:359:task_name: str = Form("bank_ledger_match"),
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\routes_blm.py:408:@router.post("/workflow/bank_ledger_match/clean")
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\routes_blm.py:409:def workflow_bank_ledger_match_clean(
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\routes_blm.py:412:task_name: str = Form("bank_ledger_match"),
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\routes_blm.py:437:@router.post("/workflow/bank_ledger_match/clean_bank")
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\routes_blm.py:438:def workflow_bank_ledger_match_clean_bank(
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\routes_blm.py:441:task_name: str = Form("bank_ledger_match"),
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\routes_blm.py:471:@router.post("/workflow/bank_ledger_match/clean_ledger")
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\routes_blm.py:472:def workflow_bank_ledger_match_clean_ledger(
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\routes_blm.py:475:task_name: str = Form("bank_ledger_match"),
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\routes_blm.py:509:@router.post("/workflow/bank_ledger_match/check")
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\routes_blm.py:510:def workflow_bank_ledger_match_check(
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\routes_blm.py:512:task_name: str = Form("bank_ledger_match"),
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\routes_blm.py:515:Step 4 - Check: 基于当前 clean 数据实时重新生成 monthly_flow_check.csv，
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\routes_blm.py:520:# 构建配置并重新生成 monthly_flow_check.csv
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\routes_blm.py:543:check_path = os.path.join(out_dir, "matches", "monthly_flow_check.csv")
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\routes_blm.py:547:"error": "monthly_flow_check.csv 生成失败。",
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\routes_blm.py:576:@router.post("/workflow/bank_ledger_match/fill")
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\routes_blm.py:577:def workflow_bank_ledger_match_fill(
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\routes_blm.py:580:task_name: str = Form("bank_ledger_match"),
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\routes_blm.py:610:@router.post("/workflow/bank_ledger_match/fill_llm")
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\routes_blm.py:611:def workflow_bank_ledger_match_fill_llm(
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\routes_blm.py:614:task_name: str = Form("bank_ledger_match"),
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\routes_blm.py:618:return workflow_bank_ledger_match_fill(
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\routes_osm.py:110:"monthly_summary": str(summary_path),
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\routes_osm.py:219:month = ""
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\routes_osm.py:223:month = f"2022-{int(m.group(1)):02d}"
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\routes_osm.py:227:script_path, str(xlsx_path), sheet, file, month, sheet_type,
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\routes_osm.py:242:script_path, str(xlsx_path), sheet, file, month, sheet_type,
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\routes_osm.py:343:"monthly_summary": {"path": str(result["monthly_summary"]), "rows": _count_rows(result["monthly_summary"])},
+C:\Users\DengKaina\Desktop\Audit_workflow\docs\backend_endpoints.md:118:curl -F "file=@./bank.xlsm" -F "dest=inputs/桂平金山/bank_ledger_match/" \
+C:\Users\DengKaina\Desktop\Audit_workflow\docs\backend_endpoints.md:121:- 返回: `{"ok": true, "path": "inputs/桂平金山/bank_ledger_match/bank.xlsm"}`
+C:\Users\DengKaina\Desktop\Audit_workflow\docs\backend_endpoints.md:152:- `task_name` (string, 可选, 默认 `bank_ledger_match`)
+C:\Users\DengKaina\Desktop\Audit_workflow\docs\backend_endpoints.md:156:curl -X POST -F "customer_name=桂平金山" -F "task_name=bank_ledger_match" \
+C:\Users\DengKaina\Desktop\Audit_workflow\docs\backend_endpoints.md:167:"task_yml_path": "outputs/桂平金山/bank_ledger_match/task.yml",
+C:\Users\DengKaina\Desktop\Audit_workflow\docs\backend_endpoints.md:176:- `task_name` (query, 可选, 默认 `bank_ledger_match`)
+C:\Users\DengKaina\Desktop\Audit_workflow\docs\backend_endpoints.md:179:curl "http://127.0.0.1:8000/workflow/config?customer_name=桂平金山&task_name=bank_ledger_match"
+C:\Users\DengKaina\Desktop\Audit_workflow\docs\backend_endpoints.md:187:- `task_name` (string, 可选, 默认 `bank_ledger_match`)
+C:\Users\DengKaina\Desktop\Audit_workflow\docs\backend_endpoints.md:191:curl -X POST -F "customer_name=桂平金山" -F "task_name=bank_ledger_match" \
+C:\Users\DengKaina\Desktop\Audit_workflow\docs\backend_endpoints.md:197:#### 17. POST /workflow/bank_ledger_match/clean（Step 3）
+C:\Users\DengKaina\Desktop\Audit_workflow\docs\backend_endpoints.md:201:- `task_name` (string, 可选, 默认 `bank_ledger_match`)
+C:\Users\DengKaina\Desktop\Audit_workflow\docs\backend_endpoints.md:206:http://127.0.0.1:8000/workflow/bank_ledger_match/clean
+C:\Users\DengKaina\Desktop\Audit_workflow\docs\backend_endpoints.md:210:#### 18. POST /workflow/bank_ledger_match/check（Step 4）
+C:\Users\DengKaina\Desktop\Audit_workflow\docs\backend_endpoints.md:211:读取 `monthly_flow_check.csv`，返回数据完备性报告（按月/账号检查流入流出是否一致）。
+C:\Users\DengKaina\Desktop\Audit_workflow\docs\backend_endpoints.md:214:- `task_name` (string, 可选, 默认 `bank_ledger_match`)
+C:\Users\DengKaina\Desktop\Audit_workflow\docs\backend_endpoints.md:218:http://127.0.0.1:8000/workflow/bank_ledger_match/check
+C:\Users\DengKaina\Desktop\Audit_workflow\docs\backend_endpoints.md:230:- 注意: `monthly_flow_check.csv` 由 Match 步骤生成，Check 需在 Match 之后执行。
+C:\Users\DengKaina\Desktop\Audit_workflow\docs\backend_endpoints.md:232:#### 19. POST /workflow/bank_ledger_match/match（Step 5）
+C:\Users\DengKaina\Desktop\Audit_workflow\docs\backend_endpoints.md:233:执行银行流水 ↔ 序时账自动匹配，生成 `matches/matches.csv`、`unmatched_bank.csv`、`unmatched_ledger.csv`、`monthly_flow_check.csv`。
+C:\Users\DengKaina\Desktop\Audit_workflow\docs\backend_endpoints.md:241:http://127.0.0.1:8000/workflow/bank_ledger_match/match
+C:\Users\DengKaina\Desktop\Audit_workflow\docs\backend_endpoints.md:245:#### 20. POST /workflow/bank_ledger_match/fill（Step 6）
+C:\Users\DengKaina\Desktop\Audit_workflow\docs\backend_endpoints.md:254:http://127.0.0.1:8000/workflow/bank_ledger_match/fill
+C:\Users\DengKaina\Desktop\Audit_workflow\docs\backend_endpoints.md:262:#### 21. POST /workflow/bank_ledger_match/approve
+C:\Users\DengKaina\Desktop\Audit_workflow\docs\backend_endpoints.md:267:#### 22. POST /workflow/bank_ledger_match/verify
+C:\Users\DengKaina\Desktop\Audit_workflow\docs\backend_endpoints.md:304:settlement_monthly_summary.csv  ← 月度结算汇总
+C:\Users\DengKaina\Desktop\Audit_workflow\docs\backend_endpoints.md:316:monthly_match_summary.csv       ← 月度匹配汇总
+C:\Users\DengKaina\Desktop\Audit_workflow\docs\backend_endpoints.md:371:- 统一 17 个标准字段: `partner_txn_id`, `amount`, `rmb_amount`, `fee`, `settlement`, `rmb_settlement`, `currency`, `rate`, `payment_time`, `settlement_time`, `type`, `status`, `remarks`, `month`, `source_file` 等
+C:\Users\DengKaina\Desktop\Audit_workflow\docs\backend_endpoints.md:387:"monthly_summary": "outputs/ABC/outbound_settlement_match/clean/settlement_monthly_summary.csv"
+C:\Users\DengKaina\Desktop\Audit_workflow\docs\backend_endpoints.md:473:"monthly_summary": {"path": "...", "rows": 13}
+C:\Users\DengKaina\Desktop\Audit_workflow\docs\backend_endpoints.md:545:http://127.0.0.1:8000/files/upload?dest=inputs/桂平金山/bank_ledger_match/
+C:\Users\DengKaina\Desktop\Audit_workflow\docs\backend_endpoints.md:556:http://127.0.0.1:8000/workflow/bank_ledger_match/clean
+C:\Users\DengKaina\Desktop\Audit_workflow\docs\backend_endpoints.md:558:# 6. Step 5: 匹配（会生成 monthly_flow_check.csv）
+C:\Users\DengKaina\Desktop\Audit_workflow\docs\backend_endpoints.md:560:http://127.0.0.1:8000/workflow/bank_ledger_match/match
+C:\Users\DengKaina\Desktop\Audit_workflow\docs\backend_endpoints.md:564:http://127.0.0.1:8000/workflow/bank_ledger_match/check
+C:\Users\DengKaina\Desktop\Audit_workflow\docs\backend_endpoints.md:568:http://127.0.0.1:8000/workflow/bank_ledger_match/fill
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\bank_1852c970.py:10:config: 配置字典，包含 sheet, bank_name, account_no, id 等字段
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\bank_1852c970.py:18:account_no = config.get("account_no", "")
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\bank_1852c970.py:157:counterparty_account_raw = row.iloc[7] if pd.notna(row.iloc[7]) else ""
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\bank_1852c970.py:158:counterparty_account = str(counterparty_account_raw).strip() if counterparty_account_raw else ""
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\bank_1852c970.py:193:"account_no": account_no,
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\bank_1852c970.py:200:"counterparty_account": counterparty_account,
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\bank_2a5b5c39.py:10:config: 配置字典，包含sheet, bank_name, account_no, id等字段
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\bank_2a5b5c39.py:18:account_no = config.get("account_no", "")
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\bank_2a5b5c39.py:77:month = int(transaction_date.split("-")[1])
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\bank_2a5b5c39.py:78:if month == 12:
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\bank_2a5b5c39.py:148:"account_no": account_no,
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\bank_2a5b5c39.py:155:"counterparty_account": "",
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\bank_67319d16.py:11:account_no = config.get("account_no", "")
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\bank_67319d16.py:55:month_part = transaction_date.split('-')[1] if '-' in transaction_date else ""
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\bank_67319d16.py:56:if month_part == '12':
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\bank_67319d16.py:147:"account_no": account_no,
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\bank_67319d16.py:154:"counterparty_account": "",
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\bank_6deeb491.py:10:config: 配置字典，包含sheet, bank_name, account_no, id等字段
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\bank_6deeb491.py:18:account_no = config.get("account_no", "")
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\bank_6deeb491.py:85:col_counterparty_account = '对手方账号'
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\bank_6deeb491.py:111:counterparty_account = safe_str(row.get(col_counterparty_account, ''))
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\bank_6deeb491.py:134:year, month, day = match.groups()
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\bank_6deeb491.py:135:transaction_date = f"{year}-{month.zfill(2)}-{day.zfill(2)}"
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\bank_6deeb491.py:226:'account_no': account_no,
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\bank_6deeb491.py:233:'counterparty_account': counterparty_account,
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\bank_b48cb167.py:20:account_no = config.get("account_no", "")
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\bank_b48cb167.py:73:counterparty_account_raw = row.iloc[1] if len(row) > 1 else None
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\bank_b48cb167.py:74:counterparty_account = str(counterparty_account_raw).strip() if pd.notna(counterparty_account_raw) else ""
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\bank_b48cb167.py:76:# 本方账号 (通常用于校验，但输出需要 account_no)
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\bank_b48cb167.py:77:# my_account_raw = row.iloc[2] if len(row) > 2 else None
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\bank_b48cb167.py:154:for v in [transaction_date, counterparty_account, flow_flag, str(amount_val), balance_str, counterparty_name, summary, description, note, extra]:
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\bank_b48cb167.py:166:"account_no": account_no,
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\bank_b48cb167.py:173:"counterparty_account": counterparty_account,
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\bank_db8b6edc.py:45:account_no = config.get("account_no", "")
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\bank_db8b6edc.py:132:if dt.month == 12:
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\bank_db8b6edc.py:198:counterparty_account = ""
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\bank_db8b6edc.py:222:"account_no": account_no,
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\bank_db8b6edc.py:229:"counterparty_account": counterparty_account,
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_01650118.py:10:account_no = config.get("account_no", "")
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_01650118.py:101:'account_no_raw', 'year', 'month', 'day', 'transaction_date_raw',
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_01650118.py:102:'direction_hint', 'voucher_no', 'summary', 'subject',
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_01650118.py:129:# 标题行在索引0，其 'account_no_raw' 可能是 NaN 或空
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_01650118.py:130:# 数据行的 'account_no_raw' 应该是账号
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_01650118.py:131:df = df.dropna(subset=['account_no_raw'], how='all')
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_01650118.py:133:# 剔除 account_no_raw 为空的行（如标题行）
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_01650118.py:134:df = df[df['account_no_raw'].astype(str).str.strip() != '']
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_01650118.py:137:# 月份在 'month' 列 (索引2)
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_01650118.py:138:if 'month' in df.columns:
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_01650118.py:139:df = df[df['month'].astype(str).str.strip() != '12']
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_01650118.py:151:account_no_raw = get_val('account_no_raw')
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_01650118.py:153:month = get_val('month')
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_01650118.py:156:direction_hint = get_val('direction_hint')
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_01650118.py:178:if not transaction_date and year and month and day:
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_01650118.py:181:m = int(float(month)) if month else 0
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_01650118.py:222:# 这里我们假设不会同时出现，或者取较大者？保守起见，设为空或根据 direction_hint
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_01650118.py:223:# 为了安全，我们检查 direction_hint
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_01650118.py:224:if direction_hint in ['收', '收到']:
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_01650118.py:227:elif direction_hint in ['付', '支付']:
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_01650118.py:240:str(account_no_raw), str(year), str(month), str(day),
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_01650118.py:241:str(date_raw), str(direction_hint), str(voucher_no),
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_01650118.py:256:'account_no': account_no,
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_62dcde35.py:10:config: 配置字典，包含 sheet, bank_name, account_no, id 等字段
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_62dcde35.py:25:account_no_config = config.get("account_no", "")
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_62dcde35.py:66:month_val = row.get("月", "")
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_62dcde35.py:73:elif pd.notna(month_val) or pd.notna(day_val):
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_62dcde35.py:98:related_account = str(row.get("相关账户", "")) if pd.notna(row.get("相关账户", "")) else ""
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_62dcde35.py:99:related_account = related_account.strip()
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_62dcde35.py:166:# bank_name 和 account_no 填充
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_62dcde35.py:168:account_no = ""
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_62dcde35.py:171:if related_account and "银行存款" in related_account:
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_62dcde35.py:173:bank_name = related_account
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_62dcde35.py:174:account_no = related_account
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_62dcde35.py:175:elif related_account:
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_62dcde35.py:177:bank_name = related_account
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_62dcde35.py:178:account_no = related_account
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_62dcde35.py:183:if not account_no and account_no_config:
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_62dcde35.py:184:account_no = account_no_config
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_62dcde35.py:200:if not counterparty_name and related_account:
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_62dcde35.py:203:parts = related_account.split("｜")
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_62dcde35.py:210:str(month_val) if pd.notna(month_val) else "",
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_62dcde35.py:215:related_account,
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_62dcde35.py:233:"account_no": account_no,
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_783125d4.py:10:account_no = config.get("account_no", "")
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_783125d4.py:67:if str(account_no) in str(s) or str(bank_name) in str(s):
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_783125d4.py:123:month = int(transaction_date.split('-')[1])
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_783125d4.py:124:if month == 12:
+C:\Users\DengKaina\Desktop\Audit_workflow\generated_parsers\ledger_783125d4.py:199:"account_no": account_no,
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\preprocess_bank_data.py:4:将原始 Excel 文件转换为 bank_ledger_match 工具所需的标准格式。
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\preprocess_bank_data.py:43:"bank_name", "account_no", "transaction_date", "flow", "amount",
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\preprocess_bank_data.py:44:"bank_debit", "bank_credit", "counterparty_name", "counterparty_account",
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\preprocess_bank_data.py:50:"bank_name", "account_no", "transaction_date", "flow", "amount",
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\preprocess_bank_data.py:93:account_no = ""
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\preprocess_bank_data.py:96:account_no = str(val).replace("账号:", "").replace("账号：", "").strip()
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\preprocess_bank_data.py:107:"对方账号": "counterparty_account",
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\preprocess_bank_data.py:146:"account_no": account_no,
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\preprocess_bank_data.py:153:"counterparty_account": str(row.get("counterparty_account", "")).strip() if pd.notna(row.get("counterparty_account")) else "",
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\preprocess_bank_data.py:172:"counterparty_account": "对方账号",
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\preprocess_bank_data.py:235:"account_no": "",
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\test_detect_llm.py:17:"task_name": "bank_ledger_match",
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\test_ledger_clean_phase1.py:10:2. 解析器诊断（排查 account_no/bank_name 为空问题）:
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\test_ledger_clean_phase1.py:13:- 列出脚本内部 bank_name/account_no 的赋值逻辑代码行
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\test_ledger_clean_phase1.py:19:account_no/bank_name 全空（违反"宁多勿缺"填充规则）
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\test_ledger_clean_phase1.py:20:- 前瞻性检查（WARNING）: account_no/bank_name 是否为科目路径等不规范格式
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\test_ledger_clean_phase1.py:27:python scripts/test_ledger_clean_phase1.py --customer 桂平金山 --task bank_ledger_match
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\test_ledger_clean_phase1.py:30:python scripts/test_ledger_clean_phase1.py --csv outputs/桂平金山/bank_ledger_match/clean/ledger_entries.csv
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\test_ledger_clean_phase1.py:61:from audit_workflow.bank_ledger_match.cleaners import (  # noqa: E402
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\test_ledger_clean_phase1.py:66:from audit_workflow.bank_ledger_match.file_detector import merge_llm_into_full_config  # noqa: E402
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\test_ledger_clean_phase1.py:69:DEFAULT_TASK = "bank_ledger_match"
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\test_ledger_clean_phase1.py:241:def check_flow_direction(self) -> None:
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\test_ledger_clean_phase1.py:262:def check_account_fill(self) -> None:
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\test_ledger_clean_phase1.py:263:"""Phase 1 填充规则检查: account_no/bank_name 尽量不为空。"""
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\test_ledger_clean_phase1.py:266:acct_empty = int((df["account_no"].astype(str).str.strip() == "").sum())
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\test_ledger_clean_phase1.py:272:"account_no 与 bank_name 全部为空，违反 Phase 1『宁多勿缺』填充规则。排查步骤: "
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\test_ledger_clean_phase1.py:275:"(3) 若数据中确实无任何银行信息 → 需在 task.yml 的 ledger inputs 补充 bank_name/account_no"
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\test_ledger_clean_phase1.py:279:self.warnings.append(f"account_no 有 {acct_empty} 行为空（Phase 1 应尽量从科目列填入原始信息）")
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\test_ledger_clean_phase1.py:284:key_cols = ["account_no", "bank_name", "subject"]
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\test_ledger_clean_phase1.py:291:self.fails.append(f"有 {cnt} 行 account_no/bank_name/subject 全为空（关键信息缺失），来源: {srcs[:5]}")
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\test_ledger_clean_phase1.py:297:# account_no 非纯数字 → Phase 2 处理
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\test_ledger_clean_phase1.py:298:bad_acct = df["account_no"][
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\test_ledger_clean_phase1.py:299:(df["account_no"].astype(str).str.strip() != "")
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\test_ledger_clean_phase1.py:300:& ~(df["account_no"].astype(str).str.replace(" ", "", regex=False).str.isdigit())
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\test_ledger_clean_phase1.py:304:self.phase2_outlook["account_no"] = unique_acct
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\test_ledger_clean_phase1.py:306:f"account_no 有 {len(unique_acct)} 个唯一非数字值（将被 Phase 2 规范化）: "
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\test_ledger_clean_phase1.py:340:for src, grp in df.groupby("source_id"):
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\test_ledger_clean_phase1.py:341:accts = grp["account_no"].astype(str).str.strip()
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\test_ledger_clean_phase1.py:355:# 解析器诊断（排查 account_no/bank_name 为空问题）
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\test_ledger_clean_phase1.py:367:from audit_workflow.bank_ledger_match import llm_cleaner as llm_mod
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\test_ledger_clean_phase1.py:385:"""提取解析脚本内部 bank_name/account_no 的赋值行（用于人工判断填充逻辑）。"""
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\test_ledger_clean_phase1.py:395:if re.search(r"\b(bank_name|account_no)\s*=(?!=)", s):
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\test_ledger_clean_phase1.py:403:"""输出解析脚本诊断: 缓存/新生成、脚本新旧、bank_name/account_no 赋值逻辑。"""
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\test_ledger_clean_phase1.py:409:prompt_file = PROJECT_ROOT / "audit_workflow" / "bank_ledger_match" / "llm_cleaner.py"
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\test_ledger_clean_phase1.py:428:print("        可能不含最新的 bank_name/account_no 填充规则（提示词改动对缓存脚本无效）")
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\test_ledger_clean_phase1.py:432:print("      脚本内 bank_name/account_no 赋值逻辑:")
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\test_ledger_clean_phase1.py:436:print("      ⚠ 脚本中未找到 bank_name/account_no 赋值语句（这是输出为空的直接原因）")
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\test_ledger_clean_phase1.py:445:from audit_workflow.bank_ledger_match.config import resolve_path
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\test_ledger_clean_phase1.py:446:from audit_workflow.bank_ledger_match.utils import read_excel_headerless
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\test_ledger_clean_phase1.py:460:f"config: bank_name={item.get('bank_name', '')!r} account_no={item.get('account_no', '')!r}"
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\test_ledger_clean_phase1.py:524:verifier.check_flow_direction()
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\test_ledger_clean_phase1.py:525:verifier.check_account_fill()
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\test_ledger_clean_phase1.py:605:from audit_workflow.bank_ledger_match.config import output_dir as _output_dir
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\test_osm_pipeline.py:81:print(f"  月度汇总: {result.get('monthly_summary')}")
+C:\Users\DengKaina\Desktop\Audit_workflow\scripts\test_use_llm_flow.py:10:sys.path.insert(0, str(root / "audit_workflow" / "bank_ledger_match"))
+C:\Users\DengKaina\Desktop\Audit_workflow\config.example.matching.yml:31:monthly_balance_enumeration:
+C:\Users\DengKaina\Desktop\Audit_workflow\For_developer.md:6:请帮我分析一下”inputs\桂平金山\bank_ledger_match“的银行流水生成一份月度汇总
+C:\Users\DengKaina\Desktop\Audit_workflow\For_developer.md:27:{"error": "目录不存在: 桂平金山/bank_ledger_match", "files": []}
+C:\Users\DengKaina\Desktop\Audit_workflow\For_developer.md:50:我找到了桂平金山 bank_ledger_match 目录下的文件。让我查看一下这些银行流水文件的结构和内容。
+C:\Users\DengKaina\Desktop\Audit_workflow\For_developer.md:92:"code": "import pandas as pd\nimport os\n\n# 读取工行银行流水文件\nfile_path = 'inputs/桂平金山/bank_ledger_match/【工行】桂平金山银行流水2022.1-12月.xlsx'\n\ntry:\n    # 先查看有哪些sheet\n    excel_file = pd.ExcelFile(file_path)\n    print(\"Sheet名称:\", excel_file.sheet_names)\n    \n    # 读取第一个sheet\n    df = pd.read_excel(file_path, sheet_name=0)\n    print(\"\\n数据形状:\", df.shape)\n    print(\"\\n列名:\")\n    print(df.columns.tolist())\n    print(\"\\n前10行数据:\")\n    print(df.head(10))\nexcept Exception as e:\n    print(f\"错误: {type(e).__name__}: {e}\")",
+C:\Users\DengKaina\Desktop\Audit_workflow\For_developer.md:99:file_path = 'inputs/桂平金山/bank_ledger_match/【工行】桂平金山银行流水2022.1-12月.xlsx'
+C:\Users\DengKaina\Desktop\Audit_workflow\For_developer.md:243:第1行: ['查询账号[ Inquirer account number ]', '621081802839', na
+C:\Users\DengKaina\Desktop\Audit_workflow\For_developer.md:253:第1行: ['查询账号[ Inquirer account number ]', '621081802839', nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan, nan]
+C:\Users\DengKaina\Desktop\Audit_workflow\For_developer.md:260:第8行: ['交易类型[ Transaction Type ]', '业务类型[ Business type ]', '付款人开户行号[ Account holding bank number of
+C:\Users\DengKaina\Desktop\Audit_workflow\For_developer.md:570:月度汇总已保存到: outputs/桂平金山/bank_ledger_match\银行流水月度汇总.xlsx
+C:\Users\DengKaina\Desktop\Audit_workflow\For_developer.md:621:月度汇总已保存到: outputs/桂平金山/bank_ledger_match\银行流水月度汇总.xlsx
+C:\Users\DengKaina\Desktop\Audit_workflow\For_developer.md:702:月度汇总已保存到: outputs/桂平金山/bank_ledger_match\银行流水月度汇总.xlsx
+C:\Users\DengKaina\Desktop\Audit_workflow\For_developer.md:747:月度汇总已保存到: outputs/桂平金山/bank_ledger_match\银行流水月度汇总.xlsx
+C:\Users\DengKaina\Desktop\Audit_workflow\For_developer.md:748:分银行月度汇总已保存到: outputs/桂平金山/bank_ledger_match\银行流水月度汇总_分银行.xlsx
+C:\Users\DengKaina\Desktop\Audit_workflow\For_developer.md:764:{"error": "目录不存在: 桂平金山/bank_ledger_match", "files": []}
+C:\Users\DengKaina\Desktop\Audit_workflow\For_developer.md:770:{"directory": "outputs/桂平金山/bank_ledger_match", "file_count": 17, "files": [{"path": "outputs/桂平金山/bank_ledger_match/task.yml", "size": 3753, "modified": "2026-06-17T14:10:16.393044", "extension": ".y
+C:\Users\DengKaina\Desktop\Audit_workflow\For_developer.md:871:- `outputs/桂平金山/bank_ledger_match/银行流水月度汇总.xlsx` - 总体月度汇总
+C:\Users\DengKaina\Desktop\Audit_workflow\For_developer.md:872:- `outputs/桂平金山/bank_ledger_match/银行流水月度汇总_分银行.xlsx` - 分银行月度汇总
+C:\Users\DengKaina\Desktop\Audit_workflow\PACKAGING.md:139:`config/config.task_definitions.yml`，如 `bank_ledger_match`）。
