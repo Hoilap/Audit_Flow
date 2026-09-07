@@ -213,11 +213,7 @@ function addAgentMessageToUI(msg) {
 
     case 'tool_call':
       headerLeft = msg.metadata?.tool_name || 'tool'
-      body = `<details class="agent-msg-tool">
-        <summary>参数</summary>
-        <pre>${escapeHtml(JSON.stringify(msg.metadata?.arguments || {}, null, 2))}</pre>
-        ${msg.metadata?.code_preview ? `<pre class="code-block">${escapeHtml(msg.metadata.code_preview)}</pre>` : ''}
-      </details>`
+      body = `<details class="agent-msg-tool"><summary>参数</summary><pre>${escapeHtml(JSON.stringify(msg.metadata?.arguments || {}, null, 2))}</pre>${msg.metadata?.code_preview ? `<pre class="code-block">${escapeHtml(msg.metadata.code_preview)}</pre>` : ''}</details>`
       break
 
     case 'tool_result': {
@@ -251,13 +247,7 @@ function addAgentMessageToUI(msg) {
       body = `<div>${escapeHtml(msg.content)}</div>`
   }
 
-  el.innerHTML = `
-    <div class="agent-msg-head">
-      <span>${headerLeft}</span>
-      <span class="agent-msg-time">${time}</span>
-    </div>
-    <div class="agent-msg-body">${body}</div>
-  `
+  el.innerHTML = `<div class="agent-msg-head"><span>${headerLeft}</span><span class="agent-msg-time">${time}</span></div><div class="agent-msg-body">${body}</div>`
 
   container.appendChild(el)
   el.scrollIntoView({ behavior: 'smooth', block: 'end' })

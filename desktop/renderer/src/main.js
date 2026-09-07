@@ -73,11 +73,23 @@ function bindEvents() {
       previewFile(projectFile.dataset.path)
     }
 
-    // 消息/README卡片折叠切换
+    // 消息/README卡片折叠切换（箭头指示由 CSS rotate 处理）
     const collapseHead = event.target.closest('.message-head, .readme-card-head')
     if (collapseHead) {
       const container = collapseHead.closest('.message') || collapseHead.closest('.readme-card')
       if (container) container.classList.toggle('collapsed')
+    }
+
+    // 消息区：全部折叠 / 全部展开（仅作用于含 message-body 的块，箭头由 CSS rotate 处理）
+    if (event.target.id === 'chat-collapse-all' || event.target.id === 'chat-expand-all') {
+      const expand = event.target.id === 'chat-expand-all'
+      const chat = $('#chat')
+      if (chat) {
+        chat.querySelectorAll('.message').forEach((msg) => {
+          if (!msg.querySelector('.message-body')) return
+          msg.classList.toggle('collapsed', !expand)
+        })
+      }
     }
 
     // 右栏区块折叠/展开
@@ -165,15 +177,6 @@ function bindEvents() {
     if (event.target.id === 'step-requirement') {
       state.stepRequirements[taskRunKey()] = event.target.value
     }
-  })
-
-  // 左栏折叠
-  $('#toggle-sidebar').addEventListener('click', () => {
-    const sidebar = $('#sidebar')
-    const layout = $('#layout')
-    sidebar.classList.toggle('collapsed')
-    layout.classList.toggle('sidebar-hidden')
-    $('#toggle-sidebar').textContent = sidebar.classList.contains('collapsed') ? '▶' : '◀'
   })
 
   $('#theme-toggle').addEventListener('click', () => document.body.classList.toggle('dark'))
@@ -330,10 +333,102 @@ function setupInstallOverlay() {
     .catch(() => {})
 }
 
+// ────────── 左右栏拖拽调宽 ──────────
+// 列宽由 CSS 变量 --sidebar-w / --evidence-w 控制（把手 5px）。
+// 拖拽时指针捕获并禁用网格过渡，松手写入 localStorage；
+// 双击把手恢复默认宽度。
+const COLUMN_CONFIG = {
+  left:  { min: 0, max: 420, cssVar: '--sidebar-w',  storageKey: 'ui.sidebarWidth',  defaultW: 260 },
+  right: { min: 0, max: 640, cssVar: '--evidence-w', storageKey: 'ui.evidenceWidth', defaultW: 380 },
+}
+
+// 窄栏模式：宽度低于阈值时切换为图标模式（文字标签平滑收起，只保留图标等）
+const NARROW_THRESHOLD = 160
+function applyNarrowState(side, width) {
+  const el = side === 'left' ? $('#sidebar') : $('#evidence')
+  if (el) el.classList.toggle('narrow', width < NARROW_THRESHOLD)
+}
+
+function setupResizeHandles() {
+  const layout = $('#layout')
+  const root = document.documentElement
+  if (!layout || !root) return
+
+  // 启动时恢复持久化宽度（钳制到合法范围，越界值回写修正而不是丢弃；0 宽度合法 = 完全收起）
+  for (const side of ['left', 'right']) {
+    const conf = COLUMN_CONFIG[side]
+    const raw = localStorage.getItem(conf.storageKey)
+    if (raw !== null) {
+      const saved = Number(raw)
+      if (Number.isFinite(saved) && saved >= 0) {
+        const clamped = Math.min(conf.max, Math.max(0, saved))
+        root.style.setProperty(conf.cssVar, `${clamped}px`)
+        applyNarrowState(side, clamped)
+        if (clamped !== saved) localStorage.setItem(conf.storageKey, String(Math.round(clamped)))
+      }
+    }
+  }
+
+  for (const side of ['left', 'right']) {
+    const handle = $(`#handle-${side}`)
+    if (!handle) continue
+    const conf = COLUMN_CONFIG[side]
+    // 左把手向右拖 = 左栏加宽；右把手向左拖 = 右栏加宽
+    const sign = side === 'left' ? 1 : -1
+
+    handle.addEventListener('pointerdown', (e) => {
+      e.preventDefault()
+      const startX = e.clientX
+      const startW = parseFloat(getComputedStyle(root).getPropertyValue(conf.cssVar)) || conf.defaultW
+      let newW = startW
+      let tip = null
+      layout.classList.add('resizing')
+      handle.classList.add('active')
+      handle.setPointerCapture(e.pointerId)
+      document.body.style.cursor = 'col-resize'
+
+      const onMove = (ev) => {
+        newW = Math.min(conf.max, Math.max(conf.min, startW + (ev.clientX - startX) * sign))
+        root.style.setProperty(conf.cssVar, `${newW}px`)
+        applyNarrowState(side, newW)
+        if (!tip) {
+          tip = document.createElement('div')
+          tip.className = 'resize-tip'
+          document.body.appendChild(tip)
+        }
+        tip.textContent = `${Math.round(newW)}px`
+        tip.style.left = `${ev.clientX}px`
+        tip.style.top = `${ev.clientY + 16}px`
+      }
+      const onUp = () => {
+        layout.classList.remove('resizing')
+        handle.classList.remove('active')
+        document.body.style.cursor = ''
+        if (tip) { tip.remove(); tip = null }
+        handle.removeEventListener('pointermove', onMove)
+        handle.removeEventListener('pointerup', onUp)
+        handle.removeEventListener('pointercancel', onUp)
+        localStorage.setItem(conf.storageKey, String(Math.round(newW)))
+      }
+      handle.addEventListener('pointermove', onMove)
+      handle.addEventListener('pointerup', onUp)
+      handle.addEventListener('pointercancel', onUp)
+    })
+
+    // 双击复位默认宽度
+    handle.addEventListener('dblclick', () => {
+      root.style.setProperty(conf.cssVar, `${conf.defaultW}px`)
+      localStorage.removeItem(conf.storageKey)
+      applyNarrowState(side, conf.defaultW)
+    })
+  }
+}
+
 async function init() {
   setupInstallOverlay()
   await renderShell()
   bindEvents()
+  setupResizeHandles()   // 左右栏拖拽调宽（把手 + 双击复位 + 持久化）
   bindDataImportZone()   // 数据源页拖拽导入框
   setupEventSource()   // 建立 SSE 连接，实时接收后端事件
   showPage(state.activePage)

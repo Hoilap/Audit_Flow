@@ -27,7 +27,6 @@
           <span id="status-model" class="metric-inline">qwen3.7</span>
         </div>
         <div class="status-right">
-          <button id="toggle-sidebar" class="ghost" title="隐藏/显示左栏">◀</button>
           <button id="theme-toggle" class="ghost" title="切换深色模式">深色</button>
           <button id="refresh-all" class="ghost">刷新</button>
         </div>
@@ -47,11 +46,15 @@
                 <option value="">加载中...</option>
               </select>
             </div>
-            <button id="commit-all">提交当前证据链</button>
+            <button id="commit-all" title="提交当前证据链">提交当前证据链</button>
           </div>
         </aside>
 
+        <div class="resize-handle handle-left" id="handle-left" title="拖拽调整左栏宽度，双击复位"></div>
+
         <main class="main" id="main"></main>
+
+        <div class="resize-handle handle-right" id="handle-right" title="拖拽调整右栏宽度，双击复位"></div>
 
         <aside class="evidence" id="evidence">
           <div class="evidence-header">

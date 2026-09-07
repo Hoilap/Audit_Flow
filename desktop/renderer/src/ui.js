@@ -6,7 +6,7 @@ import { api } from './api.js'
 
 export async function renderShell() {
   $('#nav').innerHTML = navItems.map(([id, icon, label]) => `
-    <button class="${state.activePage === id ? 'active' : ''}" data-page="${id}"><span class="nav-icon">${icon}</span>${label}</button>
+    <button class="${state.activePage === id ? 'active' : ''}" data-page="${id}"><span class="nav-icon">${icon}</span><span class="nav-label">${label}</span></button>
   `).join('')
   $('#main').innerHTML = [
     dashboardPage(),
@@ -877,6 +877,114 @@ export function renderTextPreview(file, content) {
   $('#csv-preview').innerHTML = `<div class="label" style="margin-bottom:8px;">${escapeHtml(file)}</div><pre>${escapeHtml(content.slice(0, 5000))}</pre>`
 }
 
+// ==================== L1/L2/L3 信息层级辅助 ====================
+// L2 表格默认最多展示的行数，超出部分进 L3 明细模态框
+const L2_ROW_LIMIT = 20
+// result JSON 超过该字符数时，完整内容折叠进 L3 模态框
+const L3_JSON_LIMIT = 800
+
+// L3 注册表：id -> { sections } 静态内容 或 () => entry 函数（打开时取最新数据）
+const l3Registry = new Map()
+
+export function registerL3(id, entry) {
+  l3Registry.set(id, entry)
+}
+
+/**
+ * 打开 L3 明细模态框。entry 支持两种形态：
+ * 1. sections: [{ title, content }] —— 文本/JSON 分段展示
+ * 2. headCells + rowHtmls —— 表格展示，内置搜索过滤
+ */
+export async function openL3Modal(id) {
+  let entry = l3Registry.get(id)
+  if (!entry) return
+  if (typeof entry === 'function') entry = entry()
+  if (!entry) return
+
+  const { createModal } = await import('./modal.js')
+  const modal = createModal({ title: entry.title || '完整明细', width: '88vw', height: '86vh' })
+
+  if (Array.isArray(entry.sections)) {
+    const html = entry.sections
+      .map((s) => `<div class="l3-section"><div class="l3-section-title">${escapeHtml(s.title || '')}</div><pre class="l3-pre">${escapeHtml(s.content || '')}</pre></div>`)
+      .join('')
+    modal.setBody(`<div class="l3-scroll">${html}</div>`)
+    modal.open()
+    return
+  }
+
+  const headCells = entry.headCells || []
+  const rowHtmls = entry.rowHtmls || []
+  modal.setBody(`
+    <div class="l3-search-row">
+      <input class="l3-search-input" type="search" placeholder="筛选明细…" />
+      <span class="l3-count">${rowHtmls.length} 项</span>
+    </div>
+    <div class="l3-table-wrap">
+      <table class="table">
+        <thead><tr>${headCells.map((h) => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead>
+        <tbody>${rowHtmls.join('')}</tbody>
+      </table>
+    </div>
+  `)
+  const input = modal.getBodyEl().querySelector('.l3-search-input')
+  const tbody = modal.getBodyEl().querySelector('tbody')
+  const countEl = modal.getBodyEl().querySelector('.l3-count')
+  if (input && tbody) {
+    input.addEventListener('input', () => {
+      const q = input.value.trim().toLowerCase()
+      let visible = 0
+      const rows = tbody.querySelectorAll('tr')
+      rows.forEach((tr) => {
+        const hit = !q || tr.textContent.toLowerCase().includes(q)
+        tr.style.display = hit ? '' : 'none'
+        if (hit) visible++
+      })
+      if (countEl) countEl.textContent = `${visible} / ${rows.length} 项`
+    })
+  }
+  modal.open()
+}
+
+/** 为容器内所有 .l3-detail-btn 绑定点击事件（幂等：已绑定的跳过） */
+export function bindL3Buttons(container) {
+  if (!container) return
+  container.querySelectorAll('.l3-detail-btn').forEach((btn) => {
+    if (btn.dataset.l3Bound === '1') return
+    btn.dataset.l3Bound = '1'
+    btn.addEventListener('click', () => openL3Modal(btn.dataset.l3Id))
+  })
+}
+
+/**
+ * 构建 L2 截断表格。
+ * @param {object} opts
+ *   label: 表格上方的小标签（可选，为空则不渲染）
+ *   headCells: 表头单元格数组
+ *   rowHtmls: 全部行 HTML 数组（截断只影响显示，不影响 tailRows）
+ *   tailRows: 始终追加在末尾的行 HTML（如汇总行）
+ *   emptyCols: 无数据时的 colspan
+ *   l3Id: 注册到 l3Registry 的明细 id（用于"查看完整数据"按钮）
+ *   l3Title: L3 模态框标题
+ * @returns {string}
+ */
+export function l2TableHtml({ label = '', headCells = [], rowHtmls = [], tailRows = [], emptyCols = 0, l3Id = '', l3Title = '' } = {}) {
+  const hidden = rowHtmls.length > L2_ROW_LIMIT ? rowHtmls.length - L2_ROW_LIMIT : 0
+  const shown = hidden > 0 ? rowHtmls.slice(0, L2_ROW_LIMIT) : rowHtmls
+  const emptyHtml = `<tr><td colspan="${emptyCols || headCells.length || 1}" class="subtle">暂无数据</td></tr>`
+
+  let html = ''
+  if (label) html += `<div class="label" style="margin-bottom:4px;">${label}</div>`
+  html += `<table class="table" style="font-size:12px;">
+    <thead><tr>${headCells.map((h) => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead>
+    <tbody>${shown.length ? shown.join('') : (tailRows.length ? tailRows.join('') : emptyHtml)}${shown.length && tailRows.length ? tailRows.join('') : ''}</tbody>
+  </table>`
+  if (hidden > 0 && l3Id) {
+    html += `<button class="l3-detail-btn" data-l3-id="${escapeHtml(l3Id)}" data-l3-title="${escapeHtml(l3Title)}">共 ${rowHtmls.length} 项，查看完整数据（L3）</button>`
+  }
+  return html
+}
+
 export function addMessage({ role = 'Agent', title = '', body = '', result = null, failed = false }) {
   const chat = $('#chat')
   if (!chat) return
@@ -896,11 +1004,25 @@ export function addMessage({ role = 'Agent', title = '', body = '', result = nul
     }
   }
 
+  // result JSON 超过阈值 → L1/L2 只给摘要，完整内容进 L3 模态框
+  let resultHtml = ''
+  if (result) {
+    const json = JSON.stringify(result, null, 2)
+    if (json.length > L3_JSON_LIMIT) {
+      const l3Id = `result-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+      registerL3(l3Id, { title: `${title || role} · 完整结果 JSON`, sections: [{ title: '原始结果', content: json }] })
+      const kb = (json.length / 1024).toFixed(1)
+      resultHtml = `<div class="l3-json-row"><span class="subtle">完整结果过大，已折叠（${kb} KB JSON）</span><button class="l3-detail-btn" data-l3-id="${l3Id}">查看完整结果（L3）</button></div>`
+    } else {
+      resultHtml = `<pre class="log-block">${escapeHtml(json)}</pre>`
+    }
+  }
+
   block.innerHTML = `
     <div class="message-head"><span>${escapeHtml(role)}${title ? ` · ${escapeHtml(title)}` : ''}</span><span>${failed ? 'Failed' : time}${tokenInfo} <button class="message-delete-btn" title="删除此消息">✕</button><span class="message-collapse-btn">▼</span></span></div>
     <div class="message-body">
       ${body ? `<p>${escapeHtml(body)}</p>` : ''}
-      ${result ? `<pre class="log-block">${escapeHtml(JSON.stringify(result, null, 2))}</pre>` : ''}
+      ${resultHtml}
     </div>
   `
 
@@ -912,8 +1034,10 @@ export function addMessage({ role = 'Agent', title = '', body = '', result = nul
     block.addEventListener('animationend', () => block.remove())
   })
 
+  bindL3Buttons(block)
+
   chat.appendChild(block)
-  block.scrollIntoView({ behavior: 'smooth', block: 'end' })
+  block.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
 }
 
 
@@ -1273,7 +1397,7 @@ export async function renderDataProfile(filePath) {
 
 function agentPage() {
   // Block 顺序：项目 → 步骤 → 解析器 → 额外需求 → 消息
-  return `<section class="page" id="page-agent"><div class="page-header"><div><h1>Agent 工作流</h1><p id="active-task-desc" class="subtle"></p></div><div class="toolbar"><button id="run-next-step">执行下一步</button><button id="run-all-steps" class="primary">执行全部</button></div></div><div id="workflow-task-list" class="project-bar"></div><div class="agent-grid" style="margin-top:12px;"><div><div class="card"><div class="page-header" style="margin-bottom:12px;"><div><h2 id="active-task-title"></h2><p class="subtle">每个步骤可独立执行，也可按顺序全部执行。</p></div></div><div id="workflow-step-list" class="step-list"></div></div><div id="detect-method-bar" class="project-bar" style="margin-top:12px;"></div><div class="step-requirement-bar" id="step-requirement-bar" style="display:none;"><label class="step-requirement-label">附加需求</label><textarea id="step-requirement" rows="2" placeholder="可选：对此步骤的额外要求，会传递给 LLM…"></textarea></div><div class="conversation" id="chat"><div class="message"><div class="message-head"><span>Agent</span><span>Ready</span></div><p>请先选择项目，每个步骤可点击 ▶ 独立运行。</p></div></div></div></div></section>`
+  return `<section class="page" id="page-agent"><div class="page-header"><div><h1>Agent 工作流</h1><p id="active-task-desc" class="subtle"></p></div><div class="toolbar"><button id="run-next-step">执行下一步</button><button id="run-all-steps" class="primary">执行全部</button></div></div><div id="workflow-task-list" class="project-bar"></div><div class="agent-grid" style="margin-top:12px;"><div><div class="card"><div class="page-header" style="margin-bottom:12px;"><div><h2 id="active-task-title"></h2><p class="subtle">每个步骤可独立执行，也可按顺序全部执行。</p></div></div><div id="workflow-step-list" class="step-list"></div></div><div id="detect-method-bar" class="project-bar" style="margin-top:12px;"></div><div class="step-requirement-bar" id="step-requirement-bar" style="display:none;"><label class="step-requirement-label">附加需求</label><textarea id="step-requirement" rows="2" placeholder="可选：对此步骤的额外要求，会传递给 LLM…"></textarea></div><div class="chat-toolbar"><span class="subtle">消息区（点击标题可折叠单个块）</span><span class="chat-toolbar-spacer"></span><button id="chat-collapse-all" title="折叠所有消息主体，仅保留一行标题">全部折叠</button><button id="chat-expand-all" title="展开所有消息主体">全部展开</button></div><div class="conversation" id="chat"><div class="message"><div class="message-head"><span>Agent</span><span>Ready</span></div><p>请先选择项目，每个步骤可点击 ▶ 独立运行。</p></div></div></div></div></section>`
 }
 
 function agentLoopPage() {
@@ -1650,39 +1774,48 @@ export function renderDetectResult(result) {
   const bankItems = identifications.filter((i) => i.type === 'bank_statement')
   const ledgerItems = identifications.filter((i) => i.type === 'ledger')
 
-  const idTable = (items, title) => {
-    if (items.length === 0) return `<div class="subtle">未识别到${title}</div>`
-    return `<div style="margin-top:6px;">
-      <div class="label" style="margin-bottom:4px;">${escapeHtml(title)} (${items.length} 个)</div>
-      <table class="table" style="font-size:12px;">
-        <thead><tr><th>ID</th><th>文件名</th><th>银行/来源</th><th>银行账号</th><th>工作表</th><th>时间段</th><th>解析器</th><th>置信度</th></tr></thead>
-        <tbody>${items.map((i) => {
-          const missingFields = []
-          if (!i.bank_name) missingFields.push('银行名称')
-          if (!i.account_no) missingFields.push('银行账号')
-          const hasIssue = missingFields.length > 0
-          const rowStyle = hasIssue ? 'background:#fff3cd;' : ''
-          const bankCell = i.bank_name
-            ? escapeHtml(i.bank_name)
-            : '<span style="color:#d9534f;font-weight:bold;">⚠ 未识别</span>'
-          const acctCell = i.account_no
-            ? escapeHtml(i.account_no)
-            : '<span style="color:#d9534f;font-weight:bold;">⚠ 未识别</span>'
-          const sheetCell = i.sheet ? escapeHtml(i.sheet) : '<span class="subtle">-</span>'
-          const warnTitle = hasIssue ? ` title="缺失字段: ${missingFields.join(', ')}"` : ''
-          return `<tr style="${rowStyle}"${warnTitle}>
-          <td><strong>${escapeHtml(i.id)}</strong></td>
-          <td>${escapeHtml(i.name || '')}</td>
-          <td>${bankCell}</td>
-          <td>${acctCell}</td>
-          <td>${sheetCell}</td>
-          <td>${escapeHtml(i.date_from || '')} ~ ${escapeHtml(i.date_to || '')}</td>
-          <td><span class="badge">${escapeHtml(i.parser || '')}</span></td>
-          <td>${((i.confidence || 0) * 100).toFixed(0)}%</td>
-        </tr>`
-        }).join('')}</tbody>
-      </table>
-    </div>`
+  const detectRowHtml = (i) => {
+    const missingFields = []
+    if (!i.bank_name) missingFields.push('银行名称')
+    if (!i.account_no) missingFields.push('银行账号')
+    const hasIssue = missingFields.length > 0
+    const rowStyle = hasIssue ? 'background:#fff3cd;' : ''
+    const bankCell = i.bank_name
+      ? escapeHtml(i.bank_name)
+      : '<span style="color:#d9534f;font-weight:bold;">⚠ 未识别</span>'
+    const acctCell = i.account_no
+      ? escapeHtml(i.account_no)
+      : '<span style="color:#d9534f;font-weight:bold;">⚠ 未识别</span>'
+    const sheetCell = i.sheet ? escapeHtml(i.sheet) : '<span class="subtle">-</span>'
+    const warnTitle = hasIssue ? ` title="缺失字段: ${missingFields.join(', ')}"` : ''
+    return `<tr style="${rowStyle}"${warnTitle}>
+      <td><strong>${escapeHtml(i.id)}</strong></td>
+      <td>${escapeHtml(i.name || '')}</td>
+      <td>${bankCell}</td>
+      <td>${acctCell}</td>
+      <td>${sheetCell}</td>
+      <td>${escapeHtml(i.date_from || '')} ~ ${escapeHtml(i.date_to || '')}</td>
+      <td><span class="badge">${escapeHtml(i.parser || '')}</span></td>
+      <td>${((i.confidence || 0) * 100).toFixed(0)}%</td>
+    </tr>`
+  }
+
+  const idTable = (items, title, kind) => {
+    if (items.length === 0) return `<div class="subtle" style="margin-top:6px;">未识别到${title}</div>`
+    const l3Id = `detect-${kind}`
+    registerL3(l3Id, {
+      title: `文件识别明细 · ${title}`,
+      headCells: ['ID', '文件名', '银行/来源', '银行账号', '工作表', '时间段', '解析器', '置信度'],
+      rowHtmls: items.map(detectRowHtml),
+    })
+    return `<div style="margin-top:6px;">${l2TableHtml({
+      label: `${title} (${items.length} 个)`,
+      headCells: ['ID', '文件名', '银行/来源', '银行账号', '工作表', '时间段', '解析器', '置信度'],
+      rowHtmls: items.map(detectRowHtml),
+      emptyCols: 8,
+      l3Id,
+      l3Title: `文件识别明细 · ${title}`,
+    })}</div>`
   }
 
   // 构建警告横幅 HTML
@@ -1723,19 +1856,33 @@ ${escapeHtml(result.llm_error.traceback || '')}</pre>
     llmStatusHtml = `<p>识别方式: <strong>📜 脚本（关键词）</strong></p>`
   }
 
+  // L3：原始识别数据 + task.yml 全文
+  const detectRawL3Id = 'detect-raw'
+  registerL3(detectRawL3Id, {
+    title: '文件识别 · 原始数据与 task.yml',
+    sections: [
+      { title: 'task.yml（已生成）', content: JSON.stringify(result.task_config, null, 2) },
+      { title: '原始识别结果 JSON', content: JSON.stringify(result, null, 2) },
+    ],
+  })
+
+  const summaryText = `扫描 ${result.files_count} 个文件 · 银行流水 ${bankItems.length} · 序时账 ${ledgerItems.length}`
   block.innerHTML = `
-    <div class="message-head"><span>Agent · 文件识别结果</span><span>${escapeHtml(time)}${tokenInfo} <span class="message-collapse-btn">▼</span></span></div>
+    <div class="message-head"><span>Agent · 文件识别结果 <span class="message-summary">${escapeHtml(summaryText)}</span></span><span>${escapeHtml(time)}${tokenInfo} <span class="message-collapse-btn">▼</span></span></div>
     <div class="message-body">
-    <p>扫描到 <strong>${result.files_count}</strong> 个文件。</p>
     ${llmStatusHtml}
     ${warningsHtml}
-    ${idTable(bankItems, '银行流水')}
-    ${idTable(ledgerItems, '序时账')}
-    <p style="margin-top:8px;" class="subtle">task.yml 已自动生成 → 进入下一步「确认配置」进行审核。</p>
+    ${idTable(bankItems, '银行流水', 'bank')}
+    ${idTable(ledgerItems, '序时账', 'ledger')}
+    <div class="l3-json-row" style="margin-top:8px;">
+      <span class="subtle">task.yml 已自动生成 → 进入下一步「确认配置」进行审核。</span>
+      <button class="l3-detail-btn" data-l3-id="${detectRawL3Id}">查看 task.yml 与原始数据（L3）</button>
+    </div>
     </div>
   `
+  bindL3Buttons(block)
   chat.appendChild(block)
-  block.scrollIntoView({ behavior: 'smooth', block: 'end' })
+  block.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
 }
 
 /**
@@ -1766,21 +1913,26 @@ export function renderSheetTasks(result, onRetry) {
 
   const typeLabels = { sellout: '出库', refund: '仅退款', return: '货损', transfer: '退回保税仓' }
 
-  const renderRows = () => taskList.map((t, idx) => {
+  const renderRow = (t, idx, withRetry = true) => {
     const script = t.script_name ? `<code style="font-size:11px;">${escapeHtml(t.script_name)}</code>` : '<span class="subtle">硬编码</span>'
-    const canRetry = t.status === 'llm_fallback' || t.status === 'failed'
+    const canRetry = (t.status === 'llm_fallback' || t.status === 'failed') && withRetry
     const retryBtn = canRetry
       ? `<button class="sheet-retry-btn" data-idx="${idx}" data-file="${escapeHtml(t.file)}" data-sheet="${escapeHtml(t.sheet)}" data-type="${escapeHtml(t.type)}" data-colsig="${escapeHtml(t.column_signature || '')}" style="font-size:11px;padding:2px 8px;border-radius:4px;border:1px solid var(--warning);color:var(--warning);background:transparent;cursor:pointer;">重试</button>`
       : ''
     const errorHtml = t.error ? `<details style="font-size:11px;margin-top:2px;"><summary style="cursor:pointer;color:var(--danger);">错误详情</summary><pre style="white-space:pre-wrap;word-break:break-all;font-size:10px;max-height:100px;overflow-y:auto;margin-top:2px;">${escapeHtml(t.error)}</pre></details>` : ''
     return `<tr><td style="font-size:12px;">${escapeHtml(t.file)}</td><td style="font-size:12px;"><strong>${escapeHtml(t.sheet)}</strong></td><td style="font-size:12px;">${escapeHtml(typeLabels[t.type] || t.type)}</td><td>${statusBadge(t.status)}${errorHtml}</td><td>${script}</td><td style="text-align:right;font-size:12px;">${t.rows > 0 ? t.rows.toLocaleString() : '-'}</td><td>${retryBtn}</td></tr>`
-  }).join('')
+  }
 
-  const renderSummary = () => {
+  const computeStats = () => {
     const s = taskList.filter(t => t.status === 'llm_success').length
     const f = taskList.filter(t => t.status === 'llm_fallback').length
     const d = taskList.filter(t => t.status === 'failed').length
     const totalRows = taskList.reduce((sum, t) => sum + (t.rows || 0), 0)
+    return { s, f, d, totalRows }
+  }
+
+  const renderSummary = () => {
+    const { s, f, d, totalRows } = computeStats()
     let token = ''
     if (accumulatedUsage.total_tokens > 0) {
       token = `<span style="margin-left:8px;color:var(--text-soft);font-size:12px;">| Token 累计：${accumulatedUsage.total_tokens}（输入 ${accumulatedUsage.prompt_tokens || 0}，输出 ${accumulatedUsage.completion_tokens || 0}）</span>`
@@ -1788,18 +1940,39 @@ export function renderSheetTasks(result, onRetry) {
     return `共 <strong>${taskList.length}</strong> 个工作表：LLM 成功 <strong style="color:var(--success);">${s}</strong>${f > 0 ? `，回退 <strong style="color:var(--warning);">${f}</strong>` : ''}${d > 0 ? `，失败 <strong style="color:var(--danger);">${d}</strong>` : ''}，合计 <strong>${totalRows.toLocaleString()}</strong> 条记录。${token}`
   }
 
+  // L1 头内一行纯文本摘要（不含量 HTML 标签）
+  const headSummaryHtml = () => {
+    const { s, f, d, totalRows } = computeStats()
+    return `${s} 成功${f > 0 ? ` · ${f} 回退` : ''}${d > 0 ? ` · ${d} 失败` : ''} · ${totalRows.toLocaleString()} 行`
+  }
+
+  // L3 明细：函数形式注册，打开时取最新 taskList（重试后数据不陈旧）
+  const sheetL3Id = 'sheet-tasks-detail'
+  registerL3(sheetL3Id, () => ({
+    title: '工作表清洗明细',
+    headCells: ['文件', '工作表', '类型', '状态', '脚本', '行数', '操作'],
+    rowHtmls: taskList.map((t, idx) => renderRow(t, idx, false)),
+  }))
+
   const block = document.createElement('div')
   block.className = 'message'
   block.id = 'sheet-tasks-panel'
   const time = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
   block.innerHTML = `
-    <div class="message-head"><span>Agent · 工作表清洗详情</span><span>${time} <span class="message-collapse-btn">▼</span></span></div>
+    <div class="message-head"><span>Agent · 工作表清洗详情 <span class="message-summary" id="sheet-tasks-head-summary">${escapeHtml(headSummaryHtml())}</span></span><span>${time} <span class="message-collapse-btn">▼</span></span></div>
     <div class="message-body">
       <p id="sheet-tasks-summary" style="margin-bottom:8px;">${renderSummary()}</p>
-      <div style="overflow-x:auto;"><table class="table" style="font-size:12px;"><thead><tr><th>文件</th><th>工作表</th><th>类型</th><th>状态</th><th>脚本</th><th style="text-align:right;">行数</th><th>操作</th></tr></thead><tbody>${renderRows()}</tbody></table></div>
+      ${l2TableHtml({
+        headCells: ['文件', '工作表', '类型', '状态', '脚本', '行数', '操作'],
+        rowHtmls: taskList.map((t, idx) => renderRow(t, idx, true)),
+        emptyCols: 7,
+        l3Id: sheetL3Id,
+        l3Title: '工作表清洗明细',
+      })}
     </div>`
+  bindL3Buttons(block)
   chat.appendChild(block)
-  block.scrollIntoView({ behavior: 'smooth', block: 'end' })
+  block.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
 
   if (onRetry) {
     block.querySelectorAll('.sheet-retry-btn').forEach(btn => {
@@ -1825,6 +1998,8 @@ export function renderSheetTasks(result, onRetry) {
             if (tr) { const c = tr.querySelectorAll('td'); c[3].innerHTML = statusBadge('llm_success'); c[4].innerHTML = `<code style="font-size:11px;">${escapeHtml(res.script_name || '')}</code>`; c[5].textContent = res.rows > 0 ? res.rows.toLocaleString() : '-'; c[6].innerHTML = '' }
             const s = block.querySelector('#sheet-tasks-summary')
             if (s) s.innerHTML = renderSummary()
+            const hs = block.querySelector('#sheet-tasks-head-summary')
+            if (hs) hs.textContent = headSummaryHtml()
           } else {
             btn.textContent = '重试'; btn.disabled = false; btn.style.borderColor = 'var(--warning)'; btn.style.color = 'var(--warning)'
             const msg = res && res.error ? res.error : '未知错误'
@@ -1956,10 +2131,9 @@ export function renderCheckResult(result) {
     match_rate: weightedMatchRate(flow),
     _isSummary: true,
   }))
-  const matchDisplayRows = [...matchRows, ...matchSummaryRows]
 
-  const commonHeaders = '<th>账号</th><th>月份</th><th>方向</th><th>银行笔数</th><th>银行金额</th><th>账务笔数</th><th>账务金额</th><th>差异</th><th>状态</th>'
-  const renderRows = (rows, showMatchRate) => rows.map((r) => `<tr class="${r.status === 'mismatch' ? 'row-warn' : ''}">
+  const baseHeads = ['账号', '月份', '方向', '银行笔数', '银行金额', '账务笔数', '账务金额', '差异', '状态']
+  const rowHtml = (r, showMatchRate) => `<tr class="${r.status === 'mismatch' ? 'row-warn' : ''}">
     <td>${escapeHtml(r.account_no ?? '')}</td>
     <td>${escapeHtml(r.month ?? '')}</td>
     <td>${escapeHtml(r.flow ?? '')}</td>
@@ -1970,25 +2144,33 @@ export function renderCheckResult(result) {
     <td>${escapeHtml(r.amount_diff ?? '')}</td>
     <td><span class="badge ${r.status === 'mismatch' ? 'high' : ''}">${escapeHtml(r.status ?? '')}</span></td>
     ${showMatchRate ? `<td>${escapeHtml(formatMonthlyMatchRate(r.match_rate))}</td>` : ''}
-  </tr>`).join('')
-  const renderCheckTable = (title, rows, showMatchRate) => `<div style="margin-top:8px;">
-    <div class="label" style="margin-bottom:4px;">${title} (${rows.length} 项)</div>
-    <div style="max-height:300px;overflow-y:auto;">
-      <table class="table" style="font-size:12px;">
-        <thead><tr>${commonHeaders}${showMatchRate ? '<th>匹配率</th>' : ''}</tr></thead>
-        <tbody>${rows.length ? renderRows(rows, showMatchRate) : `<tr><td colspan="${showMatchRate ? 10 : 9}" class="subtle">暂无数据</td></tr>`}</tbody>
-      </table>
-    </div>
-  </div>`
+  </tr>`
+  const renderCheckTable = (title, dataRows, tailRows, showMatchRate, l3Id) => {
+    const heads = showMatchRate ? [...baseHeads, '匹配率'] : baseHeads
+    registerL3(l3Id, {
+      title: `数据完备性检查 · ${title} 完整明细`,
+      headCells: heads,
+      rowHtmls: [...dataRows, ...tailRows].map((r) => rowHtml(r, showMatchRate)),
+    })
+    return `<div style="margin-top:8px;">${l2TableHtml({
+      label: `${title} (${dataRows.length} 项)`,
+      headCells: heads,
+      rowHtmls: dataRows.map((r) => rowHtml(r, showMatchRate)),
+      tailRows: tailRows.map((r) => rowHtml(r, showMatchRate)),
+      emptyCols: heads.length,
+      l3Id,
+      l3Title: `数据完备性检查 · ${title} 完整明细`,
+    })}</div>`
+  }
 
-  const matchTable = renderCheckTable('Match', matchDisplayRows, true)
-  const unmatchTable = renderCheckTable('Unmatch', unmatchRows, false)
+  const matchTable = renderCheckTable('Match', matchRows, matchSummaryRows, true, 'check-match')
+  const unmatchTable = renderCheckTable('Unmatch', unmatchRows, [], false, 'check-unmatch')
 
   const block = document.createElement('div')
   block.className = 'message'
   const time = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
   block.innerHTML = `
-    <div class="message-head"><span>Agent · 数据完备性检查</span><span>${escapeHtml(time)} <span class="message-collapse-btn">▼</span></span></div>
+    <div class="message-head"><span>Agent · 数据完备性检查 <span class="message-summary">总计 ${summary.total_rows || 0} · 一致 ${summary.ok_count || 0} · 不一致 ${summary.mismatch_count || 0}</span></span><span>${escapeHtml(time)} <span class="message-collapse-btn">▼</span></span></div>
     <div class="message-body">
     <div class="grid metrics" style="margin-bottom:8px;">
       <div class="card" style="text-align:center;"><div class="card-title">总计</div><div class="card-value">${summary.total_rows || 0}</div></div>
@@ -2003,5 +2185,6 @@ export function renderCheckResult(result) {
     </div>
   `
   chat.appendChild(block)
-  block.scrollIntoView({ behavior: 'smooth', block: 'end' })
+  bindL3Buttons(block)
+  block.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
 }
