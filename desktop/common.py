@@ -23,7 +23,7 @@ from dotenv import load_dotenv
 
 # ---------- 数据根目录 ----------
 # 打包模式下，Electron 会设置 AUDIT_WORKFLOW_DATA_DIR（指向 %APPDATA% 下的可写目录），
-# inputs/outputs/projects.db/.env/日志 等用户数据全部落在该目录；
+# inputs/outputs/projects.db/日志 等用户数据全部落在该目录；
 # 开发模式下回退到源码项目根（desktop/ 的上级目录），行为与之前完全一致。
 
 def _resolve_data_root() -> str:
@@ -35,7 +35,13 @@ def _resolve_data_root() -> str:
     return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-load_dotenv(os.path.join(_resolve_data_root(), ".env"))
+def _is_production_environment() -> bool:
+    return os.environ.get("AUDIT_WORKFLOW_ENV", "development").strip().lower() == "production"
+
+
+# 生产包的 API Key 直接来自 config.llm.production.yml；仅开发模式加载 .env。
+if not _is_production_environment():
+    load_dotenv(os.path.join(_resolve_data_root(), ".env"))
 
 # ---------- Logging configuration ----------
 _log_dir = _resolve_data_root()
@@ -128,7 +134,38 @@ def get_db() -> sqlite3.Connection:
     conn.execute("PRAGMA journal_mode=WAL")
     return conn
 
+# 随包示例项目（与 main.js seedDataDir 种子的 inputs 实例数据对应），仅首次建库时写入
+_SAMPLE_PROJECTS = (
+    # (客户名称, 客户简称, 项目代码, 开始日期, 截止日期, 编制人, 审核人, 完成审核)
+    ("桂平市金山环保工程有限公司", "桂平金山", "bank_ledger_match",
+     "2026-01-01", "2026-12-01", "AAA", "BBB", 1),
+    ("广东佰腾药业有限公司", "佰腾", "bank_ledger_match",
+     "2026-01-01", "2026-12-31", "CCC", "DDD", 0),
+    ("佰腾", "TMF2", "outbound_settlement_match",
+     "2026-01-01", "2026-12-31", "EEE", "FFF", 0),
+)
+
+
+def _seed_sample_projects(conn: sqlite3.Connection) -> None:
+    """首次建库时写入示例项目行；project_code 不在审计程序表中则跳过。"""
+    codes = {r["project_code"] for r in conn.execute("SELECT project_code FROM audit_procedures").fetchall()}
+    for name, short, code, start, end, prepared_by, reviewed_by, reviewed in _SAMPLE_PROJECTS:
+        if code not in codes:
+            continue
+        conn.execute(
+            """INSERT INTO tasks (customer_name, customer_short_name, first_engagement, start_date,
+                                  project_code, group_audit, end_date, currency, exchange_rate,
+                                  prepared_by, reviewed_by, reviewed_completed)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
+            (name, short, "否", start, code, "是", end, "CNY", 1.0,
+             prepared_by, reviewed_by, reviewed),
+        )
+
+
 def init_db():
+    # 首次建库标记：全新安装（或 0 字节残留库）时种子示例项目，已有库不重复种子，
+    # 用户删除的项目不会在重启后复活
+    db_existed = os.path.exists(DB_PATH) and os.path.getsize(DB_PATH) > 0
     conn = get_db()
     # 旧版 projects 表已废弃（2026-09 结构重构为 审计程序表 + 任务表），直接删除
     conn.execute("DROP TABLE IF EXISTS projects")
@@ -206,6 +243,11 @@ def init_db():
                 "INSERT OR IGNORE INTO audit_procedures (project_code, project_name) VALUES (?,?)",
                 (td["dir_name"], td["name"]),
             )
+
+    # 首次建库：种子示例项目（项目管理页可见，与随包 inputs 实例数据对应）
+    if not db_existed:
+        _seed_sample_projects(conn)
+
     conn.commit()
 
     # 确保所有任务的 inputs/客户简称/项目代码、outputs/客户简称/项目代码 目录存在（幂等），
@@ -322,9 +364,17 @@ def _project_root() -> str:
 
 
 def _default_llm_yml_path() -> str:
-    """llm.yml 的默认路径（config/config.llm.yml）。"""
-    return os.path.join(_project_root(), "config", "config.llm.yml")
+    """Return the environment-specific default LLM config path.
 
+    Explicit per-task/config-path overrides are handled by their callers; this
+    function only selects the default for development or production.
+    """
+    filename = (
+        "config.llm.production.yml"
+        if _is_production_environment()
+        else "config.llm.development.yml"
+    )
+    return os.path.join(_project_root(), "config", filename)
 
 def _default_matching_yml_path() -> str:
     """matching.yml 的默认路径（config/config.matching.yml）。"""
@@ -360,6 +410,9 @@ def _default_llm_config() -> dict:
             return llm_cfg
     except Exception:
         pass
+    if _is_production_environment():
+        # 生产环境只接受 config.llm.production.yml 中的直接配置，不读取环境变量。
+        return {}
     # 回退：从环境变量构建 flat 配置
     return {
         "api_key_env": "DASHSCOPE_API_KEY",
@@ -460,7 +513,6 @@ def _migrate_config_files():
     root = _project_root()
     config_dir = os.path.join(root, "config")
     migrations = [
-        ("config.example.llm.yml", "config.llm.yml"),
         ("config.example.matching.yml", "config.matching.yml"),
     ]
     for old_name, new_name in migrations:
@@ -480,6 +532,9 @@ def _resolve_masked_key(pcfg: dict) -> tuple[str, bool, str]:
     if direct:
         masked = "****" + direct[-4:] if len(direct) > 4 else "****"
         return masked, True, "direct"
+
+    if _is_production_environment():
+        return "", False, "none"
 
     env_name = (pcfg.get("api_key_env") or "").strip()
     if env_name:
@@ -505,6 +560,8 @@ def _resolve_plain_key(pcfg: dict) -> str:
     direct = (pcfg.get("api_key") or "").strip()
     if direct:
         return direct
+    if _is_production_environment():
+        return ""
     env_name = (pcfg.get("api_key_env") or "").strip()
     if env_name:
         val = os.getenv(env_name, "")

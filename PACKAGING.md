@@ -21,7 +21,7 @@ NSIS 安装包，使目标机器**无需预装 Python、无需联网**即可运�
 2. **离线 wheels 而非在线安装**：审计现场多为受限网络；且 pydantic-ai/pydantic
    有精确版本约束，离线包可保证版本不漂移。目标机首启时由 main.js 自动
    `pip install --no-index`，一次完成（写入 `.deps-installed` 标记，之后跳过）。
-3. **用户数据放 %APPDATA% 而非安装目录**：inputs/outputs/projects.db/.env/
+3. **用户数据放 %APPDATA% 而非安装目录**：inputs/outputs/projects.db/
    config/日志全部落在 `app.getPath('userData')`（通过环境变量
    `AUDIT_WORKFLOW_DATA_DIR` 传给后端），升级安装不丢数据，也不受
    Program Files 写权限限制。
@@ -60,7 +60,7 @@ Python 运行时版本变更后需重跑第 1、2 步（fetch-python 加 `-Force
 2. 首次启动：
 
    - main.js 在 `%APPDATA%\audit-workflow-desktop\` 建数据目录，
-     把随包的 `config/` 模板与 `.env.example` 种子到该目录（已有则不覆盖）；
+     把随包的 `config/` 模板种子到该目录（已有则不覆盖）；
 
    - 用内置运行时执行 `pip install --no-index --find-links=wheels -r requirements.txt`，
      写入 `.deps-installed` 标记；
@@ -81,7 +81,7 @@ uvicorn 热重载开启（`AUDIT_DEV=1`）。行为与改造前完全一致。
 | Python 解释器              | `.venv/Scripts/python.exe` | `resources/runtime/python/python.exe` |
 | 后端源码                    | 项目根                        | `resources/app/`（PYTHONPATH 指向它）      |
 | inputs/outputs          | 项目根                        | `%APPDATA%\audit-workflow-desktop\`   |
-| projects.db / .env / 日志 | 项目根                        | 同上                                    |
+| projects.db / 日志        | 项目根                        | 同上                                    |
 | config/\*.yml           | 项目根/config                 | 数据目录/config（首启从安装包种子）                 |
 
 ## 六、常见问题
@@ -115,7 +115,46 @@ uvicorn 热重载开启（`AUDIT_DEV=1`）。行为与改造前完全一致。
 | `packaging/fetch-wheels.ps1` | 按平台收集离线 wheels                                                                                                               |
 | `packaging/build.ps1`        | 前置校验 + 一键构建 + 产物报告                                                                                                           |
 
-## 八、数据目录初始化修复（2026-09-05 排查）
+## 八、实例数据随包种子（2026-09-10）
+
+安装包内附带 inputs 示例客户数据（佰腾、桂平金山、TMF2），目标机首启时
+种子到数据目录 `inputs/` 下，方便现场演示与验证。
+
+| 文件                      | 改动                                                                     |
+| ----------------------- | ---------------------------------------------------------------------- |
+| `desktop/package.json`  | `extraResources` 增加 `../inputs` → `app/sample_inputs`，filter 仅含佰腾/桂平金山/TMF2 三个客户 |
+| `desktop/main.js`       | `seedDataDir()` 第 3 步：`sample_inputs` 下客户目录递归复制到数据目录 `inputs/`，**目录已存在则不覆盖**（幂等，升级安装不破坏用户数据） |
+| `desktop/common.py`     | `init_db()` 首次建库时向 `tasks` 表写入三个示例项目（佰腾/桂平金山/TMF2，编制人 AAA/CCC/EEE、审核人 BBB/DDD/FFF 等与开发库一致），使新机器"项目管理"页即有示例项目 |
+
+注意：inputs 根下新增客户不会自动入包，需同步更新 package.json 的 filter；
+TMF2 约 146MB（FSS 收入报告 xlsx），安装包体积约翻倍，构建耗时与磁盘占用同步增加。
+
+DB 种子仅在**首次建库**时执行（`init_db()` 开头判断 `projects.db` 是否已存在且非空）：
+目标机全新安装 → 种子三个示例项目并自动创建对应 inputs/outputs 目录；
+已有库（含用户自行删空项目的库）→ 不种子，用户数据不受影响、删除的项目不会复活。
+`task_configs` 表无需种子：`_resolve_task_config_paths()` 无映射记录时自动回退到
+`outputs/客户/任务/task.yml` 默认路径。
+
+## 十、LLM 配置脱敏（2026-09-10）
+
+开发库的 `config/config.llm.yml`（provider `dashscope_3.7_lzd` 含硬编码真实
+API Key）和 `.env.example`（真实 `DASHSCOPE_API_KEY`）曾随安装包分发。现改为：
+
+| 文件                      | 改动                                                                     |
+| ----------------------- | ---------------------------------------------------------------------- |
+| `desktop/package.json`  | `../config` → `app/config` 增加 filter，只打包 `config.blm.detect.yaml`、`config.task_definitions.yml` 两个无密钥文件 |
+| `desktop/main.js`       | `seedDataDir()` 只从 `config.example.matching.yml` 生成 `config.matching.yml`；生产 LLM 配置直接使用 `config/config.llm.production.yml` |
+| `packaging/build.ps1`   | 构建完成后扫描解包资源，发现 `.env` 或 `.env.*` 时立即失败 |
+
+规则：**config/ 下新增含密钥的文件时，必须同步更新 package.json 的 filter 将其排除**，
+生产包不携带 `.env` / `.env.*`，也不会在首次启动时创建 `.env`。
+`config.llm.production.yml` 的 provider 使用直接 `api_key` 字段；
+开发和测试统一使用 `config/config.llm.development.yml`，可继续用 `api_key_env`。
+
+注意：`config/config.llm.yml` 目前仍被 git 跟踪（开发密钥在提交历史中），
+如需彻底清除需重写历史（`git filter-repo`），另行处理。
+
+## 九、数据目录初始化修复（2026-09-05 排查）
 
 ### 问题现象
 
@@ -128,7 +167,7 @@ uvicorn 热重载开启（`AUDIT_DEV=1`）。行为与改造前完全一致。
    含种子项目），后端启动链路正常 —— 数据库本身没问题。
 2. 真正的缺陷是**数据目录缺少 inputs/outputs 结构**：
 
-   - `main.js seedDataDir()` 只种子 `config/` 与 `.env`，不创建
+   - `main.js seedDataDir()` 只种子 `config/`，不创建
      `inputs/`、`outputs/` 根目录；
 
    - `common.py init_db()` 种子默认项目时不调用 `_ensure_project_dirs()`，
@@ -151,7 +190,7 @@ uvicorn 热重载开启（`AUDIT_DEV=1`）。行为与改造前完全一致。
 
 以上修改对开发模式无影响（数据根目录仍是项目根，目录已存在时幂等）。
 
-## 九、Agent 对话 HTTP 500 修复（2026-09-05 排查）
+## 十、Agent 对话 HTTP 500 修复（2026-09-05 排查）
 
 ### 问题现象
 
@@ -178,7 +217,7 @@ traceback 全部丢失，导致该类错误无法从日志定位。
 已用新安装包全链路验证：`pip install --no-index` 成功、
 `import opentelemetry._events` 通过、`POST /agent/chat` 返回 200 正常对话。
 
-## 十、刷新 / Ctrl+R 后仍卡住修复（2026-09-05 排查）
+## 十一、刷新 / Ctrl+R 后仍卡住修复（2026-09-05 排查）
 
 ### 问题现象
 
@@ -218,7 +257,7 @@ traceback 全部丢失，导致该类错误无法从日志定位。
 AuditWorkflow 进程），重新打开即可——依赖会重新安装直至成功；
 或手动删除 `resources/runtime/python/.deps-installed` 之外的残留后用新包重装。
 
-## 十一、Agent 对话 HTTP 500（no such table）修复（2026-09-05 排查）
+## 十二、Agent 对话 HTTP 500（no such table）修复（2026-09-05 排查）
 
 ### 问题现象
 
@@ -248,7 +287,6 @@ AuditWorkflow 进程），重新打开即可——依赖会重新安装直至成
 ### 如何确认当前运行的是最新版
 
 1. 版本号：0.1.1 起，安装包文件名/卸载条目均含版本号，新旧可区分；
-2. `bootstrap.log`：只有含第十节修复的 main.js 才会写
+2. `bootstrap.log`：只有含第十一节修复的 main.js 才会写
    `%APPDATA%\audit-workflow-desktop\bootstrap.log`；
 3. 行为验证：Agent 对话页不再 500、`GET /agent/conversations` 返回 200。
-

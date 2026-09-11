@@ -171,7 +171,9 @@ export async function renderWorkflowWorkspace() {
   // ------ Detect 识别方式选择器 ------
   const detectMethod = $('#detect-method-bar')
   if (detectMethod) {
-    detectMethod.innerHTML = renderDetectMethodSelector()
+    const methodHtml = renderDetectMethodSelector()
+    detectMethod.innerHTML = methodHtml
+    detectMethod.style.display = methodHtml ? '' : 'none'
   }
 
   // ------ 步骤列表 ------
@@ -322,14 +324,9 @@ function renderDetectMethodSelector() {
     }
   }
 
-  // ── 无可选项 → 提示 ──
+  // ── 无可选项 → 不渲染解析器栏（由调用点隐藏整个 #detect-method-bar） ──
   if (options.length === 0) {
-    return `
-      <div class="project-bar-inner" style="margin-top:6px;">
-        <span class="project-bar-label">解析器</span>
-        <span class="subtle">此步骤无可用的解析器</span>
-      </div>
-    `
+    return ''
   }
 
   const isMatchStep = step?.id === 'match'
@@ -2091,6 +2088,41 @@ export function formatMonthlyMatchRate(value) {
   if (value === null || value === undefined || String(value).trim() === '') return ''
   const rate = Number(value)
   return Number.isFinite(rate) ? `${(rate * 100).toFixed(1)}%` : ''
+}
+
+/**
+ * outbound_settlement_match 匹配完成后：在消息栏单独展示 match_rate 指标卡。
+ * summary 来自 OSM match 端点（matcher.py 计算），match_rate 为 0..100 的百分数。
+ */
+export function renderOsmMatchRate(summary) {
+  if (!summary || typeof summary.match_rate !== 'number') return
+
+  const chat = $('#chat')
+  if (!chat) return
+
+  const rate = Number(summary.match_rate)
+  const rateText = Number.isFinite(rate) ? `${rate.toFixed(2)}%` : '—'
+  const rateColor = Number.isFinite(rate) && rate >= 80 ? '#27ae60' : '#e67e22'
+  const matched = summary.matched_outbound_orders ?? summary.matched_count ?? 0
+  const total = summary.total_outbound_ids ?? 0
+
+  const block = document.createElement('div')
+  block.className = 'message'
+  const time = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+  block.innerHTML = `
+    <div class="message-head"><span>Agent · 匹配率 <span class="message-summary">出库-结算匹配完成，匹配率 ${rateText}</span></span><span>${escapeHtml(time)} <span class="message-collapse-btn">▼</span></span></div>
+    <div class="message-body">
+    <div class="grid metrics" style="margin-bottom:8px;">
+      <div class="card" style="text-align:center;"><div class="card-title">匹配率</div><div class="card-value" style="color:${rateColor};">${rateText}</div></div>
+      <div class="card" style="text-align:center;"><div class="card-title">已匹配出库</div><div class="card-value">${matched}<span style="font-size:12px;opacity:.65;"> / ${total}</span></div></div>
+      <div class="card" style="text-align:center;"><div class="card-title">未匹配出库</div><div class="card-value" style="color:#e67e22;">${summary.unmatched_outbound_count ?? 0}</div></div>
+      <div class="card" style="text-align:center;"><div class="card-title">未匹配结算</div><div class="card-value" style="color:#e67e22;">${summary.unmatched_settlement_count ?? 0}</div></div>
+    </div>
+    </div>
+  `
+  chat.appendChild(block)
+  bindL3Buttons(block)
+  block.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
 }
 
 /**

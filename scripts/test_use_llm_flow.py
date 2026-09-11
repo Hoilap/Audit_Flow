@@ -14,8 +14,8 @@ errors = []
 
 # ── 模拟配置文件加载 ──
 
-# 1. 加载 config.example.llm.yml
-with open(root / "config.example.llm.yml", encoding="utf-8") as f:
+# 1. 加载开发环境 LLM 配置
+with open(root / "config" / "config.llm.development.yml", encoding="utf-8") as f:
     llm_cfg = yaml.safe_load(f) or {}
 
 # 2. 加载 config.example.matching.yml
@@ -101,7 +101,9 @@ print("测试 5: llm.providers 配置未受影响")
 cfg = apply_use_llm_override(task_cfg_with_llm, llm_cfg)
 providers = cfg.get("llm", {}).get("providers", {})
 print(f"  providers = {list(providers.keys())}")
-assert "dashscope" in providers, "dashscope provider should exist"
+default_provider = cfg.get("llm", {}).get("default")
+assert providers, "at least one provider should exist"
+assert default_provider in providers, "default provider should exist in providers"
 print("  PASS")
 
 print("=" * 50)

@@ -22,3 +22,7 @@ audit_workflow.log
 
 # 工具产生的临时目录
 .postman/
+
+# 环境配置文件（可能含本地凭证，切勿提交）
+config/config.llm.development.yml
+config/config.llm.production.yml

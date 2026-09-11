@@ -20,7 +20,7 @@ from openai import OpenAI
 
 
 def _load_llm_config(provider_name: str | None = None) -> tuple[str, str, str]:
-    """从 config.llm.yml（或 config.example.llm.yml）加载 LLM 配置。
+    """从开发环境 LLM 配置加载 provider。
 
     返回 (api_key, base_url, model) 元组。
     """
@@ -28,14 +28,14 @@ def _load_llm_config(provider_name: str | None = None) -> tuple[str, str, str]:
 
     # 尝试加载配置文件
     root = Path(__file__).resolve().parents[1]
-    for name in ("config.llm.yml", "config.example.llm.yml"):
-        cfg_path = root / name
+    for name in ("config.llm.development.yml", "config.llm.yml"):
+        cfg_path = root / "config" / name
         if cfg_path.exists():
             with open(cfg_path, encoding="utf-8") as f:
                 raw = yaml.safe_load(f)
             break
     else:
-        raise SystemExit("找不到 config.llm.yml 或 config.example.llm.yml")
+        raise SystemExit("找不到 config/config.llm.development.yml 或 config/config.llm.yml")
 
     llm_config = raw.get("llm", {})
     task_config = {"provider": provider_name} if provider_name else None

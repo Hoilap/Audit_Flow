@@ -1,7 +1,7 @@
 import { api, apiBase, cancelRequest } from './api.js'
 import { activeTask, findWorkflowTaskByName, getProjectBasePath, resolveProjectPath, markStep, state, stepStatus, taskRunKey } from './state.js'
 import { $ } from './dom.js'
-import { addMessage, renderFileError, renderFileTree, renderFiles, renderWorkflowWorkspace, setAgentStatus, startTimer, stopTimer, renderDetectResult, renderConfigConfirm, renderCheckResult, renderProgramsList, renderSheetTasks, renderSettingsProviders, renderReviewFiles, renderDashboardStats } from './ui.js'
+import { addMessage, renderFileError, renderFileTree, renderFiles, renderWorkflowWorkspace, setAgentStatus, startTimer, stopTimer, renderDetectResult, renderConfigConfirm, renderCheckResult, renderOsmMatchRate, renderProgramsList, renderSheetTasks, renderSettingsProviders, renderReviewFiles, renderDashboardStats } from './ui.js'
 import { openCsvPreview } from './previewModal.js'
 import { openReviewEditor } from './reviewEditor.js'
 import { createModal } from './modal.js'
@@ -346,6 +346,15 @@ export async function runStep(stepIndex = state.activeStepIndex) {
             `LLM: ${llm.llm_total || 0} 条。`,
           result,
         })
+      } else if (result.summary && typeof result.summary.match_rate === 'number') {
+        // ── Match 步骤（OSM）── summary 单独携带 match_rate，消息栏独立展示指标卡
+        const s = result.summary
+        addMessage({
+          title: step.title,
+          body: `匹配完成：匹配率 ${Number(s.match_rate).toFixed(2)}%，出库单号 ${s.matched_outbound_orders ?? 0}/${s.total_outbound_ids ?? 0}，未匹配出库 ${s.unmatched_outbound_count ?? 0} 条，未匹配结算 ${s.unmatched_settlement_count ?? 0} 条。`,
+          result,
+        })
+        renderOsmMatchRate(s)
       } else {
         addMessage({ title: step.title, body: '步骤执行完成，右侧已更新生成文件。', result })
       }

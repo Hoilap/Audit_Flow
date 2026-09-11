@@ -1,0 +1,367 @@
+﻿--- desktop/package.json ---
+{
+  "name": "audit-workflow-desktop",
+  "version": "0.1.1",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "start-api": "python -m desktop.api",
+    "dist": "electron-builder --win nsis"
+  },
+  "devDependencies": {
+    "electron": "^25.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.audit.workflow",
+    "productName": "AuditWorkflow",
+    "directories": {
+      "output": "../dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../audit_workflow",
+        "to": "app/audit_workflow",
+        "filter": [
+          "**/*.py",
+          "**/*.md"
+        ]
+      },
+      {
+        "from": "../desktop",
+        "to": "app/desktop",
+        "filter": [
+          "**/*.py"
+        ]
+      },
+      {
+        "from": "../config",
+        "to": "app/config",
+        "filter": [
+          "config.blm.detect.yaml",
+          "config.task_definitions.yml"
+        ]
+      },
+      {
+        "from": "../requirements.txt",
+        "to": "app/requirements.txt"
+      },
+      {
+        "from": "../.env.example",
+        "to": "app/.env.example"
+      },
+      {
+        "from": "../config.example.matching.yml",
+        "to": "app/config.example.matching.yml"
+      },
+      {
+        "from": "../inputs",
+        "to": "app/sample_inputs",
+        "filter": [
+          "浣拌吘/**",
+          "妗傚钩閲戝北/**",
+          "TMF2/**"
+        ]
+      },
+      {
+        "from": "runtime/python",
+        "to": "runtime/python"
+      },
+      {
+        "from": "wheels",
+        "to": "wheels"
+      },
+      {
+        "from": "../config/config.llm.production.yml",
+        "to": "app/config/config.llm.production.yml"
+      }
+    ],
+    "asar": true,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "AuditWorkflow"
+    }
+  }
+}
+
+--- packaging/build.ps1 ---
+<#
+.SYNOPSIS
+    一键打包：校验前置条件 -> electron-builder 产出 NSIS 安装包到 dist/。
+.DESCRIPTION
+    前置步骤（fetch-python / fetch-wheels / npm install）只需在首次或依赖
+    变更后手动执行；本脚本会自动校验它们已完成。
+.EXAMPLE
+    powershell -ExecutionPolicy Bypass -File packaging/build.ps1
+#>
+[CmdletBinding()]
+param()
+
+$ErrorActionPreference = 'Stop'
+$projectRoot = Split-Path -Parent $PSScriptRoot
+$desktopDir = Join-Path $projectRoot 'desktop'
+
+# 国内网络下使用镜像加速 Electron 与 electron-builder 二进制下载
+$env:ELECTRON_MIRROR = 'https://npmmirror.com/mirrors/electron/'
+$env:ELECTRON_BUILDER_BINARIES_MIRROR = 'https://npmmirror.com/mirrors/electron-builder-binaries/'
+
+# ── 1. 前置校验 ──────────────────────────────────────────────
+$runtimePy = Join-Path $desktopDir 'runtime\python\python.exe'
+if (-not (Test-Path $runtimePy)) {
+    throw "内置 Python 运行时不存在。请先运行: packaging/fetch-python.ps1"
+}
+$wheelsDir = Join-Path $desktopDir 'wheels'
+if (-not (Test-Path $wheelsDir) -or (Get-ChildItem $wheelsDir -Filter *.whl).Count -eq 0) {
+    throw "离线 wheels 不存在。请先运行: packaging/fetch-wheels.ps1"
+}
+if (-not (Test-Path (Join-Path $desktopDir 'node_modules\electron'))) {
+    throw "node_modules 未安装。请先在 desktop/ 下运行: npm install"
+}
+
+Write-Host "[build] 前置校验通过"
+Write-Host "  runtime: $runtimePy"
+Write-Host "  wheels : $((Get-ChildItem $wheelsDir -Filter *.whl).Count) 个"
+
+# ── 2. electron-builder ──────────────────────────────────────
+Push-Location $desktopDir
+try {
+    Write-Host "[build] 运行 electron-builder（nsis / x64）..."
+    npx electron-builder --win nsis --x64
+    if ($LASTEXITCODE -ne 0) { throw "electron-builder 失败" }
+} finally {
+    Pop-Location
+}
+
+# ── 3. 产物报告 ──────────────────────────────────────────────
+$distDir = Join-Path $projectRoot 'dist'
+Get-ChildItem $distDir -File |
+    Where-Object { $_.Extension -in '.exe', '.blockmap' } |
+    ForEach-Object {
+        $size = [math]::Round($_.Length / 1MB, 1)
+        Write-Host ("[build] 产物: {0}  ({1}MB)" -f $_.Name, $size)
+    }
+Write-Host "[build] 完成。安装包位于 $distDir"
+
+--- inputs ---
+PDD|Directory
+TMF|Directory
+TMF2|Directory
+佰腾|Directory
+桂平金山|Directory
+--- dependency files ---
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Lib\site-packages\pandas\pyproject.toml:5:    "meson-python>=0.17.1,<1",
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Lib\site-packages\pandas\pyproject.toml:7:    "wheel",
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Lib\site-packages\pandas\pyproject.toml:9:    # Force numpy higher than 2.0, so that built wheels are compatible
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Lib\site-packages\pandas\pyproject.toml:25:  { name = 'The Pandas Development Team', email='pandas-dev@python.org' },
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Lib\site-packages\pandas\pyproject.toml:28:requires-python = '>=3.11'
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Lib\site-packages\pandas\pyproject.toml:30:  "numpy>=1.26.0; python_version < '3.14'",
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Lib\site-packages\pandas\pyproject.toml:32:  "numpy>=2.3.3; python_version >= '3.14'",
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Lib\site-packages\pandas\pyproject.toml:33:  "python-dateutil>=2.8.2",
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Lib\site-packages\pandas\pyproject.toml:45:    'Programming Language :: Python',
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Lib\site-packages\pandas\pyproject.toml:46:    'Programming Language :: Python :: 3',
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Lib\site-packages\pandas\pyproject.toml:47:    'Programming Language :: Python :: 3 :: Only',
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Lib\site-packages\pandas\pyproject.toml:48:    'Programming Language :: Python :: 3.11',
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Lib\site-packages\pandas\pyproject.toml:49:    'Programming Language :: Python :: 3.12',
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Lib\site-packages\pandas\pyproject.toml:50:    'Programming Language :: Python :: 3.13',
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Lib\site-packages\pandas\pyproject.toml:51:    'Programming Language :: Python :: 3.14',
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Lib\site-packages\pandas\pyproject.toml:71:excel = ['odfpy>=1.4.1', 'openpyxl>=3.1.5', 'python-calamine>=0.3.0', 'pyxlsb>=1.0.10', 'xlrd>=2.0.1', 'xlsxwriter>=3.2.0']
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Lib\site-packages\pandas\pyproject.toml:111:       'python-calamine>=0.3.0',
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Lib\site-packages\pandas\pyproject.toml:147:[tool.meson-python.args]
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Lib\site-packages\pandas\pyproject.toml:150:[tool.cibuildwheel]
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Lib\site-packages\pandas\pyproject.toml:156:  PANDAS_CI='1' python -c 'import pandas as pd; \
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Lib\site-packages\pandas\pyproject.toml:160:enable = ["cpython-freethreading"]
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Lib\site-packages\pandas\pyproject.toml:163:[tool.cibuildwheel.windows]
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Lib\site-packages\pandas\pyproject.toml:165:before-build = "pip install delvewheel"
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Lib\site-packages\pandas\pyproject.toml:168:  python -c "import pandas as pd; \
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Lib\site-packages\pandas\pyproject.toml:171:repair-wheel-command = "delvewheel repair -w {dest_dir} {wheel}"
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Lib\site-packages\pandas\pyproject.toml:173:[[tool.cibuildwheel.overrides]]
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Lib\site-packages\pandas\pyproject.toml:176:  PANDAS_CI='1' python -c 'import pandas as pd; \
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Lib\site-packages\pandas\pyproject.toml:177:  pd.test(extra_args=["-m not clipboard and not single_cpu and not slow and not network and not db and not fails_arm_wheels", "-n 2", "--no-strict-data-files"]); \
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Lib\site-packages\pandas\pyproject.toml:181:[[tool.cibuildwheel.overrides]]
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Lib\site-packages\pandas\pyproject.toml:185:[[tool.cibuildwheel.overrides]]
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Lib\site-packages\pandas\pyproject.toml:186:# Don't strip wheels on macOS.
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Lib\site-packages\pandas\pyproject.toml:187:# macOS doesn't support stripping wheels with linker
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Lib\site-packages\pandas\pyproject.toml:188:# https://github.com/MacPython/numpy-wheels/pull/87#issuecomment-624878264
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Lib\site-packages\pandas\pyproject.toml:192:[[tool.cibuildwheel.overrides]]
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Lib\site-packages\pandas\pyproject.toml:195:# Pyodide repairs wheels on its own, using auditwheel-emscripten
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Lib\site-packages\pandas\pyproject.toml:196:repair-wheel-command = ""
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Lib\site-packages\pandas\pyproject.toml:200:  PANDAS_CI='1' python -c 'import pandas as pd; \
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Lib\site-packages\pandas\pyproject.toml:492:"pandas/tests/io/formats/test_ipython_compat.py" = ["B905"]
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Lib\site-packages\pandas\pyproject.toml:498:"pandas/tests/io/parser/test_python_parser_only.py" = ["B905"]
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Lib\site-packages\pandas\pyproject.toml:573:  # these tests only fail in the wheel builder and don't fail in regular
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Lib\site-packages\pandas\pyproject.toml:575:  "fails_arm_wheels: Tests that fail in the ARM wheel build only",
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Lib\site-packages\pandas\pyproject.toml:590:python_version = "3.11"
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Lib\site-packages\pandas\pyproject.toml:769:pythonVersion = "3.11"
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\Activate.ps1:3:Activate a Python virtual environment for the current PowerShell session.
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\Activate.ps1:6:Pushes the python executable for a virtual environment to the front of the
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\Activate.ps1:8:in a Python virtual environment. Makes use of the command line switches as
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\Activate.ps1:23:Activates the Python virtual environment that contains the Activate.ps1 script.
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\Activate.ps1:27:Activates the Python virtual environment that contains the Activate.ps1 script,
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\Activate.ps1:32:Activates the Python virtual environment located in the specified location.
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\Activate.ps1:35:Activate.ps1 -Prompt "MyPython"
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\Activate.ps1:36:Activates the Python virtual environment that contains the Activate.ps1 script,
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\Activate.ps1:65:addition of the virtual environment's Python executable from the beginning of
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\Activate.ps1:82:    # The prior PYTHONHOME:
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\Activate.ps1:83:    if (Test-Path -Path Env:_OLD_VIRTUAL_PYTHONHOME) {
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\Activate.ps1:84:        Copy-Item -Path Env:_OLD_VIRTUAL_PYTHONHOME -Destination Env:PYTHONHOME
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\Activate.ps1:85:        Remove-Item -Path Env:_OLD_VIRTUAL_PYTHONHOME
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\Activate.ps1:104:    # Just remove the _PYTHON_VENV_PROMPT_PREFIX altogether:
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\Activate.ps1:105:    if (Get-Variable -Name "_PYTHON_VENV_PROMPT_PREFIX" -ErrorAction SilentlyContinue) {
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\Activate.ps1:106:        Remove-Variable -Name _PYTHON_VENV_PROMPT_PREFIX -Scope Global -Force
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\Activate.ps1:230:    New-Variable -Name _PYTHON_VENV_PROMPT_PREFIX -Description "Python virtual environment prompt prefix" -Scope Global -Option ReadOnly -Visibility Public -Value $Prompt
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\Activate.ps1:233:        Write-Host -NoNewline -ForegroundColor Green "($_PYTHON_VENV_PROMPT_PREFIX) "
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\Activate.ps1:239:# Clear PYTHONHOME
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\Activate.ps1:240:if (Test-Path -Path Env:PYTHONHOME) {
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\Activate.ps1:241:    Copy-Item -Path Env:PYTHONHOME -Destination Env:_OLD_VIRTUAL_PYTHONHOME
+C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\Activate.ps1:242:    Remove-Item -Path Env:PYTHONHOME
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\node_modules\.bin\js-yaml.ps1:14:    $input | & "$basedir/node$exe"  "$basedir/../js-yaml/bin/js-yaml.js" $args
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\node_modules\.bin\js-yaml.ps1:16:    & "$basedir/node$exe"  "$basedir/../js-yaml/bin/js-yaml.js" $args
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\node_modules\.bin\js-yaml.ps1:22:    $input | & "node$exe"  "$basedir/../js-yaml/bin/js-yaml.js" $args
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\node_modules\.bin\js-yaml.ps1:24:    & "node$exe"  "$basedir/../js-yaml/bin/js-yaml.js" $args
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\node_modules\app-builder-lib\package.json:65:    "js-yaml": "^4.1.0",
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\node_modules\app-builder-lib\package.json:102:    "@types/js-yaml": "4.0.3",
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\node_modules\argparse\package.json:3:  "description": "CLI arguments parser. Native port of python's argparse.",
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\node_modules\argparse\package.json:17:  "license": "Python-2.0",
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\node_modules\builder-util\package.json:29:    "js-yaml": "^4.1.0",
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\node_modules\builder-util\package.json:40:    "@types/js-yaml": "4.0.3",
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\node_modules\dmg-builder\package.json:22:    "js-yaml": "^4.1.0",
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\node_modules\dmg-builder\package.json:32:    "@types/js-yaml": "4.0.3",
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\node_modules\js-yaml\package.json:2:  "name": "js-yaml",
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\node_modules\js-yaml\package.json:4:  "description": "YAML 1.2 parser and serializer",
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\node_modules\js-yaml\package.json:6:    "yaml",
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\node_modules\js-yaml\package.json:9:    "pyyaml"
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\node_modules\js-yaml\package.json:18:  "repository": "nodeca/js-yaml",
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\node_modules\js-yaml\package.json:39:    "js-yaml": "bin/js-yaml.js"
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\node_modules\js-yaml\package.json:41:  "module": "./dist/js-yaml.mjs",
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\node_modules\js-yaml\package.json:44:      "import": "./dist/js-yaml.mjs",
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\node_modules\js-yaml\package.json:61:  "unpkg": "dist/js-yaml.min.js",
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\node_modules\js-yaml\package.json:62:  "jsdelivr": "dist/js-yaml.min.js",
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\node_modules\read-config-file\package.json:20:    "js-yaml": "^4.1.0",
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\node_modules\read-config-file\package.json:25:    "@types/js-yaml": "^4.0.1",
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\node_modules\temp-file\package.json:24:    "@types/js-yaml": "^4.0.1",
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\venv\scripts\common\Activate.ps1:3:Activate a Python virtual environment for the current PowerShell session.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\venv\scripts\common\Activate.ps1:6:Pushes the python executable for a virtual environment to the front of the
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\venv\scripts\common\Activate.ps1:8:in a Python virtual environment. Makes use of the command line switches as
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\venv\scripts\common\Activate.ps1:23:Activates the Python virtual environment that contains the Activate.ps1 script.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\venv\scripts\common\Activate.ps1:27:Activates the Python virtual environment that contains the Activate.ps1 script,
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\venv\scripts\common\Activate.ps1:32:Activates the Python virtual environment located in the specified location.
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\venv\scripts\common\Activate.ps1:35:Activate.ps1 -Prompt "MyPython"
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\venv\scripts\common\Activate.ps1:36:Activates the Python virtual environment that contains the Activate.ps1 script,
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\venv\scripts\common\Activate.ps1:65:addition of the virtual environment's Python executable from the beginning of
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\venv\scripts\common\Activate.ps1:82:    # The prior PYTHONHOME:
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\venv\scripts\common\Activate.ps1:83:    if (Test-Path -Path Env:_OLD_VIRTUAL_PYTHONHOME) {
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\venv\scripts\common\Activate.ps1:84:        Copy-Item -Path Env:_OLD_VIRTUAL_PYTHONHOME -Destination Env:PYTHONHOME
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\venv\scripts\common\Activate.ps1:85:        Remove-Item -Path Env:_OLD_VIRTUAL_PYTHONHOME
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\venv\scripts\common\Activate.ps1:104:    # Just remove the _PYTHON_VENV_PROMPT_PREFIX altogether:
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\venv\scripts\common\Activate.ps1:105:    if (Get-Variable -Name "_PYTHON_VENV_PROMPT_PREFIX" -ErrorAction SilentlyContinue) {
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\venv\scripts\common\Activate.ps1:106:        Remove-Variable -Name _PYTHON_VENV_PROMPT_PREFIX -Scope Global -Force
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\venv\scripts\common\Activate.ps1:230:    New-Variable -Name _PYTHON_VENV_PROMPT_PREFIX -Description "Python virtual environment prompt prefix" -Scope Global -Option ReadOnly -Visibility Public -Value $Prompt
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\venv\scripts\common\Activate.ps1:233:        Write-Host -NoNewline -ForegroundColor Green "($_PYTHON_VENV_PROMPT_PREFIX) "
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\venv\scripts\common\Activate.ps1:239:# Clear PYTHONHOME
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\venv\scripts\common\Activate.ps1:240:if (Test-Path -Path Env:PYTHONHOME) {
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\venv\scripts\common\Activate.ps1:241:    Copy-Item -Path Env:PYTHONHOME -Destination Env:_OLD_VIRTUAL_PYTHONHOME
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\runtime\python\Lib\venv\scripts\common\Activate.ps1:242:    Remove-Item -Path Env:PYTHONHOME
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\package.json:7:    "start-api": "python -m desktop.api",
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\package.json:46:          "config.blm.detect.yaml",
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\package.json:72:        "from": "runtime/python",
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\package.json:73:        "to": "runtime/python"
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\package.json:76:        "from": "wheels",
+C:\Users\DengKaina\Desktop\Audit_workflow\desktop\package.json:77:        "to": "wheels"
+C:\Users\DengKaina\Desktop\Audit_workflow\dist\win-unpacked\resources\app\requirements.txt:3:PyYAML>=6.0
+C:\Users\DengKaina\Desktop\Audit_workflow\dist\win-unpacked\resources\app\requirements.txt:4:python-dotenv>=1.0
+C:\Users\DengKaina\Desktop\Audit_workflow\dist\win-unpacked\resources\app\requirements.txt:10:GitPython>=3.1
+C:\Users\DengKaina\Desktop\Audit_workflow\dist\win-unpacked\resources\app\requirements.txt:11:python-multipart>=0.0.6
+C:\Users\DengKaina\Desktop\Audit_workflow\dist\win-unpacked\resources\runtime\python\Lib\venv\scripts\common\Activate.ps1:3:Activate a Python virtual environment for the current PowerShell session.
+C:\Users\DengKaina\Desktop\Audit_workflow\dist\win-unpacked\resources\runtime\python\Lib\venv\scripts\common\Activate.ps1:6:Pushes the python executable for a virtual environment to the front of the
+C:\Users\DengKaina\Desktop\Audit_workflow\dist\win-unpacked\resources\runtime\python\Lib\venv\scripts\common\Activate.ps1:8:in a Python virtual environment. Makes use of the command line switches as
+C:\Users\DengKaina\Desktop\Audit_workflow\dist\win-unpacked\resources\runtime\python\Lib\venv\scripts\common\Activate.ps1:23:Activates the Python virtual environment that contains the Activate.ps1 script.
+C:\Users\DengKaina\Desktop\Audit_workflow\dist\win-unpacked\resources\runtime\python\Lib\venv\scripts\common\Activate.ps1:27:Activates the Python virtual environment that contains the Activate.ps1 script,
+C:\Users\DengKaina\Desktop\Audit_workflow\dist\win-unpacked\resources\runtime\python\Lib\venv\scripts\common\Activate.ps1:32:Activates the Python virtual environment located in the specified location.
+C:\Users\DengKaina\Desktop\Audit_workflow\dist\win-unpacked\resources\runtime\python\Lib\venv\scripts\common\Activate.ps1:35:Activate.ps1 -Prompt "MyPython"
+C:\Users\DengKaina\Desktop\Audit_workflow\dist\win-unpacked\resources\runtime\python\Lib\venv\scripts\common\Activate.ps1:36:Activates the Python virtual environment that contains the Activate.ps1 script,
+C:\Users\DengKaina\Desktop\Audit_workflow\dist\win-unpacked\resources\runtime\python\Lib\venv\scripts\common\Activate.ps1:65:addition of the virtual environment's Python executable from the beginning of
+C:\Users\DengKaina\Desktop\Audit_workflow\dist\win-unpacked\resources\runtime\python\Lib\venv\scripts\common\Activate.ps1:82:    # The prior PYTHONHOME:
+C:\Users\DengKaina\Desktop\Audit_workflow\dist\win-unpacked\resources\runtime\python\Lib\venv\scripts\common\Activate.ps1:83:    if (Test-Path -Path Env:_OLD_VIRTUAL_PYTHONHOME) {
+C:\Users\DengKaina\Desktop\Audit_workflow\dist\win-unpacked\resources\runtime\python\Lib\venv\scripts\common\Activate.ps1:84:        Copy-Item -Path Env:_OLD_VIRTUAL_PYTHONHOME -Destination Env:PYTHONHOME
+C:\Users\DengKaina\Desktop\Audit_workflow\dist\win-unpacked\resources\runtime\python\Lib\venv\scripts\common\Activate.ps1:85:        Remove-Item -Path Env:_OLD_VIRTUAL_PYTHONHOME
+C:\Users\DengKaina\Desktop\Audit_workflow\dist\win-unpacked\resources\runtime\python\Lib\venv\scripts\common\Activate.ps1:104:    # Just remove the _PYTHON_VENV_PROMPT_PREFIX altogether:
+C:\Users\DengKaina\Desktop\Audit_workflow\dist\win-unpacked\resources\runtime\python\Lib\venv\scripts\common\Activate.ps1:105:    if (Get-Variable -Name "_PYTHON_VENV_PROMPT_PREFIX" -ErrorAction SilentlyContinue) {
+C:\Users\DengKaina\Desktop\Audit_workflow\dist\win-unpacked\resources\runtime\python\Lib\venv\scripts\common\Activate.ps1:106:        Remove-Variable -Name _PYTHON_VENV_PROMPT_PREFIX -Scope Global -Force
+C:\Users\DengKaina\Desktop\Audit_workflow\dist\win-unpacked\resources\runtime\python\Lib\venv\scripts\common\Activate.ps1:230:    New-Variable -Name _PYTHON_VENV_PROMPT_PREFIX -Description "Python virtual environment prompt prefix" -Scope Global -Option ReadOnly -Visibility Public -Value $Prompt
+C:\Users\DengKaina\Desktop\Audit_workflow\dist\win-unpacked\resources\runtime\python\Lib\venv\scripts\common\Activate.ps1:233:        Write-Host -NoNewline -ForegroundColor Green "($_PYTHON_VENV_PROMPT_PREFIX) "
+C:\Users\DengKaina\Desktop\Audit_workflow\dist\win-unpacked\resources\runtime\python\Lib\venv\scripts\common\Activate.ps1:239:# Clear PYTHONHOME
+C:\Users\DengKaina\Desktop\Audit_workflow\dist\win-unpacked\resources\runtime\python\Lib\venv\scripts\common\Activate.ps1:240:if (Test-Path -Path Env:PYTHONHOME) {
+C:\Users\DengKaina\Desktop\Audit_workflow\dist\win-unpacked\resources\runtime\python\Lib\venv\scripts\common\Activate.ps1:241:    Copy-Item -Path Env:PYTHONHOME -Destination Env:_OLD_VIRTUAL_PYTHONHOME
+C:\Users\DengKaina\Desktop\Audit_workflow\dist\win-unpacked\resources\runtime\python\Lib\venv\scripts\common\Activate.ps1:242:    Remove-Item -Path Env:PYTHONHOME
+C:\Users\DengKaina\Desktop\Audit_workflow\packaging\build.ps1:5:    前置步骤（fetch-python / fetch-wheels / npm install）只需在首次或依赖
+C:\Users\DengKaina\Desktop\Audit_workflow\packaging\build.ps1:22:$runtimePy = Join-Path $desktopDir 'runtime\python\python.exe'
+C:\Users\DengKaina\Desktop\Audit_workflow\packaging\build.ps1:24:    throw "内置 Python 运行时不存在。请先运行: packaging/fetch-python.ps1"
+C:\Users\DengKaina\Desktop\Audit_workflow\packaging\build.ps1:26:$wheelsDir = Join-Path $desktopDir 'wheels'
+C:\Users\DengKaina\Desktop\Audit_workflow\packaging\build.ps1:27:if (-not (Test-Path $wheelsDir) -or (Get-ChildItem $wheelsDir -Filter *.whl).Count -eq 0) {
+C:\Users\DengKaina\Desktop\Audit_workflow\packaging\build.ps1:28:    throw "离线 wheels 不存在。请先运行: packaging/fetch-wheels.ps1"
+C:\Users\DengKaina\Desktop\Audit_workflow\packaging\build.ps1:36:Write-Host "  wheels : $((Get-ChildItem $wheelsDir -Filter *.whl).Count) 个"
+C:\Users\DengKaina\Desktop\Audit_workflow\packaging\fetch-python.ps1:3:    下载并解压独立的 Python 运行时（python-build-standalone）到 desktop/runtime/python。
+C:\Users\DengKaina\Desktop\Audit_workflow\packaging\fetch-python.ps1:5:    只需在准备发布时运行一次；runtime/python 会被 electron-builder 打进安装包。
+C:\Users\DengKaina\Desktop\Audit_workflow\packaging\fetch-python.ps1:6:    运行时版本应与开发环境保持一致（当前项目使用 Python 3.12.x）。
+C:\Users\DengKaina\Desktop\Audit_workflow\packaging\fetch-python.ps1:10:    powershell -ExecutionPolicy Bypass -File packaging/fetch-python.ps1
+C:\Users\DengKaina\Desktop\Audit_workflow\packaging\fetch-python.ps1:19:$runtimeDir = Join-Path $projectRoot 'desktop\runtime\python'
+C:\Users\DengKaina\Desktop\Audit_workflow\packaging\fetch-python.ps1:22:# python-build-standalone 版本（astral-sh 维护，uv 同款发行版）
+C:\Users\DengKaina\Desktop\Audit_workflow\packaging\fetch-python.ps1:26:$FileName = "cpython-$PyVersion+$Tag-x86_64-pc-windows-msvc-install_only.tar.gz"
+C:\Users\DengKaina\Desktop\Audit_workflow\packaging\fetch-python.ps1:27:$Url = "https://github.com/astral-sh/python-build-standalone/releases/download/$Tag/$FileName"
+C:\Users\DengKaina\Desktop\Audit_workflow\packaging\fetch-python.ps1:29:if ((Test-Path $runtimeDir) -and (Test-Path (Join-Path $runtimeDir 'python.exe')) -and -not $Force) {
+C:\Users\DengKaina\Desktop\Audit_workflow\packaging\fetch-python.ps1:30:    Write-Host "[fetch-python] runtime 已存在：$runtimeDir（跳过，加 -Force 重新下载）"
+C:\Users\DengKaina\Desktop\Audit_workflow\packaging\fetch-python.ps1:38:    Write-Host "[fetch-python] 下载 $Url"
+C:\Users\DengKaina\Desktop\Audit_workflow\packaging\fetch-python.ps1:42:    Write-Host "[fetch-python] 使用缓存：$archive"
+C:\Users\DengKaina\Desktop\Audit_workflow\packaging\fetch-python.ps1:45:Write-Host "[fetch-python] 解压到临时目录..."
+C:\Users\DengKaina\Desktop\Audit_workflow\packaging\fetch-python.ps1:51:# install_only 包解压后即 python/ 目录本身
+C:\Users\DengKaina\Desktop\Audit_workflow\packaging\fetch-python.ps1:52:$extracted = Get-ChildItem $tmp | Where-Object Name -eq 'python' | Select-Object -First 1
+C:\Users\DengKaina\Desktop\Audit_workflow\packaging\fetch-python.ps1:53:if (-not $extracted) { throw "解压结果中未找到 python/ 目录" }
+C:\Users\DengKaina\Desktop\Audit_workflow\packaging\fetch-python.ps1:63:& (Join-Path $runtimeDir 'python.exe') --version
+C:\Users\DengKaina\Desktop\Audit_workflow\packaging\fetch-python.ps1:64:Write-Host "[fetch-python] 完成：$runtimeDir"
+C:\Users\DengKaina\Desktop\Audit_workflow\packaging\fetch-wheels.ps1:3:    离线收集全部 Python 依赖的 wheel 包到 desktop/wheels。
+C:\Users\DengKaina\Desktop\Audit_workflow\packaging\fetch-wheels.ps1:5:    目标机器可能无法联网，因此把 requirements.txt 解析出的所有 wheel
+C:\Users\DengKaina\Desktop\Audit_workflow\packaging\fetch-wheels.ps1:6:    （按 Windows x64 + Python 3.12 平台）提前下载好，随安装包分发。
+C:\Users\DengKaina\Desktop\Audit_workflow\packaging\fetch-wheels.ps1:9:    二进制 wheel 平台不匹配。
+C:\Users\DengKaina\Desktop\Audit_workflow\packaging\fetch-wheels.ps1:11:    powershell -ExecutionPolicy Bypass -File packaging/fetch-wheels.ps1
+C:\Users\DengKaina\Desktop\Audit_workflow\packaging\fetch-wheels.ps1:18:$wheelsDir = Join-Path $projectRoot 'desktop\wheels'
+C:\Users\DengKaina\Desktop\Audit_workflow\packaging\fetch-wheels.ps1:21:# 优先使用项目 .venv 的 Python（保证 pip 可用且版本正确）
+C:\Users\DengKaina\Desktop\Audit_workflow\packaging\fetch-wheels.ps1:22:$venvPy = Join-Path $projectRoot '.venv\Scripts\python.exe'
+C:\Users\DengKaina\Desktop\Audit_workflow\packaging\fetch-wheels.ps1:23:$py = if (Test-Path $venvPy) { $venvPy } else { 'python' }
+C:\Users\DengKaina\Desktop\Audit_workflow\packaging\fetch-wheels.ps1:24:Write-Host "[fetch-wheels] using Python: $py"
+C:\Users\DengKaina\Desktop\Audit_workflow\packaging\fetch-wheels.ps1:27:New-Item -ItemType Directory -Force -Path $wheelsDir | Out-Null
+C:\Users\DengKaina\Desktop\Audit_workflow\packaging\fetch-wheels.ps1:29:Write-Host "[fetch-wheels] 下载 wheels 到 $wheelsDir（含依赖闭包）..."
+C:\Users\DengKaina\Desktop\Audit_workflow\packaging\fetch-wheels.ps1:32:    -d $wheelsDir `
+C:\Users\DengKaina\Desktop\Audit_workflow\packaging\fetch-wheels.ps1:36:    --python-version 3.12 `
+C:\Users\DengKaina\Desktop\Audit_workflow\packaging\fetch-wheels.ps1:41:$count = (Get-ChildItem $wheelsDir -Filter *.whl).Count
+C:\Users\DengKaina\Desktop\Audit_workflow\packaging\fetch-wheels.ps1:42:$size = [math]::Round((Get-ChildItem $wheelsDir | Measure-Object Length -Sum).Sum / 1MB, 1)
+C:\Users\DengKaina\Desktop\Audit_workflow\packaging\fetch-wheels.ps1:43:Write-Host "[fetch-wheels] 完成：$count 个 wheel，共 ${size}MB"
+C:\Users\DengKaina\Desktop\Audit_workflow\requirements.txt:3:PyYAML>=6.0
+C:\Users\DengKaina\Desktop\Audit_workflow\requirements.txt:4:python-dotenv>=1.0
+C:\Users\DengKaina\Desktop\Audit_workflow\requirements.txt:10:GitPython>=3.1
+C:\Users\DengKaina\Desktop\Audit_workflow\requirements.txt:11:python-multipart>=0.0.6
+C:\Users\DengKaina\Desktop\Audit_workflow\setup_env.ps1:7:Write-Host "Creating Python virtual environment .venv..."
+C:\Users\DengKaina\Desktop\Audit_workflow\setup_env.ps1:8:python -m venv .venv
+C:\Users\DengKaina\Desktop\Audit_workflow\setup_env.ps1:11:python -m pip install --upgrade pip
+C:\Users\DengKaina\Desktop\Audit_workflow\setup_env.ps1:12:Write-Host "Installing Python requirements..."
+C:\Users\DengKaina\Desktop\Audit_workflow\setup_env.ps1:13:pip install -r requirements.txt

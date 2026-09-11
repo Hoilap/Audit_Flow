@@ -4878,3 +4878,38 @@ PermissionError: [Errno 13] Permission denied: 'C:\\Users\\DengKaina\\Desktop\\A
 [2026-09-08 00:30:34] INFO    audit_workflow - 启动服务器: Python=C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\python.exe, PID=29196, CWD=C:\Users\DengKaina\Desktop\Audit_workflow, mode=dev
 [2026-09-08 00:48:48] INFO    audit_workflow - 校验 inputs/ 目录: 5 个问题
 [2026-09-08 00:49:18] INFO    audit_workflow - 校验 inputs/ 目录: 5 个问题
+[2026-09-08 13:28:23] INFO    audit_workflow - 校验 inputs/ 目录: 5 个问题
+[2026-09-08 13:29:46] INFO    audit_workflow - 创建项目: customer=佰腾(TMF2), procedure=outbound_settlement_match
+[2026-09-08 13:29:53] INFO    audit_workflow - 校验 inputs/ 目录: 4 个问题
+[2026-09-08 13:30:05] INFO    audit_workflow - 校验 inputs/ 目录: 5 个问题
+[2026-09-08 13:30:14] INFO    audit_workflow - 校验 inputs/ 目录: 5 个问题
+[2026-09-08 13:30:16] INFO    audit_workflow - 校验 inputs/ 目录: 5 个问题
+[2026-09-10 09:23:46] INFO    audit_workflow - 启动服务器: Python=C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\python.exe, PID=17512, CWD=C:\Users\DengKaina\Desktop\Audit_workflow, mode=dev
+[2026-09-10 09:24:04] INFO    audit_workflow - OSM Detect: customer=TMF, task=outbound_settlement_match
+[2026-09-10 09:24:04] INFO    audit_workflow.outbound_settlement_match.pipeline - Detected 242 settlement CSV files
+[2026-09-10 09:24:08] INFO    audit_workflow.outbound_settlement_match.pipeline - Detected 3 outbound Excel files
+[2026-09-10 09:24:41] INFO    audit_workflow - OSM Detect: customer=TMF, task=outbound_settlement_match
+[2026-09-10 09:24:41] INFO    audit_workflow.outbound_settlement_match.pipeline - Detected 242 settlement CSV files
+[2026-09-10 09:24:45] INFO    audit_workflow.outbound_settlement_match.pipeline - Detected 3 outbound Excel files
+[2026-09-10 09:26:19] INFO    audit_workflow - 校验 inputs/ 目录: 4 个问题
+[2026-09-10 09:26:26] INFO    audit_workflow - OSM Detect: customer=TMF, task=outbound_settlement_match
+[2026-09-10 09:26:26] INFO    audit_workflow.outbound_settlement_match.pipeline - Detected 242 settlement CSV files
+[2026-09-10 09:26:30] INFO    audit_workflow.outbound_settlement_match.pipeline - Detected 3 outbound Excel files
+[2026-09-10 09:28:11] INFO    audit_workflow - 校验 inputs/ 目录: 4 个问题
+[2026-09-10 09:38:32] INFO    audit_workflow - 校验 inputs/ 目录: 3 个问题
+[2026-09-10 10:03:21] INFO    audit_workflow - 校验 inputs/ 目录: 3 个问题
+[2026-09-10 10:05:16] INFO    audit_workflow - 启动服务器: Python=C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\python.exe, PID=5168, CWD=C:\Users\DengKaina\Desktop\Audit_workflow, mode=dev
+[2026-09-10 10:06:28] INFO    audit_workflow - OSM Detect: customer=TMF2, task=outbound_settlement_match
+[2026-09-10 10:06:29] INFO    audit_workflow.outbound_settlement_match.pipeline - Detected 67 settlement CSV files
+[2026-09-10 10:06:36] INFO    audit_workflow.outbound_settlement_match.pipeline - Detected 9 outbound Excel files
+[2026-09-10 10:10:24] INFO    audit_workflow - OSM Match: customer=TMF2, task=outbound_settlement_match
+[2026-09-10 10:10:25] INFO    audit_workflow.outbound_settlement_match.matcher - Loaded: sellout=47661, refund=767, return=78, transfer=658, settlement=53942
+[2026-09-10 10:10:25] INFO    audit_workflow.outbound_settlement_match.matcher -   refund: 720 unique order IDs to exclude
+[2026-09-10 10:10:25] INFO    audit_workflow.outbound_settlement_match.matcher -   return: 71 unique order IDs to exclude
+[2026-09-10 10:10:25] INFO    audit_workflow.outbound_settlement_match.matcher -   transfer: 316 unique order IDs to exclude
+[2026-09-10 10:10:28] INFO    audit_workflow.outbound_settlement_match.matcher - Net outbound: 46846 records (filtered 815 from 47661 sellout)
+[2026-09-10 10:10:28] INFO    audit_workflow.outbound_settlement_match.matcher - Matching: outbound.order_id ←→ settlement.partner_txn_id
+[2026-09-10 10:10:30] INFO    audit_workflow.outbound_settlement_match.matcher - Match summary: matched=43488, unmatched_outbound=3443, unmatched_settlement=12796
+[2026-09-10 11:33:44] INFO    audit_workflow - 启动服务器: Python=C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\python.exe, PID=19004, CWD=C:\Users\DengKaina\Desktop\Audit_workflow, mode=dev
+[2026-09-10 20:16:01] INFO    audit_workflow - 启动服务器: Python=C:\Users\DengKaina\Desktop\Audit_workflow\.venv\Scripts\python.exe, PID=17716, CWD=C:\Users\DengKaina\Desktop\Audit_workflow, mode=dev
+[2026-09-10 20:16:12] INFO    audit_workflow - 校验 inputs/ 目录: 3 个问题

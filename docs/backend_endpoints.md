@@ -28,7 +28,8 @@ python -m uvicorn desktop.api:app --host 127.0.0.1 --port 8000 --reload
 配置已拆分为两层，通过 `task_configs` 数据库表关联：
 
 ```
-config.example.llm.yml          ← LLM 模型/API 配置（全局）
+config/config.llm.development.yml ← 开发环境 LLM 模型/API 配置（全局）
+config/config.llm.production.yml  ← 生产环境 LLM 模型/API 配置（全局）
 outputs/{客户}/{任务}/task.yml  ← 任务文件相关配置（由 Detect 生成）
 ```
 

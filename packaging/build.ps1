@@ -45,7 +45,31 @@ try {
     Pop-Location
 }
 
-# ── 3. 产物报告 ──────────────────────────────────────────────
+# ── 3. 安全校验：安装包资源中不得出现任何 .env 文件 ──────────
+$unpackedResources = Join-Path $projectRoot 'dist\win-unpacked\resources'
+$envFiles = @()
+if (Test-Path $unpackedResources) {
+    $envFiles = @(Get-ChildItem $unpackedResources -Recurse -Force -File |
+        Where-Object { $_.Name -eq '.env' -or $_.Name -like '.env.*' })
+}
+$asarEnvEntries = @()
+$asarPath = Join-Path $unpackedResources 'app.asar'
+$asarCli = Join-Path $desktopDir 'node_modules\.bin\asar.cmd'
+if ((Test-Path $asarPath) -and (Test-Path $asarCli)) {
+    $asarEntries = @(& $asarCli list $asarPath)
+    if ($LASTEXITCODE -ne 0) { throw "无法检查 app.asar 内容" }
+    $asarEnvEntries = @($asarEntries | Where-Object {
+        (Split-Path $_ -Leaf) -eq '.env' -or (Split-Path $_ -Leaf) -like '.env.*'
+    })
+}
+if ($envFiles.Count -gt 0 -or $asarEnvEntries.Count -gt 0) {
+    $paths = @($envFiles | ForEach-Object { $_.FullName }) + @($asarEnvEntries | ForEach-Object { "app.asar:$_" })
+    $pathText = $paths -join [Environment]::NewLine
+    throw "安全校验失败：打包产物中发现 .env 文件：`n$pathText"
+}
+Write-Host "[build] 安全校验通过：产物中不含 .env / .env.*"
+
+# ── 4. 产物报告 ──────────────────────────────────────────────
 $distDir = Join-Path $projectRoot 'dist'
 Get-ChildItem $distDir -File |
     Where-Object { $_.Extension -in '.exe', '.blockmap' } |

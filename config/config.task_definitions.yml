@@ -68,23 +68,14 @@ tasks:
     description: "Detect扫描→清洗结算流水→清洗出库表→匹配出库与结算"
     steps:
       - id: osm-detect
-        allow_llm: true
-        allow_script: true
-        allow_scripts_list:
-          - id: script
-            label: "脚本识别"
+        allow_llm: false
+        allow_script: false
       - id: clean-settlement
         allow_llm: true
-        allow_script: true
-        allow_scripts_list:
-          - id: llm_settlement
-            label: "LLM 结算清洗"
+        allow_script: false
       - id: clean-outbound
         allow_llm: true
-        allow_script: true
-        allow_scripts_list:
-          - id: llm_outbound
-            label: "LLM 出库清洗"
+        allow_script: false
       - id: match
         allow_llm: true
         allow_script: false

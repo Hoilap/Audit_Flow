@@ -20,7 +20,7 @@ ipcMain.handle('get-install-status', () => installProgress)
 // ── 运行模式与路径解析 ──────────────────────────────────────────
 // 开发模式：项目根 = desktop/ 的上级目录，Python 用 .venv
 // 打包模式：resources/app 为后端源码，resources/runtime/python 为内置运行时，
-//           用户数据（inputs/outputs/db/config/.env/日志）在 app.getPath('userData')
+//           用户数据（inputs/outputs/db/config/日志）在 app.getPath('userData')
 
 const IS_PACKAGED = app.isPackaged
 
@@ -187,12 +187,33 @@ function seedDataDir() {
     }
   }
 
-  // 2) .env：从 .env.example 种子（存在则不覆盖）
-  const envExample = path.join(BACKEND_SRC_DIR, '.env.example')
-  const envTarget = path.join(DATA_DIR, '.env')
-  if (fs.existsSync(envExample) && !fs.existsSync(envTarget)) {
-    fs.copyFileSync(envExample, envTarget)
-    console.log('[bootstrap] seeded .env from .env.example')
+  // 1b) 匹配配置：从随包示例模板生成（目标存在则不覆盖）。
+  // 生产 LLM 配置已作为 config/config.llm.production.yml 随包复制，且不依赖 .env。
+  const exampleConfigs = [
+    ['config.example.matching.yml', 'config.matching.yml'],
+  ]
+  for (const [exampleName, targetName] of exampleConfigs) {
+    const exampleSrc = path.join(BACKEND_SRC_DIR, exampleName)
+    const cfgDst = path.join(dataConfigDir, targetName)
+    if (fs.existsSync(exampleSrc) && !fs.existsSync(cfgDst)) {
+      fs.mkdirSync(dataConfigDir, { recursive: true })
+      fs.copyFileSync(exampleSrc, cfgDst)
+      console.log(`[bootstrap] seeded config from example: ${targetName}`)
+    }
+  }
+
+  // 2) 实例数据：随包 inputs 示例客户（客户目录不存在才复制，用户已有数据不覆盖）
+  const shippedInputsDir = path.join(BACKEND_SRC_DIR, 'sample_inputs')
+  if (fs.existsSync(shippedInputsDir)) {
+    const dataInputsDir = path.join(DATA_DIR, 'inputs')
+    for (const cust of fs.readdirSync(shippedInputsDir)) {
+      const src = path.join(shippedInputsDir, cust)
+      const dst = path.join(dataInputsDir, cust)
+      if (fs.statSync(src).isDirectory() && !fs.existsSync(dst)) {
+        fs.cpSync(src, dst, { recursive: true })
+        bootstrapLog('[bootstrap] seeded sample inputs: ' + cust)
+      }
+    }
   }
 }
 
@@ -232,6 +253,7 @@ async function startBackend() {
     PYTHONPATH: BACKEND_SRC_DIR,          // 让 python -m desktop.api 从资源目录导入
     AUDIT_WORKFLOW_DATA_DIR: DATA_DIR,    // 后端把 inputs/outputs/db/config 都放这里
     AUDIT_DEV: IS_PACKAGED ? '' : '1',
+    AUDIT_WORKFLOW_ENV: IS_PACKAGED ? 'production' : 'development',
     PYTHONUNBUFFERED: '1',
     // 防止用户机器上的 PYTHONHOME/PYTHONPATH 污染内置运行时
     PYTHONHOME: '',
