@@ -16,6 +16,6 @@ llm:
       model: qwen3.7-plus
       model_env: DASHSCOPE_MODEL
     dashscope_3.7_lzd:
-      api_key: REDACTED_DASHSCOPE_LZD_KEY
+      api_key_env: DASHSCOPE_API_KEY_LZD
       base_url: https://ws-bjyhszolnatf055a.cn-beijing.maas.aliyuncs.com/compatible-mode/v1
       model: qwen3.7-plus
